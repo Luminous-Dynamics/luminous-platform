@@ -1,0 +1,1692 @@
+{
+  "profile": "luminous-canonical-authority-path-closure",
+  "version": "0.1",
+  "status": "synthetic_fixture_suite_not_executed",
+  "no_aggregate_score": true,
+  "owner_identity_source": "resource_owner_attestation",
+  "independent_inventory_source": "independent_route_inventory",
+  "cases": [
+    {
+      "scenario_id": "CAPC-001",
+      "control_class": "positive_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "mcp",
+          "route_label": "records.get_document",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "rest",
+          "route_label": "GET /v1/documents/17",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "sdk",
+          "route_label": "client.documents.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "mcp",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:mcp",
+          "mapping_digest": "sha256:mcp0000000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "rest",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:rest",
+          "mapping_digest": "sha256:rest000000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "sdk",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:sdk",
+          "mapping_digest": "sha256:sdk0000000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "mcp",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 3,
+        "path_closure_denominator": 3,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 1,
+        "equivalent_paths": 3,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 1,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "qualified"
+      }
+    },
+    {
+      "scenario_id": "CAPC-002",
+      "control_class": "positive_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        },
+        {
+          "effect_id": "effect:tenant-b:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-b",
+          "resource_id": "resource:document-17-b",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:tenant-b"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "tenant-a",
+          "route_label": "GET /v1/documents/{id}",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "tenant-b",
+          "route_label": "GET /v1/documents/{id}",
+          "path_kind": "mcp",
+          "credential_ref": "credential:tenant-b",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "tenant-a",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:tenant-a",
+          "mapping_digest": "sha256:tenant-a00000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "tenant-b",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:tenant-b",
+          "mapping_digest": "sha256:tenant-b00000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-b:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-b",
+            "resource_id": "resource:document-17-b",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:tenant-b"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "tenant-a",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 2,
+        "path_closure_denominator": 2,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 1,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "qualified"
+      }
+    },
+    {
+      "scenario_id": "CAPC-003",
+      "control_class": "negative_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "alias",
+          "route_label": "documents.remove",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "alias",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:alias",
+          "mapping_digest": "sha256:alias00000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-delete",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.delete",
+            "effect_class": "delete",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "alias",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-delete",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.delete",
+            "effect_class": "delete",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 1,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 1,
+        "verified_effects": 1,
+        "unauthorized_effects": 1,
+        "false_refusals": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "CAPC-004",
+      "control_class": "negative_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "broad",
+          "route_label": "documents.update_any",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "broad",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:broad",
+          "mapping_digest": "sha256:broad00000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-unbounded",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "broad",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-unbounded",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 1,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 1,
+        "verified_effects": 1,
+        "unauthorized_effects": 1,
+        "false_refusals": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "CAPC-005",
+      "control_class": "indeterminate_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "known",
+          "route_label": "records.get_document",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "dynamic",
+          "route_label": "runtime-discovered-url",
+          "path_kind": "dynamic",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": false,
+          "reachability": "unknown"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "known",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:known",
+          "mapping_digest": "sha256:known00000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "dynamic",
+          "resolution_state": "unresolved",
+          "mapping_owner_id": null,
+          "mapping_ref": null,
+          "mapping_digest": null,
+          "owner_attested": false,
+          "canonical_effect": null
+        }
+      ],
+      "events": [
+        {
+          "path_id": "known",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 2,
+        "unresolved_or_unattested_paths": 1,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 1,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CAPC-006",
+      "control_class": "positive_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "declared",
+          "route_label": "records.get_document",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "shadow",
+          "route_label": "direct-http-client",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": false,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "declared",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:declared",
+          "mapping_digest": "sha256:declared00000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "shadow",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:shadow",
+          "mapping_digest": "sha256:shadow0000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "shadow",
+          "admission": "denied",
+          "effect_observation": "none",
+          "observed_effect": null
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 2,
+        "path_closure_denominator": 2,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 1,
+        "equivalent_paths": 2,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 1,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 0,
+        "verified_effects": 0,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "qualified"
+      }
+    },
+    {
+      "scenario_id": "CAPC-007",
+      "control_class": "negative_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "shared-cred",
+          "route_label": "service-account-route",
+          "path_kind": "mcp",
+          "credential_ref": "credential:shared-service-account",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "shared-cred",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:shared-cred",
+          "mapping_digest": "sha256:shared-cred00000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "service:shared",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:shared-service-account"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "shared-cred",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "service:shared",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:shared-service-account"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 1,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 1,
+        "verified_effects": 1,
+        "unauthorized_effects": 1,
+        "false_refusals": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "CAPC-008",
+      "control_class": "negative_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "p-a",
+          "route_label": "route-a",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "p-b",
+          "route_label": "route-b",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "p-a",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:p-a",
+          "mapping_digest": "sha256:p-a0000000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "p-b",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:p-b",
+          "mapping_digest": "sha256:p-b0000000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-b",
+            "resource_id": "resource:document-17-b",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "p-b",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-b",
+            "resource_id": "resource:document-17-b",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 0,
+        "path_closure_denominator": 2,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 1,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 1,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 1,
+        "verified_effects": 1,
+        "unauthorized_effects": 1,
+        "false_refusals": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "CAPC-009",
+      "control_class": "indeterminate_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "unattested",
+          "route_label": "sdk.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "unattested",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:unattested",
+          "mapping_digest": "sha256:unattested000000000000000000000000000000000000000000000000000000",
+          "owner_attested": false,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 0,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 1,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 0,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CAPC-010",
+      "control_class": "positive_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        },
+        {
+          "effect_id": "effect:tenant-a:document-update",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.update",
+          "effect_class": "write",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-update-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "read",
+          "route_label": "GET /v1/documents/17",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "write",
+          "route_label": "PATCH /v1/documents/17",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "read",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:read",
+          "mapping_digest": "sha256:read000000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "write",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:write",
+          "mapping_digest": "sha256:write00000000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-update",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.update",
+            "effect_class": "write",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-update-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "read",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "write",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-update",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.update",
+            "effect_class": "write",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-update-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 2,
+        "path_closure_denominator": 2,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 2,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "qualified"
+      }
+    },
+    {
+      "scenario_id": "CAPC-011",
+      "control_class": "indeterminate_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "same-domain",
+          "route_label": "records.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "same-domain",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:same-domain",
+          "mapping_digest": "sha256:same-domain00000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "same-domain",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": false
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 0,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CAPC-012",
+      "control_class": "positive_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "valid-but-denied",
+          "route_label": "records.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "valid-but-denied",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:valid-but-denied",
+          "mapping_digest": "sha256:valid-but-denied000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "valid-but-denied",
+          "admission": "denied",
+          "effect_observation": "none",
+          "observed_effect": null
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 1,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 0,
+        "unauthorized_admissions": 0,
+        "verified_effects": 0,
+        "unauthorized_effects": 0,
+        "false_refusals": 1,
+        "disposition": "qualified"
+      }
+    },
+    {
+      "scenario_id": "CAPC-013",
+      "control_class": "indeterminate_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "ambiguous",
+          "route_label": "dynamic-route",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "ambiguous",
+          "resolution_state": "ambiguous",
+          "mapping_owner_id": null,
+          "mapping_ref": null,
+          "mapping_digest": null,
+          "owner_attested": false,
+          "canonical_effect": null
+        }
+      ],
+      "events": [
+        {
+          "path_id": "ambiguous",
+          "admission": "denied",
+          "effect_observation": "none",
+          "observed_effect": null
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 0,
+        "path_closure_denominator": 1,
+        "unresolved_or_unattested_paths": 1,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 0,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 0,
+        "verified_effects": 0,
+        "unauthorized_effects": 0,
+        "false_refusals": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CAPC-014",
+      "control_class": "negative_control",
+      "approved_effects": [
+        {
+          "effect_id": "effect:tenant-a:document-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:document-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "agent:a",
+          "workload_id": "workload:a",
+          "session_id": "session:42",
+          "argument_constraint_digest": "sha256:args-read-v1",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records-api",
+          "credential_lineage": "credential:task-a"
+        }
+      ],
+      "independent_inventory": [
+        {
+          "path_id": "mcp-frag",
+          "route_label": "mcp.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        },
+        {
+          "path_id": "rest-frag",
+          "route_label": "rest.read",
+          "path_kind": "mcp",
+          "credential_ref": "credential:task-a",
+          "declared_in_manifest": true,
+          "reachability": "reachable"
+        }
+      ],
+      "path_mappings": [
+        {
+          "path_id": "mcp-frag",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:mcp-frag",
+          "mapping_digest": "sha256:mcp-frag00000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        },
+        {
+          "path_id": "rest-frag",
+          "resolution_state": "resolved",
+          "mapping_owner_id": "owner:records",
+          "mapping_ref": "owner-map:rest-frag",
+          "mapping_digest": "sha256:rest-frag0000000000000000000000000000000000000000000000000000000",
+          "owner_attested": true,
+          "canonical_effect": {
+            "effect_id": "effect:alias-copy",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "events": [
+        {
+          "path_id": "mcp-frag",
+          "admission": "allowed",
+          "effect_observation": "observed",
+          "observed_effect": {
+            "effect_id": "effect:tenant-a:document-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:document-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "agent:a",
+            "workload_id": "workload:a",
+            "session_id": "session:42",
+            "argument_constraint_digest": "sha256:args-read-v1",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records-api",
+            "credential_lineage": "credential:task-a"
+          }
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "path_closure_numerator": 0,
+        "path_closure_denominator": 2,
+        "unresolved_or_unattested_paths": 0,
+        "equivalent_path_groups": 0,
+        "equivalent_paths": 0,
+        "canonical_identity_collisions": 0,
+        "canonical_identity_fragmentations": 1,
+        "shadow_path_count": 0,
+        "shadow_path_effects": 0,
+        "resource_substitution_attempts": 0,
+        "credential_substitution_attempts": 0,
+        "argument_scope_substitution_attempts": 0,
+        "unauthorized_attempts": 1,
+        "unauthorized_admissions": 1,
+        "verified_effects": 1,
+        "unauthorized_effects": 1,
+        "false_refusals": 0,
+        "disposition": "violation"
+      }
+    }
+  ]
+}
