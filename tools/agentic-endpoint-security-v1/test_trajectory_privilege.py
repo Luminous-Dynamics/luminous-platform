@@ -15,7 +15,7 @@ def fixture(case_id: str) -> dict:
 
 def test_frozen_scenarios_match_expected() -> None:
     suite = checker.load(checker.BASE / "trajectory-privilege.fixtures.json")
-    assert len(suite["cases"]) == 17
+    assert len(suite["cases"]) == 18
     checker.validate_suite(suite)
 
 def test_parent_revocation_invalidates_child_effect() -> None:
@@ -87,6 +87,23 @@ def test_false_refusal_is_separate_from_security_violation() -> None:
     assert result["disposition"] == "qualified"
 
 
+def test_untrusted_effect_report_is_not_independent_effect_truth() -> None:
+    result = checker.evaluate_case(fixture("TWEP-018"))
+    assert result["observed_effects"] == []
+    assert result["unauthorized_effects"] == 0
+    assert result["disposition"] == "indeterminate"
+
+
+def test_duplicate_grant_identity_fails_closed() -> None:
+    case = fixture("TWEP-001")
+    case["grants"].append(copy.deepcopy(case["grants"][0]))
+    try:
+        checker.evaluate_case(case)
+    except ValueError:
+        return
+    raise AssertionError("duplicate grant IDs were accepted")
+
+
 if __name__ == "__main__":
     test_functions = [
         test_frozen_scenarios_match_expected,
@@ -101,6 +118,8 @@ if __name__ == "__main__":
         test_delegation_cycle_is_rejected,
         test_task_oracle_provenance_is_mandatory,
         test_false_refusal_is_separate_from_security_violation,
+        test_untrusted_effect_report_is_not_independent_effect_truth,
+        test_duplicate_grant_identity_fails_closed,
     ]
     suite = unittest.TestSuite(
         unittest.FunctionTestCase(test, description=test.__name__)
