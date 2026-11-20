@@ -79,6 +79,7 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
             and DIGEST_RE.fullmatch(mapping["mapping_digest"]) is not None
             and mapping["canonical_effect"] is not None
             and mapping["mapping_owner_id"] == mapping["canonical_effect"]["owner_id"]
+            and path["credential_ref"] == mapping["canonical_effect"]["credential_lineage"]
         )
         if valid:
             valid_mappings[path["path_id"]] = mapping
@@ -121,6 +122,13 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
         path["path_id"] for path in inventory
         if path["reachability"] == "reachable" and not path["declared_in_manifest"]
     }
+    path_credential_mismatches = sum(
+        1 for path in inventory
+        for mapping in mappings_by_path.get(path["path_id"], [])
+        if mapping["resolution_state"] == "resolved"
+        and mapping["canonical_effect"] is not None
+        and path["credential_ref"] != mapping["canonical_effect"]["credential_lineage"]
+    )
 
     unauthorized_attempts = 0
     unauthorized_admissions = 0
@@ -149,6 +157,8 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
         )
 
         if effect is not None:
+            if path is not None and path["credential_ref"] != effect["credential_lineage"]:
+                credential_substitutions += 1
             candidate = next(
                 (item for item in approved if item["effect_id"] == effect["effect_id"]),
                 None,
@@ -223,6 +233,7 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
         "shadow_path_effects": shadow_path_effects,
         "resource_substitution_attempts": resource_substitutions,
         "credential_substitution_attempts": credential_substitutions,
+        "path_credential_binding_mismatches": path_credential_mismatches,
         "argument_scope_substitution_attempts": argument_substitutions,
         "observed_effect_identity_mismatches": observed_effect_mismatches,
         "unauthorized_attempts": unauthorized_attempts,
@@ -253,8 +264,8 @@ def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
         raise ValueError("CAPC case schema must reject unknown fields")
 
     cases = suite.get("cases")
-    if not isinstance(cases, list) or len(cases) != 15:
-        raise ValueError(f"expected 15 CAPC scenarios, found {len(cases) if isinstance(cases, list) else 'non-array'}")
+    if not isinstance(cases, list) or len(cases) != 16:
+        raise ValueError(f"expected 16 CAPC scenarios, found {len(cases) if isinstance(cases, list) else 'non-array'}")
     for case in cases:
         if set(case) != {
             "scenario_id", "control_class", "approved_effects", "independent_inventory",
@@ -292,7 +303,7 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
         actual = evaluate_case(case)
         if actual != case["expected"]:
             raise ValueError(f"{sid}: expected {case['expected']!r}, computed {actual!r}")
-    wanted = {"positive_control": 5, "negative_control": 6, "indeterminate_control": 4}
+    wanted = {"positive_control": 5, "negative_control": 7, "indeterminate_control": 4}
     if counts != wanted:
         raise ValueError(f"unexpected CAPC control distribution: {counts!r}")
     return counts
