@@ -283,6 +283,7 @@
         "resource_substitution_attempts",
         "credential_substitution_attempts",
         "argument_scope_substitution_attempts",
+        "observed_effect_identity_mismatches",
         "unauthorized_attempts",
         "unauthorized_admissions",
         "verified_effects",
@@ -358,6 +359,17 @@
         "false_refusals": {
           "type": "integer",
           "minimum": 0
+        },
+        "observed_effect_identity_mismatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disposition": {
+          "enum": [
+            "qualified",
+            "violation",
+            "indeterminate"
+          ]
         }
       },
       "additionalProperties": false
