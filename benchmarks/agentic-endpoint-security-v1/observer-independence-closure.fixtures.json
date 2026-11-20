@@ -1209,7 +1209,7 @@
           "role": "independent_observer",
           "domains": {
             "process_runtime": "c:process_runtime",
-            "event_stream": "c:event_stream",
+            "event_stream": "subject:event_stream",
             "signing_root": "c:signing_root",
             "credential_root": "c:credential_root",
             "clock_authority": "c:clock_authority",
