@@ -3058,6 +3058,839 @@
         "admission_decision": "allow",
         "task_result": "success"
       }
+    },
+    {
+      "scenario_id": "APAC-028",
+      "control_class": "negative_control",
+      "request": {
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attempt_id": "attempt:028",
+        "principal_ref": "principal:user-a",
+        "actor_ref": "workload:agent-a",
+        "participant_ref": "participant:service-a",
+        "target_ref": "resource:service-a",
+        "operation_ref": "service.update",
+        "arguments_digest": "sha256:000001a40032c01caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "purpose_ref": "purpose:maintenance",
+        "context_digest": "sha256:00000208003ed578aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "consumer_policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a"
+      },
+      "consumer_policy": {
+        "policy_ref": "consumer-policy:maintenance-v1",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "allow_explicit_empty_set": false,
+        "require_complete_dependency_coverage": true,
+        "on_unsatisfied": "deny"
+      },
+      "prerequisite_set": {
+        "set_ref": "prerequisite-set:19",
+        "set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "explicitly_declared": true,
+        "required": true,
+        "intentionally_empty": false,
+        "claims": [
+          {
+            "claim_id": "claim:agent-baseline-security",
+            "property": "delegation_containment",
+            "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "qualification_result_ref": "qualification:19",
+            "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "assure004_result_ref": "assure004:19",
+            "assure004_result_digest": "sha256:000003340063158caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "applicability_result_ref": "mycelix-applicability:19",
+            "applicability_result_digest": "sha256:00000398006f2ae8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "lifecycle_state_at_commit": "current",
+            "applicability_at_commit": "exact_subject",
+            "dependency_coverage_at_commit": "complete",
+            "unresolved_dependency_count": 0,
+            "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "acceptable_applicability": [
+              "exact_subject",
+              "controlled_equivalent"
+            ],
+            "subject_matches": true,
+            "bridge_ref": null,
+            "lifecycle_state_after_commit": "current"
+          }
+        ]
+      },
+      "preflight": {
+        "authority_state": "current",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a",
+        "authority_snapshot_digest": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "commit": {
+        "authority_state_at_linearization": "current",
+        "policy_digest_at_linearization": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest_at_linearization": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest_at_linearization": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_matches_preflight": false,
+        "revalidation_state": "passed",
+        "linearization_order": "no_race",
+        "request_digest_at_linearization": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref_at_linearization": "grant:root-a",
+        "authority_snapshot_digest_at_linearization": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_snapshot_matches_preflight": true,
+        "authority_revalidation_state": "not_attempted",
+        "assurance_revalidation": {
+          "state": "passed",
+          "result_ref": "assurance-revalidation:APAC-019",
+          "result_digest": "sha256:00000000000000000000000000000000000000000000000000000000000004c3",
+          "request_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000b0c",
+          "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "snapshot_digest": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "validated_claims": [
+            {
+              "claim_id": "claim:agent-baseline-security",
+              "property": "delegation_containment",
+              "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "qualification_result_ref": "qualification:19",
+              "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "assure004_result_ref": "assure004-revalidated:APAC-019:0",
+              "assure004_result_digest": "sha256:000000000000000000000000000000000000000000000000000000000000058b",
+              "applicability_result_ref": "mycelix-revalidated:APAC-019:0",
+              "applicability_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000527",
+              "lifecycle_state_at_commit": "current",
+              "applicability_at_commit": "exact_subject",
+              "dependency_coverage_at_commit": "complete",
+              "unresolved_dependency_count": 0,
+              "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "acceptable_applicability": [
+                "exact_subject",
+                "controlled_equivalent"
+              ],
+              "subject_matches": true,
+              "bridge_ref": null,
+              "lifecycle_state_after_commit": "current",
+              "predecessor_qualification_result_ref": null,
+              "predecessor_qualification_result_digest": null
+            }
+          ]
+        },
+        "authority_revalidation": {
+          "state": "not_attempted",
+          "result_ref": null,
+          "result_digest": null,
+          "request_digest": null,
+          "grant_ref": null,
+          "snapshot_digest": null,
+          "authority_state": null
+        }
+      },
+      "effect": {
+        "participant_effect_state": "no_effect",
+        "attempt_count": 0,
+        "original_attempt_reconciled": false,
+        "new_attempt_before_reconciliation": false
+      },
+      "expected": {
+        "authority_result": "eligible",
+        "assurance_result": "denied",
+        "admission_decision": "deny",
+        "task_result": "blocked"
+      }
+    },
+    {
+      "scenario_id": "APAC-029",
+      "control_class": "negative_control",
+      "request": {
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attempt_id": "attempt:029",
+        "principal_ref": "principal:user-a",
+        "actor_ref": "workload:agent-a",
+        "participant_ref": "participant:service-a",
+        "target_ref": "resource:service-a",
+        "operation_ref": "service.update",
+        "arguments_digest": "sha256:000001a40032c01caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "purpose_ref": "purpose:maintenance",
+        "context_digest": "sha256:00000208003ed578aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "consumer_policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a"
+      },
+      "consumer_policy": {
+        "policy_ref": "consumer-policy:maintenance-v1",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "allow_explicit_empty_set": false,
+        "require_complete_dependency_coverage": true,
+        "on_unsatisfied": "deny"
+      },
+      "prerequisite_set": {
+        "set_ref": "prerequisite-set:19",
+        "set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "explicitly_declared": true,
+        "required": true,
+        "intentionally_empty": false,
+        "claims": [
+          {
+            "claim_id": "claim:agent-baseline-security",
+            "property": "delegation_containment",
+            "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "qualification_result_ref": "qualification:19",
+            "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "assure004_result_ref": "assure004:19",
+            "assure004_result_digest": "sha256:000003340063158caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "applicability_result_ref": "mycelix-applicability:19",
+            "applicability_result_digest": "sha256:00000398006f2ae8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "lifecycle_state_at_commit": "current",
+            "applicability_at_commit": "exact_subject",
+            "dependency_coverage_at_commit": "complete",
+            "unresolved_dependency_count": 0,
+            "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "acceptable_applicability": [
+              "exact_subject",
+              "controlled_equivalent"
+            ],
+            "subject_matches": true,
+            "bridge_ref": null,
+            "lifecycle_state_after_commit": "current"
+          }
+        ]
+      },
+      "preflight": {
+        "authority_state": "current",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a",
+        "authority_snapshot_digest": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "commit": {
+        "authority_state_at_linearization": "current",
+        "policy_digest_at_linearization": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest_at_linearization": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest_at_linearization": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_matches_preflight": false,
+        "revalidation_state": "passed",
+        "linearization_order": "no_race",
+        "request_digest_at_linearization": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref_at_linearization": "grant:root-a",
+        "authority_snapshot_digest_at_linearization": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_snapshot_matches_preflight": true,
+        "authority_revalidation_state": "not_attempted",
+        "assurance_revalidation": {
+          "state": "passed",
+          "result_ref": "assurance-revalidation:APAC-019",
+          "result_digest": "sha256:00000000000000000000000000000000000000000000000000000000000004c3",
+          "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "snapshot_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000b71",
+          "validated_claims": [
+            {
+              "claim_id": "claim:agent-baseline-security",
+              "property": "delegation_containment",
+              "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "qualification_result_ref": "qualification:19",
+              "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "assure004_result_ref": "assure004-revalidated:APAC-019:0",
+              "assure004_result_digest": "sha256:000000000000000000000000000000000000000000000000000000000000058b",
+              "applicability_result_ref": "mycelix-revalidated:APAC-019:0",
+              "applicability_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000527",
+              "lifecycle_state_at_commit": "current",
+              "applicability_at_commit": "exact_subject",
+              "dependency_coverage_at_commit": "complete",
+              "unresolved_dependency_count": 0,
+              "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "acceptable_applicability": [
+                "exact_subject",
+                "controlled_equivalent"
+              ],
+              "subject_matches": true,
+              "bridge_ref": null,
+              "lifecycle_state_after_commit": "current",
+              "predecessor_qualification_result_ref": null,
+              "predecessor_qualification_result_digest": null
+            }
+          ]
+        },
+        "authority_revalidation": {
+          "state": "not_attempted",
+          "result_ref": null,
+          "result_digest": null,
+          "request_digest": null,
+          "grant_ref": null,
+          "snapshot_digest": null,
+          "authority_state": null
+        }
+      },
+      "effect": {
+        "participant_effect_state": "no_effect",
+        "attempt_count": 0,
+        "original_attempt_reconciled": false,
+        "new_attempt_before_reconciliation": false
+      },
+      "expected": {
+        "authority_result": "eligible",
+        "assurance_result": "denied",
+        "admission_decision": "deny",
+        "task_result": "blocked"
+      }
+    },
+    {
+      "scenario_id": "APAC-030",
+      "control_class": "negative_control",
+      "request": {
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attempt_id": "attempt:030",
+        "principal_ref": "principal:user-a",
+        "actor_ref": "workload:agent-a",
+        "participant_ref": "participant:service-a",
+        "target_ref": "resource:service-a",
+        "operation_ref": "service.update",
+        "arguments_digest": "sha256:000001a40032c01caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "purpose_ref": "purpose:maintenance",
+        "context_digest": "sha256:00000208003ed578aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "consumer_policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a"
+      },
+      "consumer_policy": {
+        "policy_ref": "consumer-policy:maintenance-v1",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "allow_explicit_empty_set": false,
+        "require_complete_dependency_coverage": true,
+        "on_unsatisfied": "deny"
+      },
+      "prerequisite_set": {
+        "set_ref": "prerequisite-set:19",
+        "set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "explicitly_declared": true,
+        "required": true,
+        "intentionally_empty": false,
+        "claims": [
+          {
+            "claim_id": "claim:agent-baseline-security",
+            "property": "delegation_containment",
+            "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "qualification_result_ref": "qualification:19",
+            "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "assure004_result_ref": "assure004:19",
+            "assure004_result_digest": "sha256:000003340063158caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "applicability_result_ref": "mycelix-applicability:19",
+            "applicability_result_digest": "sha256:00000398006f2ae8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "lifecycle_state_at_commit": "current",
+            "applicability_at_commit": "exact_subject",
+            "dependency_coverage_at_commit": "complete",
+            "unresolved_dependency_count": 0,
+            "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "acceptable_applicability": [
+              "exact_subject",
+              "controlled_equivalent"
+            ],
+            "subject_matches": true,
+            "bridge_ref": null,
+            "lifecycle_state_after_commit": "current"
+          }
+        ]
+      },
+      "preflight": {
+        "authority_state": "current",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a",
+        "authority_snapshot_digest": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "commit": {
+        "authority_state_at_linearization": "current",
+        "policy_digest_at_linearization": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest_at_linearization": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest_at_linearization": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_matches_preflight": false,
+        "revalidation_state": "passed",
+        "linearization_order": "no_race",
+        "request_digest_at_linearization": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref_at_linearization": "grant:root-a",
+        "authority_snapshot_digest_at_linearization": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_snapshot_matches_preflight": true,
+        "authority_revalidation_state": "not_attempted",
+        "assurance_revalidation": {
+          "state": "passed",
+          "result_ref": "assurance-revalidation:APAC-019",
+          "result_digest": "sha256:00000000000000000000000000000000000000000000000000000000000004c3",
+          "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "snapshot_digest": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "validated_claims": []
+        },
+        "authority_revalidation": {
+          "state": "not_attempted",
+          "result_ref": null,
+          "result_digest": null,
+          "request_digest": null,
+          "grant_ref": null,
+          "snapshot_digest": null,
+          "authority_state": null
+        }
+      },
+      "effect": {
+        "participant_effect_state": "no_effect",
+        "attempt_count": 0,
+        "original_attempt_reconciled": false,
+        "new_attempt_before_reconciliation": false
+      },
+      "expected": {
+        "authority_result": "eligible",
+        "assurance_result": "denied",
+        "admission_decision": "deny",
+        "task_result": "blocked"
+      }
+    },
+    {
+      "scenario_id": "APAC-031",
+      "control_class": "negative_control",
+      "request": {
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attempt_id": "attempt:031",
+        "principal_ref": "principal:user-a",
+        "actor_ref": "workload:agent-a",
+        "participant_ref": "participant:service-a",
+        "target_ref": "resource:service-a",
+        "operation_ref": "service.update",
+        "arguments_digest": "sha256:000001a40032c01caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "purpose_ref": "purpose:maintenance",
+        "context_digest": "sha256:00000208003ed578aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "consumer_policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a"
+      },
+      "consumer_policy": {
+        "policy_ref": "consumer-policy:maintenance-v1",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "allow_explicit_empty_set": false,
+        "require_complete_dependency_coverage": true,
+        "on_unsatisfied": "deny"
+      },
+      "prerequisite_set": {
+        "set_ref": "prerequisite-set:19",
+        "set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "explicitly_declared": true,
+        "required": true,
+        "intentionally_empty": false,
+        "claims": [
+          {
+            "claim_id": "claim:agent-baseline-security",
+            "property": "delegation_containment",
+            "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "qualification_result_ref": "qualification:19",
+            "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "assure004_result_ref": "assure004:19",
+            "assure004_result_digest": "sha256:000003340063158caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "applicability_result_ref": "mycelix-applicability:19",
+            "applicability_result_digest": "sha256:00000398006f2ae8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "lifecycle_state_at_commit": "current",
+            "applicability_at_commit": "exact_subject",
+            "dependency_coverage_at_commit": "complete",
+            "unresolved_dependency_count": 0,
+            "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "acceptable_applicability": [
+              "exact_subject",
+              "controlled_equivalent"
+            ],
+            "subject_matches": true,
+            "bridge_ref": null,
+            "lifecycle_state_after_commit": "current"
+          }
+        ]
+      },
+      "preflight": {
+        "authority_state": "current",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a",
+        "authority_snapshot_digest": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "commit": {
+        "authority_state_at_linearization": "current",
+        "policy_digest_at_linearization": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest_at_linearization": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest_at_linearization": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_matches_preflight": false,
+        "revalidation_state": "passed",
+        "linearization_order": "no_race",
+        "request_digest_at_linearization": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref_at_linearization": "grant:root-a",
+        "authority_snapshot_digest_at_linearization": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_snapshot_matches_preflight": true,
+        "authority_revalidation_state": "not_attempted",
+        "assurance_revalidation": {
+          "state": "passed",
+          "result_ref": "assurance-revalidation:APAC-019",
+          "result_digest": "sha256:00000000000000000000000000000000000000000000000000000000000004c3",
+          "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "snapshot_digest": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "validated_claims": [
+            {
+              "claim_id": "claim:agent-baseline-security",
+              "property": "delegation_containment",
+              "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "qualification_result_ref": "qualification:19",
+              "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "assure004_result_ref": "assure004-revalidated:APAC-019:0",
+              "assure004_result_digest": "sha256:000000000000000000000000000000000000000000000000000000000000058b",
+              "applicability_result_ref": "mycelix-revalidated:APAC-019:0",
+              "applicability_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000527",
+              "lifecycle_state_at_commit": "current",
+              "applicability_at_commit": "exact_subject",
+              "dependency_coverage_at_commit": "complete",
+              "unresolved_dependency_count": 0,
+              "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "acceptable_applicability": [
+                "exact_subject",
+                "controlled_equivalent"
+              ],
+              "subject_matches": true,
+              "bridge_ref": null,
+              "lifecycle_state_after_commit": "current",
+              "predecessor_qualification_result_ref": null,
+              "predecessor_qualification_result_digest": null
+            },
+            {
+              "claim_id": "claim:agent-baseline-security",
+              "property": "delegation_containment",
+              "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "qualification_result_ref": "qualification:19",
+              "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "assure004_result_ref": "assure004-revalidated:APAC-019:0",
+              "assure004_result_digest": "sha256:000000000000000000000000000000000000000000000000000000000000058b",
+              "applicability_result_ref": "mycelix-revalidated:APAC-019:0",
+              "applicability_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000527",
+              "lifecycle_state_at_commit": "current",
+              "applicability_at_commit": "exact_subject",
+              "dependency_coverage_at_commit": "complete",
+              "unresolved_dependency_count": 0,
+              "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "acceptable_applicability": [
+                "exact_subject",
+                "controlled_equivalent"
+              ],
+              "subject_matches": true,
+              "bridge_ref": null,
+              "lifecycle_state_after_commit": "current",
+              "predecessor_qualification_result_ref": null,
+              "predecessor_qualification_result_digest": null
+            }
+          ]
+        },
+        "authority_revalidation": {
+          "state": "not_attempted",
+          "result_ref": null,
+          "result_digest": null,
+          "request_digest": null,
+          "grant_ref": null,
+          "snapshot_digest": null,
+          "authority_state": null
+        }
+      },
+      "effect": {
+        "participant_effect_state": "no_effect",
+        "attempt_count": 0,
+        "original_attempt_reconciled": false,
+        "new_attempt_before_reconciliation": false
+      },
+      "expected": {
+        "authority_result": "eligible",
+        "assurance_result": "denied",
+        "admission_decision": "deny",
+        "task_result": "blocked"
+      }
+    },
+    {
+      "scenario_id": "APAC-032",
+      "control_class": "negative_control",
+      "request": {
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attempt_id": "attempt:032",
+        "principal_ref": "principal:user-a",
+        "actor_ref": "workload:agent-a",
+        "participant_ref": "participant:service-a",
+        "target_ref": "resource:service-a",
+        "operation_ref": "service.update",
+        "arguments_digest": "sha256:000001a40032c01caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "purpose_ref": "purpose:maintenance",
+        "context_digest": "sha256:00000208003ed578aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "consumer_policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a"
+      },
+      "consumer_policy": {
+        "policy_ref": "consumer-policy:maintenance-v1",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "allow_explicit_empty_set": false,
+        "require_complete_dependency_coverage": true,
+        "on_unsatisfied": "deny"
+      },
+      "prerequisite_set": {
+        "set_ref": "prerequisite-set:19",
+        "set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "explicitly_declared": true,
+        "required": true,
+        "intentionally_empty": false,
+        "claims": [
+          {
+            "claim_id": "claim:agent-baseline-security",
+            "property": "delegation_containment",
+            "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "qualification_result_ref": "qualification:19",
+            "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "assure004_result_ref": "assure004:19",
+            "assure004_result_digest": "sha256:000003340063158caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "applicability_result_ref": "mycelix-applicability:19",
+            "applicability_result_digest": "sha256:00000398006f2ae8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "lifecycle_state_at_commit": "current",
+            "applicability_at_commit": "exact_subject",
+            "dependency_coverage_at_commit": "complete",
+            "unresolved_dependency_count": 0,
+            "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "acceptable_applicability": [
+              "exact_subject",
+              "controlled_equivalent"
+            ],
+            "subject_matches": true,
+            "bridge_ref": null,
+            "lifecycle_state_after_commit": "current"
+          }
+        ]
+      },
+      "preflight": {
+        "authority_state": "current",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a",
+        "authority_snapshot_digest": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "commit": {
+        "authority_state_at_linearization": "current",
+        "policy_digest_at_linearization": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest_at_linearization": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest_at_linearization": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_matches_preflight": false,
+        "revalidation_state": "passed",
+        "linearization_order": "no_race",
+        "request_digest_at_linearization": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref_at_linearization": "grant:root-a",
+        "authority_snapshot_digest_at_linearization": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_snapshot_matches_preflight": true,
+        "authority_revalidation_state": "not_attempted",
+        "assurance_revalidation": {
+          "state": "passed",
+          "result_ref": "assurance-revalidation:APAC-019",
+          "result_digest": "sha256:00000000000000000000000000000000000000000000000000000000000004c3",
+          "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "snapshot_digest": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "validated_claims": [
+            {
+              "claim_id": "claim:agent-baseline-security",
+              "property": "delegation_containment",
+              "subject_manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000ca0",
+              "qualification_result_ref": "qualification:19",
+              "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "assure004_result_ref": "assure004-revalidated:APAC-019:0",
+              "assure004_result_digest": "sha256:000000000000000000000000000000000000000000000000000000000000058b",
+              "applicability_result_ref": "mycelix-revalidated:APAC-019:0",
+              "applicability_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000527",
+              "lifecycle_state_at_commit": "current",
+              "applicability_at_commit": "exact_subject",
+              "dependency_coverage_at_commit": "complete",
+              "unresolved_dependency_count": 0,
+              "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "acceptable_applicability": [
+                "exact_subject",
+                "controlled_equivalent"
+              ],
+              "subject_matches": true,
+              "bridge_ref": null,
+              "lifecycle_state_after_commit": "current",
+              "predecessor_qualification_result_ref": null,
+              "predecessor_qualification_result_digest": null
+            }
+          ]
+        },
+        "authority_revalidation": {
+          "state": "not_attempted",
+          "result_ref": null,
+          "result_digest": null,
+          "request_digest": null,
+          "grant_ref": null,
+          "snapshot_digest": null,
+          "authority_state": null
+        }
+      },
+      "effect": {
+        "participant_effect_state": "no_effect",
+        "attempt_count": 0,
+        "original_attempt_reconciled": false,
+        "new_attempt_before_reconciliation": false
+      },
+      "expected": {
+        "authority_result": "eligible",
+        "assurance_result": "denied",
+        "admission_decision": "deny",
+        "task_result": "blocked"
+      }
+    },
+    {
+      "scenario_id": "APAC-033",
+      "control_class": "negative_control",
+      "request": {
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attempt_id": "attempt:33",
+        "principal_ref": "principal:user-a",
+        "actor_ref": "workload:agent-a",
+        "participant_ref": "participant:service-a",
+        "target_ref": "resource:service-a",
+        "operation_ref": "service.update",
+        "arguments_digest": "sha256:000001a40032c01caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "purpose_ref": "purpose:maintenance",
+        "context_digest": "sha256:00000208003ed578aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "consumer_policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a"
+      },
+      "consumer_policy": {
+        "policy_ref": "consumer-policy:maintenance-v1",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "allow_explicit_empty_set": false,
+        "require_complete_dependency_coverage": true,
+        "on_unsatisfied": "deny"
+      },
+      "prerequisite_set": {
+        "set_ref": "prerequisite-set:19",
+        "set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "explicitly_declared": true,
+        "required": true,
+        "intentionally_empty": false,
+        "claims": [
+          {
+            "claim_id": "claim:agent-baseline-security",
+            "property": "delegation_containment",
+            "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "qualification_result_ref": "qualification:19",
+            "qualification_result_digest": "sha256:000002d000570030aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "assure004_result_ref": "assure004:19",
+            "assure004_result_digest": "sha256:000003340063158caaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "applicability_result_ref": "mycelix-applicability:19",
+            "applicability_result_digest": "sha256:00000398006f2ae8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "lifecycle_state_at_commit": "current",
+            "applicability_at_commit": "exact_subject",
+            "dependency_coverage_at_commit": "complete",
+            "unresolved_dependency_count": 0,
+            "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+            "acceptable_applicability": [
+              "exact_subject",
+              "controlled_equivalent"
+            ],
+            "subject_matches": true,
+            "bridge_ref": null,
+            "lifecycle_state_after_commit": "current"
+          }
+        ]
+      },
+      "preflight": {
+        "authority_state": "current",
+        "policy_digest": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref": "grant:root-a",
+        "authority_snapshot_digest": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "commit": {
+        "authority_state_at_linearization": "current",
+        "policy_digest_at_linearization": "sha256:000000dc001a9564aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "prerequisite_set_digest_at_linearization": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_digest_at_linearization": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assurance_snapshot_matches_preflight": false,
+        "revalidation_state": "passed",
+        "linearization_order": "no_race",
+        "request_digest_at_linearization": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_grant_ref_at_linearization": "grant:root-a",
+        "authority_snapshot_digest_at_linearization": "sha256:000003fc007b4044aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "authority_snapshot_matches_preflight": true,
+        "authority_revalidation_state": "not_attempted",
+        "assurance_revalidation": {
+          "state": "passed",
+          "result_ref": "assurance-revalidation:APAC-033",
+          "result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000d05",
+          "request_digest": "sha256:000001400026aac0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "prerequisite_set_digest": "sha256:00000078000e8008aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "snapshot_digest": "sha256:00000460008755a0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "validated_claims": [
+            {
+              "claim_id": "claim:agent-baseline-security",
+              "property": "delegation_containment",
+              "subject_manifest_digest": "sha256:0000026c004aead4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "qualification_result_ref": "qualification:APAC-027-successor",
+              "qualification_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000aa7",
+              "assure004_result_ref": "assure004-revalidated:APAC-019:0",
+              "assure004_result_digest": "sha256:000000000000000000000000000000000000000000000000000000000000058b",
+              "applicability_result_ref": "mycelix-revalidated:APAC-019:0",
+              "applicability_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000527",
+              "lifecycle_state_at_commit": "current",
+              "applicability_at_commit": "exact_subject",
+              "dependency_coverage_at_commit": "complete",
+              "unresolved_dependency_count": 0,
+              "required_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "actual_currentness_class": "CurrentThroughVerifiedCheckpoint",
+              "acceptable_applicability": [
+                "exact_subject",
+                "controlled_equivalent"
+              ],
+              "subject_matches": true,
+              "bridge_ref": null,
+              "lifecycle_state_after_commit": "current",
+              "predecessor_qualification_result_ref": null,
+              "predecessor_qualification_result_digest": null
+            }
+          ]
+        },
+        "authority_revalidation": {
+          "state": "not_attempted",
+          "result_ref": null,
+          "result_digest": null,
+          "request_digest": null,
+          "grant_ref": null,
+          "snapshot_digest": null,
+          "authority_state": null
+        }
+      },
+      "effect": {
+        "participant_effect_state": "no_effect",
+        "attempt_count": 0,
+        "original_attempt_reconciled": false,
+        "new_attempt_before_reconciliation": false
+      },
+      "expected": {
+        "authority_result": "eligible",
+        "assurance_result": "denied",
+        "admission_decision": "deny",
+        "task_result": "blocked"
+      }
     }
   ],
   "claim_ceiling": "synthetic_commit_boundary_conformance_only",
