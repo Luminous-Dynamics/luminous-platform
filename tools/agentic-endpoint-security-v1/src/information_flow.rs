@@ -69,6 +69,7 @@ pub struct SourceRecord {
     pub content_digest: String,
     pub receipt_valid: bool,
     pub expires_at_step: u64,
+    pub revoked_at_step: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -750,6 +751,7 @@ mod tests {
             content_digest: format!("sha256:{}", "a".repeat(64)),
             receipt_valid: true,
             expires_at_step: 100,
+            revoked_at_step: None,
         }
     }
 
@@ -1045,6 +1047,33 @@ mod tests {
         assert_eq!(result.flow_decision, Decision::Denied);
         assert_eq!(result.admission_decision, AdmissionDecision::Deny);
         assert!(result.unknown_lineage_count > 0);
+    }
+
+    #[test]
+    fn revoked_memory_source_is_denied_after_revocation() {
+        let mut input = base_input();
+        input.sources[0].class = SourceClass::Memory;
+        input.sources[0].revoked_at_step = Some(8);
+        input.parameter_rules[0].allowed_source_ids =
+            ["source:user".into()].into_iter().collect();
+        input.parameter_rules[0].allowed_source_classes =
+            [SourceClass::Memory].into_iter().collect();
+        let result = evaluate(&input);
+        assert_eq!(result.flow_decision, Decision::Denied);
+        assert_eq!(result.admission_decision, AdmissionDecision::Deny);
+    }
+
+    #[test]
+    fn later_source_revocation_does_not_retroactively_invalidate_prior_flow() {
+        let mut input = base_input();
+        input.sources[0].class = SourceClass::Memory;
+        input.sources[0].revoked_at_step = Some(8);
+        input.flow.step = 5;
+        input.parameter_rules[0].allowed_source_classes =
+            [SourceClass::Memory].into_iter().collect();
+        let result = evaluate(&input);
+        assert_eq!(result.flow_decision, Decision::Eligible);
+        assert_eq!(result.admission_decision, AdmissionDecision::Allow);
     }
 
     #[test]
