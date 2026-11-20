@@ -24,8 +24,8 @@ def test_frozen_corpus_matches_expected() -> None:
     suite = checker.load(checker.BASE / "observer-independence-closure.fixtures.json")
     schema = checker.load(checker.BASE / "observer-independence-closure.schema.json")
     assert checker.validate_suite(suite, schema) == {
-        "positive_control": 4,
-        "negative_control": 9,
+        "positive_control": 5,
+        "negative_control": 8,
         "indeterminate_control": 3,
     }
 
