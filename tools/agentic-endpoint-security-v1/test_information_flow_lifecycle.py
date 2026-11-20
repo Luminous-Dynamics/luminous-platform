@@ -185,6 +185,39 @@ def test_duplicate_lineage_node_identity_fails_closed() -> None:
     raise AssertionError("duplicate lineage-node identity was accepted")
 
 
+def _assert_structure_rejects(mutate) -> None:
+    suite = checker.load(checker.BASE / "information-flow-lifecycle.fixtures.json")
+    schema = checker.load(checker.BASE / "information-flow-lifecycle.schema.json")
+    mutate(suite["cases"][0])
+    try:
+        checker.validate_structure(suite, schema)
+    except ValueError:
+        return
+    raise AssertionError("malformed flow binding was accepted")
+
+
+def test_duplicate_parameter_binding_fields_are_rejected() -> None:
+    _assert_structure_rejects(
+        lambda case: case["flow"]["parameter_bindings"].append(
+            copy.deepcopy(case["flow"]["parameter_bindings"][0])
+        )
+    )
+
+
+def test_duplicate_observed_binding_fields_are_rejected() -> None:
+    _assert_structure_rejects(
+        lambda case: case["flow"]["observed_bindings"].append(
+            copy.deepcopy(case["flow"]["observed_bindings"][0])
+        )
+    )
+
+
+def test_observed_field_set_must_match_bound_parameter_set() -> None:
+    _assert_structure_rejects(
+        lambda case: case["flow"]["observed_bindings"].pop()
+    )
+
+
 if __name__ == "__main__":
     functions = [
         value for name, value in globals().items()
