@@ -64,11 +64,23 @@ An offline participant can continue only operations explicitly permitted by its 
 ## 6. Synthetic contract artifacts
 
 - assurance-prerequisite-admission.schema.v0.1.json: Draft 2020-12 schema for prerequisite-set identity, exact request binding, preflight/commit snapshots and effect outcomes.
-- assurance-prerequisite-admission.fixtures.v0.1.json: 20 synthetic scenarios, including empty-set positive controls, stale claim and stale authority negatives, partial inventory, property-specific non-impact, conditional transfer, post-commit invalidation, commit-time races, partition and unknown-outcome reconciliation.
+- assurance-prerequisite-admission.fixtures.v0.1.json: 24 synthetic scenarios (8 positive, 11 negative, 5 indeterminate), including explicit-empty-set controls, stale/withdrawn/expired/superseded claims, partial dependency inventory, property-specific non-impact, conditional transfer, post-commit invalidation, claim-before-commit races, authority snapshot revalidation, policy/prerequisite-set substitution, partition/unknown-outcome and reconciliation.
 - scripts/validate_assurance_prerequisite_admission.py: test-only schema and deterministic reference evaluator.
 - .github/workflows/assurance-prerequisite-admission.yml: read-only, path-scoped conformance workflow.
 
 The evaluator is a synthetic reference oracle only. It does not invoke Mycelix, WALP, a broker or a participant.
+
+
+The request, preflight and commit records separately bind the exact request digest, authority grant reference, consumer policy digest, prerequisite-set digest and authority/assurance snapshot digests. A snapshot-match boolean must agree with the digest comparison. A changed snapshot is accepted only through the corresponding owner-qualified revalidation result; an indeterminate revalidation holds the effect.
+
+The suite also distinguishes:
+- policy revision substitution from authority revocation;
+- prerequisite-set substitution from claim invalidation;
+- assurance snapshot mismatch with successful revalidation from failed/indeterminate revalidation;
+- authority snapshot mismatch with successful revalidation from failed/indeterminate revalidation;
+- claim invalidation before commit from invalidation after a valid commit.
+
+These are synthetic binding semantics, not cryptographic hash verification or a live linearizability proof.
 
 ## 7. Metrics and proposed gates (not results)
 
