@@ -69,7 +69,9 @@
         "lifecycle",
         "consumer_requirement",
         "carry_forward",
-        "expected"
+        "expected",
+        "result_digest",
+        "dependency_inventory"
       ],
       "properties": {
         "record_id": {
@@ -288,7 +290,11 @@
             "transition_evidence_ref",
             "registration_view_ref",
             "currentness_class",
-            "checkpoint_ref"
+            "checkpoint_ref",
+            "assure004_result_digest",
+            "predecessor_result_digest",
+            "successor_result_digest",
+            "transition_evidence_digest"
           ],
           "properties": {
             "assure004_result_ref": {
@@ -356,9 +362,63 @@
             },
             "checkpoint_ref": {
               "$ref": "#/$defs/nullableString"
+            },
+            "assure004_result_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "predecessor_result_digest": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "successor_result_digest": {
+              "$ref": "#/$defs/nullableDigest"
+            },
+            "transition_evidence_digest": {
+              "$ref": "#/$defs/nullableDigest"
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "currentness_class": {
+                    "const": "CurrentThroughVerifiedCheckpoint"
+                  }
+                },
+                "required": [
+                  "currentness_class"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "checkpoint_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "currentness_class": {
+                    "const": "TerminalInSuppliedView"
+                  }
+                },
+                "required": [
+                  "currentness_class"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "registration_view_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          ]
         },
         "consumer_requirement": {
           "type": "object",
@@ -457,6 +517,39 @@
             "reason_code": {
               "type": "string",
               "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "result_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "dependency_inventory": {
+          "type": "object",
+          "required": [
+            "inventory_ref",
+            "dependency_graph_digest",
+            "coverage_status",
+            "unresolved_dependency_count"
+          ],
+          "properties": {
+            "inventory_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dependency_graph_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "coverage_status": {
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "unresolved_dependency_count": {
+              "type": "integer",
+              "minimum": 0
             }
           },
           "additionalProperties": false
