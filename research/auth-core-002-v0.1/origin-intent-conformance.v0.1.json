@@ -1,0 +1,975 @@
+{
+  "profile": "luminous-origin-intent-conformance",
+  "version": "0.1",
+  "status": "synthetic_not_executed",
+  "cases": [
+    {
+      "vector_id": "OIPM-V001-FULLY-SPECIFIED-POSITIVE",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "eligible",
+        "authority_disposition": "current",
+        "effect_gate": "participant_check_required"
+      }
+    },
+    {
+      "vector_id": "OIPM-V002-PARAMETER-OPEN-NAMED-SOURCE",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "billing-adapter"
+            ],
+            "constraint_ref": "constraint:amount-ceiling",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "invoice_amount",
+            "origin_source_refs": [
+              "billing-adapter"
+            ],
+            "lineage_state": "complete",
+            "receipt_status": "valid",
+            "attester_role": "connector",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "eligible",
+        "authority_disposition": "current",
+        "effect_gate": "participant_check_required"
+      }
+    },
+    {
+      "vector_id": "OIPM-V003-ACTION-OPEN-FINITE-SET",
+      "task": {
+        "precision": "action_open",
+        "fixed_action": null,
+        "fixed_target": null,
+        "preauthorized_actions": [
+          {
+            "action_id": "calendar.create_event",
+            "target_ref": "calendar:user",
+            "operation_ref": "calendar.create",
+            "effect_class": "reversible",
+            "constraints_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "action_selection_delegation": {
+          "allowed_source_refs": [
+            "calendar-feed"
+          ],
+          "purpose_ref": "purpose:calendar-assist",
+          "not_before": "2026-11-20T00:00:00Z",
+          "expires_at": "2026-11-21T00:00:00Z",
+          "delegation_ref": "grant:selector-01"
+        },
+        "parameter_delegations": []
+      },
+      "sources": [
+        {
+          "source_ref": "calendar-feed",
+          "source_class": "allowlisted_connector",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "calendar.create_event",
+        "target_ref": "calendar:user",
+        "operation_ref": "calendar.create",
+        "selection_source_ref": "calendar-feed",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "eligible",
+        "authority_disposition": "current",
+        "effect_gate": "participant_check_required"
+      }
+    },
+    {
+      "vector_id": "OIPM-V004-ACTION-OPEN-UNBOUNDED-CLARIFY",
+      "task": {
+        "precision": "action_open",
+        "fixed_action": null,
+        "fixed_target": null,
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [],
+      "candidate": {
+        "action_id": null,
+        "target_ref": "calendar:user",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "web-page",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "clarification_required",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V005-INJECTED-RECIPIENT-NOT-DELEGATED",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "billing-adapter"
+            ],
+            "constraint_ref": "constraint:amount",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        },
+        {
+          "source_ref": "attacker-note",
+          "source_class": "web_content",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "recipient",
+            "origin_source_refs": [
+              "attacker-note"
+            ],
+            "lineage_state": "complete",
+            "receipt_status": "valid",
+            "attester_role": "connector",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V006-NAMED-DOCUMENT-CANNOT-REWRITE-ACTION",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "billing-adapter"
+            ],
+            "constraint_ref": "constraint:amount",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "payments.transfer",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "billing-adapter",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V007-ACTION-OPEN-OUTSIDE-FINITE-SET",
+      "task": {
+        "precision": "action_open",
+        "fixed_action": null,
+        "fixed_target": null,
+        "preauthorized_actions": [
+          {
+            "action_id": "calendar.create_event",
+            "target_ref": "calendar:user",
+            "operation_ref": "calendar.create",
+            "effect_class": "reversible",
+            "constraints_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "action_selection_delegation": {
+          "allowed_source_refs": [
+            "calendar-feed"
+          ],
+          "purpose_ref": "purpose:calendar-assist",
+          "not_before": "2026-11-20T00:00:00Z",
+          "expires_at": "2026-11-21T00:00:00Z",
+          "delegation_ref": "grant:selector-01"
+        },
+        "parameter_delegations": []
+      },
+      "sources": [
+        {
+          "source_ref": "calendar-feed",
+          "source_class": "allowlisted_connector",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "payments.transfer",
+        "target_ref": "bank:external",
+        "operation_ref": "payments.transfer",
+        "selection_source_ref": "calendar-feed",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V008-ACTION-OPEN-UNLISTED-SELECTOR",
+      "task": {
+        "precision": "action_open",
+        "fixed_action": null,
+        "fixed_target": null,
+        "preauthorized_actions": [
+          {
+            "action_id": "calendar.create_event",
+            "target_ref": "calendar:user",
+            "operation_ref": "calendar.create",
+            "effect_class": "reversible",
+            "constraints_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "action_selection_delegation": {
+          "allowed_source_refs": [
+            "calendar-feed"
+          ],
+          "purpose_ref": "purpose:calendar-assist",
+          "not_before": "2026-11-20T00:00:00Z",
+          "expires_at": "2026-11-21T00:00:00Z",
+          "delegation_ref": "grant:selector-01"
+        },
+        "parameter_delegations": []
+      },
+      "sources": [
+        {
+          "source_ref": "calendar-feed",
+          "source_class": "allowlisted_connector",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        },
+        {
+          "source_ref": "unlisted-web",
+          "source_class": "web_content",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "calendar.create_event",
+        "target_ref": "calendar:user",
+        "operation_ref": "calendar.create",
+        "selection_source_ref": "unlisted-web",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V009-PARAPHRASED-INJECTION-UNDELEGATED-FIELD",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "billing-adapter"
+            ],
+            "constraint_ref": "constraint:amount",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        },
+        {
+          "source_ref": "injected-paraphrase",
+          "source_class": "tool_output",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "recipient",
+            "origin_source_refs": [
+              "injected-paraphrase"
+            ],
+            "lineage_state": "complete",
+            "receipt_status": "valid",
+            "attester_role": "connector",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V010-SUMMARY-DROPS-LINEAGE",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [
+        {
+          "source_ref": "attacker-document",
+          "source_class": "web_content",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [
+          {
+            "transform_ref": "transform:summary-01",
+            "kind": "summarize",
+            "input_source_refs": [
+              "attacker-document"
+            ],
+            "propagated_source_refs": [],
+            "output_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "lineage_complete": false
+          }
+        ],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V011-CHILD-HANDOFF-DROPS-LINEAGE",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [
+        {
+          "source_ref": "attacker-document",
+          "source_class": "web_content",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        },
+        {
+          "source_ref": "child-agent",
+          "source_class": "child_agent",
+          "writer_control": "operator",
+          "content_taint": "mixed",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [
+          {
+            "transform_ref": "handoff:child-01",
+            "kind": "child_agent_handoff",
+            "input_source_refs": [
+              "attacker-document"
+            ],
+            "propagated_source_refs": [
+              "child-agent"
+            ],
+            "output_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "lineage_complete": false
+          }
+        ],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V012-MIXED-ORIGIN-PARAMETER",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "recipient",
+            "allowed_source_refs": [
+              "billing-adapter",
+              "partner-directory"
+            ],
+            "constraint_ref": "constraint:known-payee",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        },
+        {
+          "source_ref": "partner-directory",
+          "source_class": "allowlisted_connector",
+          "writer_control": "third_party",
+          "content_taint": "connector_controlled",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "recipient",
+            "origin_source_refs": [
+              "billing-adapter",
+              "partner-directory"
+            ],
+            "lineage_state": "mixed",
+            "receipt_status": "valid",
+            "attester_role": "connector",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "indeterminate",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V013-UNKNOWN-LINEAGE-NOT-TRUSTED",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "billing-adapter"
+            ],
+            "constraint_ref": "constraint:amount",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "invoice_amount",
+            "origin_source_refs": [
+              "billing-adapter"
+            ],
+            "lineage_state": "unknown",
+            "receipt_status": "valid",
+            "attester_role": "connector",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "indeterminate",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V014-STALE-SOURCE-RECEIPT",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "stale-adapter"
+            ],
+            "constraint_ref": "constraint:amount",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "stale-adapter",
+          "source_class": "allowlisted_connector",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "stale",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "invoice_amount",
+            "origin_source_refs": [
+              "stale-adapter"
+            ],
+            "lineage_state": "complete",
+            "receipt_status": "stale",
+            "attester_role": "connector",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V015-MODEL-CANNOT-SELF-ATTEST",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "self-labelled-source"
+            ],
+            "constraint_ref": "constraint:amount",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "self-labelled-source",
+          "source_class": "allowlisted_connector",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "model"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "invoice_amount",
+            "origin_source_refs": [
+              "self-labelled-source"
+            ],
+            "lineage_state": "complete",
+            "receipt_status": "valid",
+            "attester_role": "model",
+            "constraints_satisfied": true
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V016-MANIFEST-REQUEST-SUBSTITUTION",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": false,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V017-REVOKED-AUTHORITY-SEPARATE",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "revoked"
+      },
+      "expected": {
+        "origin_decision": "eligible",
+        "authority_disposition": "revoked",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V018-UNKNOWN-AUTHORITY-SEPARATE",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "unknown"
+      },
+      "expected": {
+        "origin_decision": "eligible",
+        "authority_disposition": "indeterminate",
+        "effect_gate": "no_dispatch"
+      }
+    },
+    {
+      "vector_id": "OIPM-V019-CLARIFIED-PRINCIPAL-POSITIVE",
+      "task": {
+        "precision": "fully_specified",
+        "fixed_action": "files.export",
+        "fixed_target": "tenant-a/report-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": []
+      },
+      "sources": [],
+      "candidate": {
+        "action_id": "files.export",
+        "target_ref": "tenant-a/report-01",
+        "operation_ref": "files.export",
+        "selection_source_ref": "principal",
+        "parameters": [],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "eligible",
+        "authority_disposition": "current",
+        "effect_gate": "participant_check_required"
+      }
+    },
+    {
+      "vector_id": "OIPM-V020-PARAMETER-CONSTRAINT-FAILS",
+      "task": {
+        "precision": "parameter_open",
+        "fixed_action": "documents.summarize",
+        "fixed_target": "tenant-a/document-01",
+        "preauthorized_actions": [],
+        "action_selection_delegation": null,
+        "parameter_delegations": [
+          {
+            "parameter_name": "invoice_amount",
+            "allowed_source_refs": [
+              "billing-adapter"
+            ],
+            "constraint_ref": "constraint:amount-ceiling",
+            "expires_at": "2026-12-01T00:00:00Z"
+          }
+        ]
+      },
+      "sources": [
+        {
+          "source_ref": "billing-adapter",
+          "source_class": "user_named_document",
+          "writer_control": "third_party",
+          "content_taint": "untrusted_external",
+          "lineage_state": "complete",
+          "attestation_status": "valid",
+          "attester_role": "connector"
+        }
+      ],
+      "candidate": {
+        "action_id": "documents.summarize",
+        "target_ref": "tenant-a/document-01",
+        "operation_ref": "documents.summarize",
+        "selection_source_ref": "principal",
+        "parameters": [
+          {
+            "parameter_name": "invoice_amount",
+            "origin_source_refs": [
+              "billing-adapter"
+            ],
+            "lineage_state": "complete",
+            "receipt_status": "valid",
+            "attester_role": "connector",
+            "constraints_satisfied": false
+          }
+        ],
+        "transformations": [],
+        "manifest_binding_matches": true,
+        "authority_state": "current"
+      },
+      "expected": {
+        "origin_decision": "denied",
+        "authority_disposition": "current",
+        "effect_gate": "no_dispatch"
+      }
+    }
+  ]
+}
