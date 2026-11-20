@@ -237,7 +237,7 @@ def main() -> int:
     schema = load(BASE / "trajectory-privilege.schema.json")
     validate_structure(suite, schema)
     counts = validate_suite(suite)
-    print(f"TWEP_SCHEMA=Draft2020-12_CHECKED CASES={len(suite['cases'])} CONTROLS={json.dumps(counts, sort_keys=True)} NO_AGGREGATE_SCORE=true CLAIM=SYNTHETIC_ONLY")
+    print(f"TWEP_SCHEMA=STRUCTURE_CHECKED CASES={len(suite['cases'])} CONTROLS={json.dumps(counts, sort_keys=True)} NO_AGGREGATE_SCORE=true CLAIM=SYNTHETIC_ONLY")
     return 0
 
 if __name__ == "__main__":
