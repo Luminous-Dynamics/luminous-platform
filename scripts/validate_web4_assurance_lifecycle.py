@@ -91,6 +91,17 @@ def main() -> int:
             raise SystemExit(f"{rid}: transition kind {transition} conflicts with lifecycle state {state}")
         if transition == "none" and state in {"expired","invalidated","withdrawn","superseded"}:
             raise SystemExit(f"{rid}: terminal lifecycle state requires its explicit transition kind")
+        if transition == "none":
+            if any(lifecycle[field] is not None for field in ["successor_result_ref","successor_result_digest","transition_evidence_ref","transition_evidence_digest"]):
+                raise SystemExit(f"{rid}: no-transition records cannot carry successor/event evidence")
+            if lifecycle["lineage_state"] == "complete" and any(lifecycle[field] is not None for field in ["predecessor_result_ref","predecessor_result_digest"]):
+                raise SystemExit(f"{rid}: complete no-transition lineage cannot carry an unexplained predecessor")
+            if lifecycle["lineage_state"] == "incomplete" and lifecycle["predecessor_result_ref"] is None:
+                raise SystemExit(f"{rid}: incomplete lineage must identify its missing predecessor")
+            if lifecycle["lineage_state"] == "cyclic" and (lifecycle["predecessor_result_ref"] is None or lifecycle["predecessor_result_digest"] is None):
+                raise SystemExit(f"{rid}: cyclic lineage must identify the repeated predecessor and digest")
+            if lifecycle["lineage_state"] == "forked" and len(lifecycle["competing_successor_refs"]) < 2:
+                raise SystemExit(f"{rid}: forked lineage must identify at least two competing successors")
         if transition in {"expired","invalidated","withdrawn","superseded"}:
             if lifecycle["predecessor_result_ref"] != record["result_ref"]:
                 raise SystemExit(f"{rid}: transition must preserve the exact predecessor result identity")
