@@ -22,3 +22,8 @@ The Rust suite contains **28 authored tests** across the evidence-dimension eval
 ## Canonical authority path closure (CAPC)
 
 The existing read-only benchmark workflow also runs the standard-library CAPC checker and mutation tests. CAPC qualifies owner-issued resource/effect identity across independently inventoried MCP/REST/SDK/direct paths. It is not a policy engine, resource registry, route discovery service, or effect observer. See [CAPC v0.1](../../docs/CANONICAL_AUTHORITY_PATH_CLOSURE_BENCHMARK_V0_1.md).
+
+
+## Information-flow lifecycle benchmark
+
+The existing read-only benchmark job also runs the standard-library source-to-sink information-flow checker and mutation tests. This supplement consumes the AUTH-CORE-002 #503 origin/intent manifest contract and tests taint/source lineage through summaries, embeddings, memory and child-agent handoffs. It verifies exact observed sink-parameter digests, distinguishes policy-oracle decisions from system admission, and includes a scoped declassification positive control. It does not create another provenance ledger, DLP product, memory store or runtime flow-control service. See [IFL v0.1](../../docs/INFORMATION_FLOW_LIFECYCLE_BENCHMARK_V0_1.md).
