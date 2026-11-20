@@ -47,8 +47,8 @@ def main() -> int:
         raise SystemExit("WALP must not introduce an aggregate assurance score")
 
     records = suite["records"]
-    if len(records) != 24:
-        raise SystemExit(f"expected 24 WALP fixtures, found {len(records)}")
+    if len(records) != 27:
+        raise SystemExit(f"expected 27 WALP fixtures, found {len(records)}")
 
     seen: set[str] = set()
     lifecycle_counts: dict[str, int] = {}
@@ -99,7 +99,7 @@ def main() -> int:
             if change == "unknown" and expected["lifecycle_disposition"] == "current":
                 raise SystemExit(f"{rid}/{dependency['dependency_id']}: unknown dependency cannot silently retain currentness")
 
-        if applicability["status"] == "controlled_equivalent" and applicability["bridge_evidence_ref"] is None:
+        if applicability["status"] in {"controlled_equivalent", "conditionally_transferable"} and applicability["bridge_evidence_ref"] is None:
             raise SystemExit(f"{rid}: controlled equivalent lacks bridge evidence")
         if applicability["status"] == "unknown" and state == "current":
             raise SystemExit(f"{rid}: unknown applicability cannot be current")
@@ -117,12 +117,16 @@ def main() -> int:
         should_be_eligible = state == "current" and applicable and currentness_ok
         actual_eligible = expected["consumer_handling"] == "eligible_for_policy_evaluation"
         if should_be_eligible != actual_eligible:
-            raise SystemExit(f"{rid}: consumer handling does not match lifecycle/applicability/currentness inputs")
+            raise SystemExit(f"{rid}: consumer eligibility does not match lifecycle/applicability/currentness inputs")
+        if not should_be_eligible:
+            handling_for_policy = {"block": "blocked", "restricted": "restricted", "manual_review": "manual_review"}[consumer["on_unsatisfied"]]
+            if expected["consumer_handling"] != handling_for_policy:
+                raise SystemExit(f"{rid}: consumer handling contradicts its on_unsatisfied policy")
 
     required_states = {"current","expired","invalidated","withdrawn","superseded","requires_requalification","indeterminate","forked"}
     if not required_states.issubset(lifecycle_counts):
         raise SystemExit(f"missing lifecycle states: {sorted(required_states - set(lifecycle_counts))}")
-    required_applicability = {"exact_subject","controlled_equivalent","requires_targeted_revalidation","unknown"}
+    required_applicability = {"exact_subject","controlled_equivalent","conditionally_transferable","historical_only","inapplicable","requires_targeted_revalidation","unknown"}
     if not required_applicability.issubset(applicability_counts):
         raise SystemExit(f"missing applicability strata: {sorted(required_applicability - set(applicability_counts))}")
 
