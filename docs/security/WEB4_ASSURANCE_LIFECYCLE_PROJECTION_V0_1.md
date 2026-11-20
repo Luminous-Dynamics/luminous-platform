@@ -125,3 +125,18 @@ The v0.1 suite is synthetic. It does not invoke ASSURE-004, Mycelix's dependency
 - Mycelix LISE-ASSURANCE-INVALIDATION: https://github.com/Luminous-Dynamics/mycelix/issues/6219
 - WAEP v0.1: https://github.com/Luminous-Dynamics/luminous-platform/issues/495
 - XAP: https://github.com/Luminous-Dynamics/luminous-platform/pull/498
+
+
+## 10. Interoperability with existing assurance standards
+
+WALP should be an adapter, not a replacement, for three complementary bodies of work:
+
+- **NIST OSCAL Assessment Results** already represents what was assessed, how, by whom, findings and risks, including continuous-assessment consumers. WALP can reference OSCAL assessment/result artifacts as evidence inputs, while adding explicit claim-specific applicability, append-only predecessor/successor lifecycle and policy handling. OSCAL assessment reporting does not by itself establish that every old finding remains applicable to a changed subject. See https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/ and https://pages.nist.gov/OSCAL/about/.
+- **IETF SCITT RFC 9943** provides signed statements, transparency-service receipts and append-only/non-equivocation/replayability properties for auditable statement histories. WALP can reference statement and receipt identities for transition evidence. Transparency proves that a statement was registered under a service's policy; it does not prove the statement's substantive truth, claim applicability or deployment authority. See https://www.rfc-editor.org/rfc/rfc9943.html.
+- **SLSA provenance / in-toto attestations** bind build outputs to build processes and resolved dependencies. WALP should consume software/build provenance for relevant subject surfaces and dependency changes, not invent another artifact-provenance format. SLSA provenance alone does not determine whether a higher-level Web4 security claim remains applicable after that dependency changes. See https://slsa.dev/spec/v1.2/provenance and https://slsa.dev/spec/v1.2/tracks.
+
+This yields a useful composition:
+
+**signed/transparent statements + machine-readable assessment results + artifact provenance + canonical lifecycle/applicability outcomes → claim-specific Web4 projection**
+
+The novelty to test is not another ledger or attestation format. It is whether a system can derive the smallest justified requalification scope while keeping historical results immutable, making missing dependency coverage explicit, and refusing to infer deployment authority from evidence availability.
