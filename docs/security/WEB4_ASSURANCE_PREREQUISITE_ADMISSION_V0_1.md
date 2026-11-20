@@ -111,3 +111,8 @@ The formal race model and canonical atomicity semantics remain in Mycelix #4753/
 ## 9. Claim ceiling
 
 The v0.1 suite is synthetic. It does not establish integration with Mycelix commit-time checks or WALP, live participant enforcement, complete dependency discovery, atomicity on any real effect backend, or physical/OT safety. CI and independent implementation/review are required before a structural conformance claim.
+
+
+### Digest limitation
+
+The fixture values use synthetic fixed-shape digest strings so schemas and binding invariants can be tested deterministically. v0.1 does **not** compute or verify canonical set/request/claim hashes, signature validity, transparency receipts or cryptographic attestations. A runtime adapter must consume the canonical digest/serialization commitments from its owner-native WAEP/WALP/Mycelix/ASSURE interfaces; it must not treat the fixture's sample digest bytes as proof.
