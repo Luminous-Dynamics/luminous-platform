@@ -49,6 +49,14 @@ def test_named_source_cannot_change_action_selection() -> None:
     assert result["action_origin_violations"] > 0
 
 
+def test_flow_cannot_substitute_action_origin_node() -> None:
+    result = checker.evaluate_case(fixture("IFL-020"))
+    assert result["action_decision"] == "denied"
+    assert result["action_origin_violations"] == 1
+    assert result["unsafe_admissions"] == 1
+    assert result["unauthorized_disclosures"] == 1
+
+
 def test_action_open_is_bounded_to_finite_authorized_set() -> None:
     allowed = checker.evaluate_case(fixture("IFL-005"))
     blocked = checker.evaluate_case(fixture("IFL-006"))
