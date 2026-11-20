@@ -1,0 +1,1842 @@
+{
+  "profile": "luminous-web4-assurance-lifecycle-projection",
+  "version": "0.1",
+  "status": "synthetic_fixture_suite_not_executed",
+  "no_aggregate_score": true,
+  "records": [
+    {
+      "record_id": "WALP-001",
+      "result_ref": "assure-result:001",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-001",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:1",
+        "assure000_result_ref": "assure0-result:1",
+        "assure001_subject_ref": "assure1-subject:1",
+        "assure002_campaign_ref": "assure2-campaign:1",
+        "assure003_resolver_result_ref": "assure3-result:1",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:1",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:001",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "CurrentThroughVerifiedCheckpoint",
+        "checkpoint_ref": "checkpoint:verified"
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "exact_current_subject"
+      }
+    },
+    {
+      "record_id": "WALP-002",
+      "result_ref": "assure-result:002",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-002",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:2",
+        "assure000_result_ref": "assure0-result:2",
+        "assure001_subject_ref": "assure1-subject:2",
+        "assure002_campaign_ref": "assure2-campaign:2",
+        "assure003_resolver_result_ref": "assure3-result:2",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:2",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:002",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "TerminalInSuppliedView",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "TerminalInSuppliedView"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "bounded_supplied_view_is_accepted"
+      }
+    },
+    {
+      "record_id": "WALP-003",
+      "result_ref": "assure-result:003",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-003",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:3",
+        "assure000_result_ref": "assure0-result:3",
+        "assure001_subject_ref": "assure1-subject:3",
+        "assure002_campaign_ref": "assure2-campaign:3",
+        "assure003_resolver_result_ref": "assure3-result:3",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:3",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "agent_authorization"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "model",
+          "role": "model_checkpoint",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "change_state": "material_change",
+          "change_evidence_ref": "change:model-revision",
+          "affected_claim_properties": [
+            "agent_authorization"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:003",
+        "state": "requires_requalification",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "requires_requalification",
+        "consumer_handling": "blocked",
+        "reason_code": "model_subject_drift"
+      }
+    },
+    {
+      "record_id": "WALP-004",
+      "result_ref": "assure-result:004",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-004",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:4",
+        "assure000_result_ref": "assure0-result:4",
+        "assure001_subject_ref": "assure1-subject:4",
+        "assure002_campaign_ref": "assure2-campaign:4",
+        "assure003_resolver_result_ref": "assure3-result:4",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:4",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "intent_preservation"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "system-prompt",
+          "role": "prompt",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "change_state": "material_change",
+          "change_evidence_ref": "change:prompt-digest",
+          "affected_claim_properties": [
+            "intent_preservation"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:004",
+        "state": "requires_requalification",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "requires_requalification",
+        "consumer_handling": "blocked",
+        "reason_code": "prompt_identity_drift"
+      }
+    },
+    {
+      "record_id": "WALP-005",
+      "result_ref": "assure-result:005",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-005",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:5",
+        "assure000_result_ref": "assure0-result:5",
+        "assure001_subject_ref": "assure1-subject:5",
+        "assure002_campaign_ref": "assure2-campaign:5",
+        "assure003_resolver_result_ref": "assure3-result:5",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:5",
+        "status": "controlled_equivalent",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": "bridge:equivalence-01",
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "runtime-patch",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "change_state": "controlled_non_material_change",
+          "change_evidence_ref": "bridge:equivalence-01",
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:005",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "CurrentThroughVerifiedCheckpoint",
+        "checkpoint_ref": "checkpoint:verified"
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "preregistered_equivalence_bridge"
+      }
+    },
+    {
+      "record_id": "WALP-006",
+      "result_ref": "assure-result:006",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-006",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:6",
+        "assure000_result_ref": "assure0-result:6",
+        "assure001_subject_ref": "assure1-subject:6",
+        "assure002_campaign_ref": "assure2-campaign:6",
+        "assure003_resolver_result_ref": "assure3-result:6",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:6",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:006",
+        "state": "expired",
+        "lineage_state": "complete",
+        "transition_kind": "expired",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "evidence:lease-expiry",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "expired",
+        "consumer_handling": "blocked",
+        "reason_code": "evidence_lease_expiry"
+      }
+    },
+    {
+      "record_id": "WALP-007",
+      "result_ref": "assure-result:007",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-007",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:7",
+        "assure000_result_ref": "assure0-result:7",
+        "assure001_subject_ref": "assure1-subject:7",
+        "assure002_campaign_ref": "assure2-campaign:7",
+        "assure003_resolver_result_ref": "assure3-result:7",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:7",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:007",
+        "state": "withdrawn",
+        "lineage_state": "complete",
+        "transition_kind": "withdrawn",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "evidence:authorized-withdrawal",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "withdrawn",
+        "consumer_handling": "blocked",
+        "reason_code": "evidence_withdrawal"
+      }
+    },
+    {
+      "record_id": "WALP-008",
+      "result_ref": "assure-result:008",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-008",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:8",
+        "assure000_result_ref": "assure0-result:8",
+        "assure001_subject_ref": "assure1-subject:8",
+        "assure002_campaign_ref": "assure2-campaign:8",
+        "assure003_resolver_result_ref": "assure3-result:8",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:8",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "effect_authorization"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "authority-policy",
+          "role": "policy",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "change_state": "material_change",
+          "change_evidence_ref": "event:policy-change",
+          "affected_claim_properties": [
+            "effect_authorization"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:008",
+        "state": "invalidated",
+        "lineage_state": "complete",
+        "transition_kind": "invalidated",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "event:policy-change",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "invalidated",
+        "consumer_handling": "blocked",
+        "reason_code": "policy_drift_observed"
+      }
+    },
+    {
+      "record_id": "WALP-009",
+      "result_ref": "assure-result:009",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-009",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:9",
+        "assure000_result_ref": "assure0-result:9",
+        "assure001_subject_ref": "assure1-subject:9",
+        "assure002_campaign_ref": "assure2-campaign:9",
+        "assure003_resolver_result_ref": "assure3-result:9",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:9",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "delegation_containment"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "campaign-def",
+          "role": "campaign_semantics",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "change_state": "material_change",
+          "change_evidence_ref": "event:semantic-definition-change",
+          "affected_claim_properties": [
+            "delegation_containment"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:009",
+        "state": "requires_requalification",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "requires_requalification",
+        "consumer_handling": "blocked",
+        "reason_code": "richer_campaign_semantics_changed"
+      }
+    },
+    {
+      "record_id": "WALP-010",
+      "result_ref": "assure-result:010",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-010",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:10",
+        "assure000_result_ref": "assure0-result:10",
+        "assure001_subject_ref": "assure1-subject:10",
+        "assure002_campaign_ref": "assure2-campaign:10",
+        "assure003_resolver_result_ref": "assure3-result:10",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:10",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:010",
+        "state": "indeterminate",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "TerminalInSuppliedView",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "indeterminate",
+        "consumer_handling": "blocked",
+        "reason_code": "checkpoint_currentness_not_established"
+      }
+    },
+    {
+      "record_id": "WALP-011",
+      "result_ref": "assure-result:011",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-011",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:11",
+        "assure000_result_ref": "assure0-result:11",
+        "assure001_subject_ref": "assure1-subject:11",
+        "assure002_campaign_ref": "assure2-campaign:11",
+        "assure003_resolver_result_ref": "assure3-result:11",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:11",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:011",
+        "state": "superseded",
+        "lineage_state": "complete",
+        "transition_kind": "superseded",
+        "predecessor_result_ref": "assure-result:010",
+        "successor_result_ref": "assure-result:011",
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "registration:event-successor",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "superseded",
+        "consumer_handling": "restricted",
+        "reason_code": "new_successor_discovered"
+      }
+    },
+    {
+      "record_id": "WALP-012",
+      "result_ref": "assure-result:012",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-012",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:12",
+        "assure000_result_ref": "assure0-result:12",
+        "assure001_subject_ref": "assure1-subject:12",
+        "assure002_campaign_ref": "assure2-campaign:12",
+        "assure003_resolver_result_ref": "assure3-result:12",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:12",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:012",
+        "state": "forked",
+        "lineage_state": "forked",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [
+          "result:left",
+          "result:right"
+        ],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "forked",
+        "consumer_handling": "blocked",
+        "reason_code": "conflicting_successors"
+      }
+    },
+    {
+      "record_id": "WALP-013",
+      "result_ref": "assure-result:013",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-013",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:13",
+        "assure000_result_ref": "assure0-result:13",
+        "assure001_subject_ref": "assure1-subject:13",
+        "assure002_campaign_ref": "assure2-campaign:13",
+        "assure003_resolver_result_ref": "assure3-result:13",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:13",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:013",
+        "state": "indeterminate",
+        "lineage_state": "incomplete",
+        "transition_kind": "none",
+        "predecessor_result_ref": "missing:predecessor",
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "manual_review"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "indeterminate",
+        "consumer_handling": "manual_review",
+        "reason_code": "incomplete_transition_lineage"
+      }
+    },
+    {
+      "record_id": "WALP-014",
+      "result_ref": "assure-result:014",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-014",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:14",
+        "assure000_result_ref": "assure0-result:14",
+        "assure001_subject_ref": "assure1-subject:14",
+        "assure002_campaign_ref": "assure2-campaign:14",
+        "assure003_resolver_result_ref": "assure3-result:14",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:14",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:014",
+        "state": "indeterminate",
+        "lineage_state": "cyclic",
+        "transition_kind": "none",
+        "predecessor_result_ref": "assure-result:014",
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "indeterminate",
+        "consumer_handling": "blocked",
+        "reason_code": "cyclic_transition_graph"
+      }
+    },
+    {
+      "record_id": "WALP-015",
+      "result_ref": "assure-result:015",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-015",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:15",
+        "assure000_result_ref": "assure0-result:15",
+        "assure001_subject_ref": "assure1-subject:15",
+        "assure002_campaign_ref": "assure2-campaign:15",
+        "assure003_resolver_result_ref": "assure3-result:15",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:15",
+        "status": "unknown",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "unknown-edge",
+          "role": "observer_dependency",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unknown",
+          "change_evidence_ref": null,
+          "affected_claim_properties": [
+            "evidence_independence"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:015",
+        "state": "indeterminate",
+        "lineage_state": "unknown",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "manual_review"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "indeterminate",
+        "consumer_handling": "manual_review",
+        "reason_code": "dependency_coverage_unknown"
+      }
+    },
+    {
+      "record_id": "WALP-016",
+      "result_ref": "assure-result:016",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-016",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:16",
+        "assure000_result_ref": "assure0-result:16",
+        "assure001_subject_ref": "assure1-subject:16",
+        "assure002_campaign_ref": "assure2-campaign:16",
+        "assure003_resolver_result_ref": "assure3-result:16",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:16",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "information_flow"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "data-source",
+          "role": "source-collector",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "change_state": "material_change",
+          "change_evidence_ref": "event:collector-change",
+          "affected_claim_properties": [
+            "information_flow"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:016",
+        "state": "requires_requalification",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "restricted"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "requires_requalification",
+        "consumer_handling": "restricted",
+        "reason_code": "one_property_requires_targeted_revalidation"
+      }
+    },
+    {
+      "record_id": "WALP-017",
+      "result_ref": "assure-result:017",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-017",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:17",
+        "assure000_result_ref": "assure0-result:17",
+        "assure001_subject_ref": "assure1-subject:17",
+        "assure002_campaign_ref": "assure2-campaign:17",
+        "assure003_resolver_result_ref": "assure3-result:17",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:17",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:017",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "requalified",
+        "predecessor_result_ref": "assure-result:016",
+        "successor_result_ref": "assure-result:017",
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "evidence:new-qualification",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "CurrentThroughVerifiedCheckpoint",
+        "checkpoint_ref": "checkpoint:new"
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "new_exact_successor_qualification"
+      }
+    },
+    {
+      "record_id": "WALP-018",
+      "result_ref": "assure-result:018",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-018",
+        "property": "hardware_attestation",
+        "scope_subject_id": "device:edge-gateway-board-rev-b",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:18",
+        "assure000_result_ref": "assure0-result:18",
+        "assure001_subject_ref": "assure1-subject:18",
+        "assure002_campaign_ref": "assure2-campaign:18",
+        "assure003_resolver_result_ref": "assure3-result:18",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:18",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "hardware_attestation"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "board",
+          "role": "hardware_revision",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "change_state": "material_change",
+          "change_evidence_ref": "evidence:board-revision",
+          "affected_claim_properties": [
+            "hardware_attestation"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:018",
+        "state": "requires_requalification",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "requires_requalification",
+        "consumer_handling": "blocked",
+        "reason_code": "exact_device_subject_changed"
+      }
+    },
+    {
+      "record_id": "WALP-019",
+      "result_ref": "assure-result:019",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-019",
+        "property": "evidence_independence",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:19",
+        "assure000_result_ref": "assure0-result:19",
+        "assure001_subject_ref": "assure1-subject:19",
+        "assure002_campaign_ref": "assure2-campaign:19",
+        "assure003_resolver_result_ref": "assure3-result:19",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:19",
+        "status": "unknown",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "observer-host",
+          "role": "observer_common_cause",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unknown",
+          "change_evidence_ref": null,
+          "affected_claim_properties": [
+            "evidence_independence"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:019",
+        "state": "indeterminate",
+        "lineage_state": "unknown",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "indeterminate",
+        "consumer_handling": "blocked",
+        "reason_code": "observer_common_cause_unknown"
+      }
+    },
+    {
+      "record_id": "WALP-020",
+      "result_ref": "assure-result:020",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-020",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:20",
+        "assure000_result_ref": "assure0-result:20",
+        "assure001_subject_ref": "assure1-subject:20",
+        "assure002_campaign_ref": "assure2-campaign:20",
+        "assure003_resolver_result_ref": "assure3-result:20",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:20",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "unrelated-ui",
+          "role": "non_claim_dependency",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "change_state": "controlled_non_material_change",
+          "change_evidence_ref": "bridge:nonimpact-ui",
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:020",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "CurrentThroughVerifiedCheckpoint",
+        "checkpoint_ref": "checkpoint:verified"
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "explicitly_unaffected_dependency"
+      }
+    },
+    {
+      "record_id": "WALP-021",
+      "result_ref": "assure-result:021",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-021",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:21",
+        "assure000_result_ref": "assure0-result:21",
+        "assure001_subject_ref": "assure1-subject:21",
+        "assure002_campaign_ref": "assure2-campaign:21",
+        "assure003_resolver_result_ref": "assure3-result:21",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:21",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:021",
+        "state": "superseded",
+        "lineage_state": "complete",
+        "transition_kind": "superseded",
+        "predecessor_result_ref": "assure-result:020",
+        "successor_result_ref": "assure-result:021",
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "event:successor",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "superseded",
+        "consumer_handling": "restricted",
+        "reason_code": "predecessor_historical_only"
+      }
+    },
+    {
+      "record_id": "WALP-022",
+      "result_ref": "assure-result:022",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-022",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:22",
+        "assure000_result_ref": "assure0-result:22",
+        "assure001_subject_ref": "assure1-subject:22",
+        "assure002_campaign_ref": "assure2-campaign:22",
+        "assure003_resolver_result_ref": "assure3-result:22",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:22",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:022",
+        "state": "invalidated",
+        "lineage_state": "complete",
+        "transition_kind": "invalidated",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": "evidence:contradictory-observation",
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "invalidated",
+        "consumer_handling": "blocked",
+        "reason_code": "contradictory_evidence"
+      }
+    },
+    {
+      "record_id": "WALP-023",
+      "result_ref": "assure-result:023",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-023",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:23",
+        "assure000_result_ref": "assure0-result:23",
+        "assure001_subject_ref": "assure1-subject:23",
+        "assure002_campaign_ref": "assure2-campaign:23",
+        "assure003_resolver_result_ref": "assure3-result:23",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:23",
+        "status": "requires_targeted_revalidation",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": [
+          "evidence_independence"
+        ]
+      },
+      "dependencies": [
+        {
+          "dependency_id": "verifier",
+          "role": "evaluator_profile",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "change_state": "material_change",
+          "change_evidence_ref": "event:verifier-profile-change",
+          "affected_claim_properties": [
+            "evidence_independence"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:023",
+        "state": "requires_requalification",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "requires_requalification",
+        "consumer_handling": "blocked",
+        "reason_code": "verifier_semantics_changed"
+      }
+    },
+    {
+      "record_id": "WALP-024",
+      "result_ref": "assure-result:024",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-024",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-a",
+        "subject_manifest_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "campaign_semantics_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "evidence_root_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:24",
+        "assure000_result_ref": "assure0-result:24",
+        "assure001_subject_ref": "assure1-subject:24",
+        "assure002_campaign_ref": "assure2-campaign:24",
+        "assure003_resolver_result_ref": "assure3-result:24",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "independently_reviewed"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:24",
+        "status": "exact_subject",
+        "impact_snapshot_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "bridge_evidence_ref": null,
+        "affected_claim_properties": []
+      },
+      "dependencies": [
+        {
+          "dependency_id": "dep-runtime",
+          "role": "runtime",
+          "baseline_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "observed_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "change_state": "unchanged",
+          "change_evidence_ref": null,
+          "affected_claim_properties": []
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:024",
+        "state": "indeterminate",
+        "lineage_state": "unknown",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "successor_result_ref": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "registration_view_ref": "registration-view:exact",
+        "currentness_class": "Unknown",
+        "checkpoint_ref": null
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "manual_review"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "indeterminate",
+        "consumer_handling": "manual_review",
+        "reason_code": "authoritative_currentness_anchor_missing"
+      }
+    }
+  ],
+  "claim_ceiling": "synthetic_projection_conformance_only"
+}
