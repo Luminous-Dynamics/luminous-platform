@@ -18,6 +18,9 @@ on:
 permissions:
   contents: read
 
+# IFL consumes AUTH-CORE-002 origin/intent semantics; TWEP and CAPC remain
+# benchmark supplements in this same read-only validation job.
+
 # Keep one current validation run for this PR; old pending runs should not
 # accumulate while the branch is being actively amended.
 concurrency:
