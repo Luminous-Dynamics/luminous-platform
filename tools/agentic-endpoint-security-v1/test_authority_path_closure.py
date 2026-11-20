@@ -127,6 +127,14 @@ def test_observed_effect_must_match_the_specific_path_mapping() -> None:
     assert result["disposition"] == "violation"
 
 
+def test_inventory_credential_must_match_owner_resolved_credential_lineage() -> None:
+    result = checker.evaluate_case(case("CAPC-016"))
+    assert result["path_credential_binding_mismatches"] == 1
+    assert result["path_closure_numerator"] == 0
+    assert result["credential_substitution_attempts"] == 1
+    assert result["unauthorized_effects"] == 1
+
+
 if __name__ == "__main__":
     functions = [
         value for name, value in globals().items()
