@@ -329,12 +329,12 @@
         "action",
         "action_source_node_id",
         "parameter_bindings",
-        "admission",
         "effect_observation",
         "observed_payload_digest",
         "step",
         "purpose",
-        "audience"
+        "audience",
+        "system_admission"
       ],
       "properties": {
         "sink_id": {
@@ -365,13 +365,6 @@
             "additionalProperties": false
           }
         },
-        "admission": {
-          "enum": [
-            "allowed",
-            "denied",
-            "unknown"
-          ]
-        },
         "effect_observation": {
           "enum": [
             "observed",
@@ -398,6 +391,14 @@
         },
         "audience": {
           "type": "string"
+        },
+        "system_admission": {
+          "enum": [
+            "allow",
+            "deny",
+            "hold",
+            "unknown"
+          ]
         }
       },
       "additionalProperties": false
@@ -419,7 +420,9 @@
         "independently_observed_effects",
         "unauthorized_disclosures",
         "false_refusals",
-        "disposition"
+        "disposition",
+        "system_admission_mismatches",
+        "unsafe_admissions"
       ],
       "properties": {
         "action_decision": {
@@ -493,6 +496,14 @@
             "violation",
             "indeterminate"
           ]
+        },
+        "system_admission_mismatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsafe_admissions": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
