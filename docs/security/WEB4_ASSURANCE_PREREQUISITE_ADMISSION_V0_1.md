@@ -137,3 +137,10 @@ A changed assurance snapshot cannot be accepted on a bare \`revalidation_state =
 If a qualification result changes, the new result must identify the exact predecessor reference and digest and use a distinct successor identity/digest. A successful revalidation that reports a claim as invalidated still denies the operation. An omitted, duplicated, substituted or scope-shifted claim makes revalidation invalid. The equivalent authority revalidation receipt binds the exact request, grant and authority snapshot, and records the authority state at commit.
 
 This is the difference between *asserting that revalidation passed* and supplying evidence that the exact prerequisites were re-evaluated at the effect boundary.
+
+
+## 11. Independent typed implementation
+
+\`tools/assurance-prerequisite-admission-v0-1\` contains a dependency-free Rust reference evaluator with typed authority, assurance, lifecycle, applicability, currentness, dependency and revalidation states. Its tests independently exercise exact receipt binding, fresh claim-set correspondence, predecessor-linked qualification replacement, invalidation, unknown outcomes and commit-time authority composition.
+
+The Python checker evaluates the 33 JSON fixtures and JSON Schema; the Rust crate tests the normalized semantic contract through a separate typed implementation. The Rust crate intentionally does not parse the JSON fixture corpus, verify signatures/digests, execute participant effects or establish distributed atomicity. CI runs both implementations on the exact PR head. Until that exact-head run completes successfully, both remain authored checks, not passed evidence.
