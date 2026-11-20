@@ -25,11 +25,33 @@ def load_json(path: Path) -> Any:
         raise SystemExit(f"cannot load {path.relative_to(ROOT)}: {exc}") from exc
 
 
+def request_policy_digest_mismatch(case: dict[str, Any]) -> bool:
+    policy = case["consumer_policy"]
+    prereq = case["prerequisite_set"]
+    request = case["request"]
+    preflight = case["preflight"]
+    commit = case["commit"]
+    return any([
+        request["consumer_policy_digest"] != policy["policy_digest"],
+        preflight["policy_digest"] != policy["policy_digest"],
+        commit["policy_digest_at_linearization"] != policy["policy_digest"],
+        request["prerequisite_set_digest"] != prereq["set_digest"],
+        preflight["prerequisite_set_digest"] != prereq["set_digest"],
+        commit["prerequisite_set_digest_at_linearization"] != prereq["set_digest"],
+        preflight["authority_grant_ref"] != request["authority_grant_ref"],
+        commit["authority_grant_ref_at_linearization"] != request["authority_grant_ref"],
+    ])
+
+
 def assurance_result(case: dict[str, Any]) -> str:
     policy = case["consumer_policy"]
     prereq = case["prerequisite_set"]
     commit = case["commit"]
 
+    if preflight["request_digest"] != case["request"]["request_digest"] or commit["request_digest_at_linearization"] != case["request"]["request_digest"]:
+        return "denied"
+    if request_policy_digest_mismatch(case):
+        return "denied"
     if not prereq["explicitly_declared"]:
         return "indeterminate"
     if not prereq["claims"]:
@@ -96,7 +118,19 @@ def assurance_result(case: dict[str, Any]) -> str:
 
 
 def authority_result(case: dict[str, Any]) -> str:
-    state = case["commit"]["authority_state_at_linearization"]
+    preflight = case["preflight"]
+    commit = case["commit"]
+    request = case["request"]
+    if preflight["request_digest"] != request["request_digest"] or commit["request_digest_at_linearization"] != request["request_digest"]:
+        return "denied"
+    if preflight["authority_grant_ref"] != request["authority_grant_ref"] or commit["authority_grant_ref_at_linearization"] != request["authority_grant_ref"]:
+        return "denied"
+    if not commit["authority_snapshot_matches_preflight"]:
+        if commit["authority_revalidation_state"] == "failed":
+            return "denied"
+        if commit["authority_revalidation_state"] != "passed":
+            return "indeterminate"
+    state = commit["authority_state_at_linearization"]
     if state == "current":
         return "eligible"
     if state in {"revoked","expired","denied"}:
@@ -135,8 +169,8 @@ def main() -> int:
         raise SystemExit("APAC must not introduce an aggregate score")
 
     cases = suite["scenarios"]
-    if len(cases) != 20:
-        raise SystemExit(f"expected 20 APAC scenarios, found {len(cases)}")
+    if len(cases) != 24:
+        raise SystemExit(f"expected 24 APAC scenarios, found {len(cases)}")
     ids: set[str] = set()
     class_counts: dict[str, int] = {}
     for case in cases:
@@ -195,8 +229,8 @@ def main() -> int:
         # claim state used at the commit linearization point.
         if commit["linearization_order"] == "commit_before_claim_event":
             for claim in prereq["claims"]:
-                if claim["lifecycle_state_after_commit"] != "current" and claim["lifecycle_state_at_commit"] != "current":
-                    raise SystemExit(f"{sid}: post-commit invalidation must preserve the commit-time current state")
+                if claim["lifecycle_state_at_commit"] != "current":
+                    raise SystemExit(f"{sid}: post-commit invalidation cannot make the commit-time claim state non-current")
 
         if effect["new_attempt_before_reconciliation"]:
             raise SystemExit(f"{sid}: new attempt before reconciliation is forbidden")
