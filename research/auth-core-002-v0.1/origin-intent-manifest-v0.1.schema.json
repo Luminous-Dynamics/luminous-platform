@@ -1,0 +1,742 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:auth-core-002:origin-intent:0.1",
+  "title": "Luminous Origin-Bound Intent Provenance Manifest v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "manifest_id",
+    "task",
+    "action_selection",
+    "source_registry",
+    "parameter_bindings",
+    "transformations",
+    "authority_reference",
+    "request_binding",
+    "manifest_digest_profile",
+    "manifest_digest",
+    "record_disposition",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-origin-intent-provenance"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "manifest_id": {
+      "type": "string",
+      "pattern": "^OIPM-[A-Z0-9-]{4,64}$"
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    },
+    "action_selection": {
+      "$ref": "#/$defs/actionSelection"
+    },
+    "source_registry": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "parameter_bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/parameterBinding"
+      }
+    },
+    "transformations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transformation"
+      }
+    },
+    "authority_reference": {
+      "$ref": "#/$defs/authorityReference"
+    },
+    "request_binding": {
+      "$ref": "#/$defs/requestBinding"
+    },
+    "manifest_digest_profile": {
+      "const": "JCS_CANONICAL_EXCLUDING_MANIFEST_DIGEST_V1"
+    },
+    "manifest_digest": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/digest"
+        }
+      ]
+    },
+    "record_disposition": {
+      "const": "not_claimed"
+    },
+    "claim_ceiling": {
+      "const": "non_authoritative_provenance_only"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^(sha256|blake3):[a-f0-9]{64}$"
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "task_ref",
+        "principal_ref",
+        "precision",
+        "intent_digest",
+        "fixed_action",
+        "fixed_target",
+        "preauthorized_actions",
+        "action_selection_delegation",
+        "parameter_delegations"
+      ],
+      "properties": {
+        "task_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "precision": {
+          "enum": [
+            "fully_specified",
+            "parameter_open",
+            "action_open"
+          ]
+        },
+        "intent_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "fixed_action": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fixed_target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "preauthorized_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/authorizedAction"
+          }
+        },
+        "action_selection_delegation": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/actionDelegation"
+            }
+          ]
+        },
+        "parameter_delegations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameterDelegation"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorizedAction": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "target_ref",
+        "operation_ref",
+        "effect_class",
+        "constraints_digest"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect_class": {
+          "enum": [
+            "read_only",
+            "reversible",
+            "consequential",
+            "safety_critical"
+          ]
+        },
+        "constraints_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "additionalProperties": false
+    },
+    "actionDelegation": {
+      "type": "object",
+      "required": [
+        "allowed_source_refs",
+        "purpose_ref",
+        "not_before",
+        "expires_at",
+        "delegation_ref"
+      ],
+      "properties": {
+        "allowed_source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "not_before": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "delegation_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "parameterDelegation": {
+      "type": "object",
+      "required": [
+        "parameter_name",
+        "allowed_source_refs",
+        "constraint_ref",
+        "expires_at"
+      ],
+      "properties": {
+        "parameter_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "constraint_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "source_ref",
+        "source_class",
+        "writer_control",
+        "content_taint",
+        "lineage_state",
+        "attestation"
+      ],
+      "properties": {
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_class": {
+          "enum": [
+            "principal_instruction",
+            "user_named_document",
+            "allowlisted_connector",
+            "tool_output",
+            "child_agent",
+            "memory",
+            "web_content",
+            "operator_input",
+            "unknown"
+          ]
+        },
+        "writer_control": {
+          "enum": [
+            "principal",
+            "operator",
+            "connector",
+            "third_party",
+            "mixed",
+            "unknown"
+          ]
+        },
+        "content_taint": {
+          "enum": [
+            "principal_controlled",
+            "operator_controlled",
+            "connector_controlled",
+            "untrusted_external",
+            "mixed",
+            "unknown"
+          ]
+        },
+        "lineage_state": {
+          "enum": [
+            "complete",
+            "incomplete",
+            "unknown"
+          ]
+        },
+        "attestation": {
+          "type": "object",
+          "required": [
+            "receipt_ref",
+            "receipt_digest",
+            "attester_role",
+            "status"
+          ],
+          "properties": {
+            "receipt_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "receipt_digest": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/$defs/digest"
+                }
+              ]
+            },
+            "attester_role": {
+              "enum": [
+                "principal",
+                "connector",
+                "operator",
+                "independent_verifier",
+                "model",
+                "none"
+              ]
+            },
+            "status": {
+              "enum": [
+                "valid",
+                "stale",
+                "revoked",
+                "invalid",
+                "unknown"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "actionSelection": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "target_ref",
+        "operation_ref",
+        "selection_source_ref",
+        "selection_basis",
+        "origin_state"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selection_source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selection_basis": {
+          "enum": [
+            "principal_instruction",
+            "bounded_source_selection",
+            "clarified_principal_instruction"
+          ]
+        },
+        "origin_state": {
+          "enum": [
+            "principal_fixed",
+            "verified_delegated_source",
+            "untrusted",
+            "mixed",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "parameterBinding": {
+      "type": "object",
+      "required": [
+        "parameter_name",
+        "value_digest",
+        "data_class",
+        "origin_source_refs",
+        "transformation_refs",
+        "origin_state"
+      ],
+      "properties": {
+        "parameter_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "data_class": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "safety_critical",
+            "unknown"
+          ]
+        },
+        "origin_source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "transformation_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "origin_state": {
+          "enum": [
+            "principal_fixed",
+            "verified_delegated_source",
+            "mixed",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "transformation": {
+      "type": "object",
+      "required": [
+        "transform_ref",
+        "kind",
+        "input_source_refs",
+        "propagated_source_refs",
+        "output_digest",
+        "lineage_complete"
+      ],
+      "properties": {
+        "transform_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "extract",
+            "normalize",
+            "summarize",
+            "paraphrase",
+            "embed",
+            "memory_store",
+            "memory_retrieve",
+            "serialize",
+            "tool_output",
+            "child_agent_handoff",
+            "other"
+          ]
+        },
+        "input_source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "propagated_source_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "output_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "lineage_complete": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorityReference": {
+      "type": "object",
+      "required": [
+        "canonical_grant_ref",
+        "grant_digest",
+        "policy_epoch"
+      ],
+      "properties": {
+        "canonical_grant_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "grant_digest": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/digest"
+            }
+          ]
+        },
+        "policy_epoch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestBinding": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "participant_ref",
+        "target_ref",
+        "operation_ref",
+        "arguments_digest",
+        "purpose_ref",
+        "context_digest",
+        "policy_epoch",
+        "attempt_id",
+        "manifest_digest"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arguments_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest_digest": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/digest"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "properties": {
+              "precision": {
+                "const": "fully_specified"
+              }
+            },
+            "required": [
+              "precision"
+            ]
+          }
+        },
+        "required": [
+          "task"
+        ]
+      },
+      "then": {
+        "properties": {
+          "task": {
+            "properties": {
+              "fixed_action": {
+                "type": "string"
+              },
+              "fixed_target": {
+                "type": "string"
+              },
+              "preauthorized_actions": {
+                "maxItems": 0
+              },
+              "action_selection_delegation": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "properties": {
+              "precision": {
+                "const": "parameter_open"
+              }
+            },
+            "required": [
+              "precision"
+            ]
+          }
+        },
+        "required": [
+          "task"
+        ]
+      },
+      "then": {
+        "properties": {
+          "task": {
+            "properties": {
+              "fixed_action": {
+                "type": "string"
+              },
+              "fixed_target": {
+                "type": "string"
+              },
+              "preauthorized_actions": {
+                "maxItems": 0
+              },
+              "action_selection_delegation": {
+                "type": "null"
+              },
+              "parameter_delegations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "task": {
+            "properties": {
+              "precision": {
+                "const": "action_open"
+              }
+            },
+            "required": [
+              "precision"
+            ]
+          }
+        },
+        "required": [
+          "task"
+        ]
+      },
+      "then": {
+        "properties": {
+          "task": {
+            "properties": {
+              "fixed_action": {
+                "type": "null"
+              },
+              "preauthorized_actions": {
+                "minItems": 1
+              },
+              "action_selection_delegation": {
+                "$ref": "#/$defs/actionDelegation"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
