@@ -46,6 +46,7 @@ def request_policy_digest_mismatch(case: dict[str, Any]) -> bool:
 def assurance_result(case: dict[str, Any]) -> str:
     policy = case["consumer_policy"]
     prereq = case["prerequisite_set"]
+    preflight = case["preflight"]
     commit = case["commit"]
 
     if preflight["request_digest"] != case["request"]["request_digest"] or commit["request_digest_at_linearization"] != case["request"]["request_digest"]:
@@ -55,7 +56,7 @@ def assurance_result(case: dict[str, Any]) -> str:
     if not prereq["explicitly_declared"]:
         return "indeterminate"
     if not prereq["claims"]:
-        if prereq["intentionally_empty"] and not prereq["required"] and policy["allow_explicit_empty_set"]:
+        if prereq["intentionally_empty"] and prereq["explicitly_declared"] and not prereq["required"] and policy["allow_explicit_empty_set"]:
             return "not_required"
         return "indeterminate"
 
@@ -64,6 +65,11 @@ def assurance_result(case: dict[str, Any]) -> str:
     if commit["prerequisite_set_digest_at_linearization"] != prereq["set_digest"]:
         return "denied"
 
+    assurance_snapshot_equal = (
+        commit["assurance_snapshot_digest_at_linearization"] == preflight["assurance_snapshot_digest"]
+    )
+    if commit["assurance_snapshot_matches_preflight"] != assurance_snapshot_equal:
+        return "denied"
     if not commit["assurance_snapshot_matches_preflight"]:
         if commit["revalidation_state"] == "passed":
             pass
@@ -125,6 +131,11 @@ def authority_result(case: dict[str, Any]) -> str:
         return "denied"
     if preflight["authority_grant_ref"] != request["authority_grant_ref"] or commit["authority_grant_ref_at_linearization"] != request["authority_grant_ref"]:
         return "denied"
+    authority_snapshot_equal = (
+        commit["authority_snapshot_digest_at_linearization"] == preflight["authority_snapshot_digest"]
+    )
+    if commit["authority_snapshot_matches_preflight"] != authority_snapshot_equal:
+        return "denied"
     if not commit["authority_snapshot_matches_preflight"]:
         if commit["authority_revalidation_state"] == "failed":
             return "denied"
@@ -167,6 +178,8 @@ def main() -> int:
         raise SystemExit("APAC claim ceiling was weakened")
     if suite["no_aggregate_score"] is not True:
         raise SystemExit("APAC must not introduce an aggregate score")
+    if suite["digest_semantics"] != "synthetic_fixed_shape_only_no_canonical_hash_recomputation":
+        raise SystemExit("APAC digests are synthetic placeholders, not canonical cryptographic commitments")
 
     cases = suite["scenarios"]
     if len(cases) != 24:
@@ -231,6 +244,8 @@ def main() -> int:
             for claim in prereq["claims"]:
                 if claim["lifecycle_state_at_commit"] != "current":
                     raise SystemExit(f"{sid}: post-commit invalidation cannot make the commit-time claim state non-current")
+                if claim["lifecycle_state_after_commit"] == "current":
+                    raise SystemExit(f"{sid}: post-commit invalidation control must record the later lifecycle state separately")
 
         if effect["new_attempt_before_reconciliation"]:
             raise SystemExit(f"{sid}: new attempt before reconciliation is forbidden")
