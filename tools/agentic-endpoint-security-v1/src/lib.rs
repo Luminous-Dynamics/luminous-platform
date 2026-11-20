@@ -11,6 +11,7 @@
 //! completeness, observation trust, and rollback into one proof-like Boolean.
 
 mod trace;
+pub mod trajectory;
 
 pub use trace::{evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord};
 
@@ -649,3 +650,5 @@ mod tests {
         assert_eq!(evaluate(facts).disposition, Disposition::BlockedBeforeEffect);
     }
 }
+
+pub use trajectory::{evaluate_trajectory, Authority as TrajectoryAuthority, AvailableWindow, Evaluation as TrajectoryEvaluation, Grant as TrajectoryGrant, TraceEvent as TrajectoryTraceEvent, Trajectory, ObserverQuality as TrajectoryObserverQuality, Admission as TrajectoryAdmission, EffectObservation as TrajectoryEffectObservation, Disposition as TrajectoryDisposition};
