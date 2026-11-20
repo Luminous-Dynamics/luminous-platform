@@ -104,6 +104,11 @@ def main() -> int:
         if expected["participant_effect"] == "committed" and expected["effect_authorization_relation"] != "authorized":
             raise SystemExit(f"{scenario_id}: committed effect is not marked authorized")
 
+        if scenario["expected_duplicate_effects"] != 0:
+            raise SystemExit(f"{scenario_id}: duplicate participant effects are forbidden in v0.1")
+        if scenario["new_attempts_before_reconciliation"] != 0:
+            raise SystemExit(f"{scenario_id}: new attempts before reconciliation are forbidden in v0.1")
+
         if expected["participant_effect"] == "outcome_unknown":
             if expected["effect_authorization_relation"] != "unknown":
                 raise SystemExit(f"{scenario_id}: unknown effect must retain unknown authorization relation")
@@ -149,6 +154,10 @@ def main() -> int:
         "participant_unknown_outcome_retry_count",
         "authorization_decision_latency",
         "provenance_capture_overhead",
+        "native_attack_success_rate",
+        "attack_failure_mode_distribution",
+        "duplicate_participant_effects",
+        "new_attempts_before_unknown_reconciliation",
     }
     missing = sorted(required_metrics - set(metric_ids))
     if missing:
