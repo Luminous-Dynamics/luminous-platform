@@ -218,6 +218,21 @@ def test_observed_field_set_must_match_bound_parameter_set() -> None:
     )
 
 
+
+
+def test_revoked_memory_source_cannot_be_reused_after_revocation() -> None:
+    result = checker.evaluate_case(fixture("IFL-021"))
+    assert result["flow_decision"] == "denied"
+    assert result["admission_decision"] == "deny"
+    assert result["unauthorized_disclosures"] == 1
+
+
+def test_later_source_revocation_does_not_retroactively_rewrite_prior_effect() -> None:
+    result = checker.evaluate_case(fixture("IFL-022"))
+    assert result["flow_decision"] == "eligible"
+    assert result["admission_decision"] == "allow"
+    assert result["unauthorized_disclosures"] == 0
+
 if __name__ == "__main__":
     functions = [
         value for name, value in globals().items()
