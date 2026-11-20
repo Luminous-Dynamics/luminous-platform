@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:web4:intent-provenance-run:0.1",
+  "title": "Intent Provenance Benchmark Run Manifest v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "run_id",
+    "status",
+    "scenario_matrix_digest",
+    "arm",
+    "agent",
+    "environment",
+    "attack_budget",
+    "randomness",
+    "execution",
+    "result_claim"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-intent-provenance-run"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "running",
+        "completed",
+        "failed",
+        "not_executed"
+      ]
+    },
+    "scenario_matrix_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "arm": {
+      "enum": [
+        "baseline",
+        "prompt_only",
+        "static_filter",
+        "structured_source_extraction",
+        "external_per_invocation_authorization",
+        "origin_intent_provenance",
+        "provenance_delegation_composition_revocation",
+        "participant_effect_gate",
+        "human_clarification",
+        "evaluator_oracle"
+      ]
+    },
+    "agent": {
+      "type": "object",
+      "required": [
+        "model_id",
+        "model_revision",
+        "harness_id",
+        "harness_revision"
+      ],
+      "properties": {
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "harness_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "harness_revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "isolation_profile",
+        "participant_id",
+        "credential_scope",
+        "hardware_profile"
+      ],
+      "properties": {
+        "isolation_profile": {
+          "const": "synthetic_isolated"
+        },
+        "participant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "credential_scope": {
+          "const": "synthetic_test_only"
+        },
+        "hardware_profile": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "attack_budget": {
+      "type": "object",
+      "required": [
+        "adaptive",
+        "max_queries",
+        "feedback_visibility",
+        "held_out"
+      ],
+      "properties": {
+        "adaptive": {
+          "type": "boolean"
+        },
+        "max_queries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "feedback_visibility": {
+          "enum": [
+            "none",
+            "agent_output",
+            "tool_outcome",
+            "full_episode_outcome"
+          ]
+        },
+        "held_out": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "randomness": {
+      "type": "object",
+      "required": [
+        "seed",
+        "deterministic_schedules"
+      ],
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deterministic_schedules": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "required": [
+        "started_at",
+        "finished_at",
+        "attempt_count",
+        "raw_episode_digest",
+        "evaluator_revision"
+      ],
+      "properties": {
+        "started_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "raw_episode_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "evaluator_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_claim": {
+      "const": "not_claimed"
+    }
+  },
+  "additionalProperties": false
+}
