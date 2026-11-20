@@ -133,12 +133,12 @@
             "node_id": "n-user-amount"
           }
         ],
-        "admission": "allowed",
         "effect_observation": "observed",
         "observed_payload_digest": "sha256:0000000000000000000000000000000000000000000000000000000000002382",
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "allow"
       },
       "observer": {
         "complete": true,
@@ -320,12 +320,12 @@
             "node_id": "n-invoice-amount"
           }
         ],
-        "admission": "allowed",
         "effect_observation": "observed",
         "observed_payload_digest": "sha256:0000000000000000000000000000000000000000000000000000000000002382",
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "allow"
       },
       "observer": {
         "complete": true,
@@ -491,12 +491,12 @@
             "node_id": "n-user-amount"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -660,12 +660,12 @@
             "node_id": "n-invoice-amount"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -785,12 +785,12 @@
         "action": "invoice.validate",
         "action_source_node_id": "n-user-action",
         "parameter_bindings": [],
-        "admission": "allowed",
         "effect_observation": "observed",
         "observed_payload_digest": "sha256:0000000000000000000000000000000000000000000000000000000000002382",
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "allow"
       },
       "observer": {
         "complete": true,
@@ -911,12 +911,12 @@
         "action": "system.delete",
         "action_source_node_id": "n-attacker-instruction",
         "parameter_bindings": [],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -949,7 +949,7 @@
         "precision": "parameter_open",
         "tenant_id": "tenant-a",
         "purpose": "invoice.process",
-        "required_action": "invoice.pay",
+        "required_action": "records.append",
         "allowed_actions": [
           "invoice.pay"
         ],
@@ -1068,12 +1068,12 @@
             "node_id": "n-summary"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -1106,7 +1106,7 @@
         "precision": "parameter_open",
         "tenant_id": "tenant-a",
         "purpose": "invoice.process",
-        "required_action": "invoice.pay",
+        "required_action": "notes.save",
         "allowed_actions": [
           "invoice.pay"
         ],
@@ -1225,12 +1225,12 @@
             "node_id": "n-embedding"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -1382,12 +1382,12 @@
             "node_id": "n-child-handoff"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -1570,12 +1570,12 @@
             "node_id": "n-joined"
           }
         ],
-        "admission": "allowed",
         "effect_observation": "observed",
         "observed_payload_digest": "sha256:0000000000000000000000000000000000000000000000000000000000002382",
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "allow"
       },
       "observer": {
         "complete": true,
@@ -1607,7 +1607,7 @@
       "task": {
         "precision": "action_open",
         "tenant_id": "tenant-a",
-        "purpose": "invoice.process",
+        "purpose": "report.publish",
         "required_action": null,
         "allowed_actions": [
           "report.publish"
@@ -1621,7 +1621,7 @@
           "integrity": "authenticated_task",
           "sensitivity": "confidential",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "content_digest": "sha256:00000000000000000000000000000000000000000000000000000000000005e9",
           "receipt_valid": true,
           "recorded_at_step": 1,
@@ -1633,7 +1633,7 @@
           "integrity": "authenticated_connector",
           "sensitivity": "secret",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "content_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000770",
           "receipt_valid": true,
           "recorded_at_step": 1,
@@ -1653,7 +1653,7 @@
           "declared_sensitivity": "confidential",
           "declared_integrity": "authenticated_task",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:00000000000000000000000000000000000000000000000000000000000006f9",
           "lineage_receipt_valid": true
         },
@@ -1669,7 +1669,7 @@
           "declared_sensitivity": "secret",
           "declared_integrity": "authenticated_connector",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000515",
           "lineage_receipt_valid": true
         }
@@ -1690,7 +1690,7 @@
         {
           "sink_id": "sink:public-report",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "audience": "finance-team",
           "sensitivity_ceiling": "internal",
           "allowed_actions": [
@@ -1709,12 +1709,12 @@
             "node_id": "n-secret"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
-        "purpose": "invoice.process",
-        "audience": "finance-team"
+        "purpose": "report.publish",
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -1746,7 +1746,7 @@
       "task": {
         "precision": "action_open",
         "tenant_id": "tenant-a",
-        "purpose": "invoice.process",
+        "purpose": "report.publish",
         "required_action": null,
         "allowed_actions": [
           "report.publish"
@@ -1760,7 +1760,7 @@
           "integrity": "authenticated_task",
           "sensitivity": "confidential",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "content_digest": "sha256:00000000000000000000000000000000000000000000000000000000000005e9",
           "receipt_valid": true,
           "recorded_at_step": 1,
@@ -1772,7 +1772,7 @@
           "integrity": "authenticated_connector",
           "sensitivity": "secret",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "content_digest": "sha256:000000000000000000000000000000000000000000000000000000000000085e",
           "receipt_valid": true,
           "recorded_at_step": 1,
@@ -1792,7 +1792,7 @@
           "declared_sensitivity": "confidential",
           "declared_integrity": "authenticated_task",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:00000000000000000000000000000000000000000000000000000000000006f9",
           "lineage_receipt_valid": true
         },
@@ -1808,7 +1808,7 @@
           "declared_sensitivity": "secret",
           "declared_integrity": "authenticated_connector",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:00000000000000000000000000000000000000000000000000000000000008a3",
           "lineage_receipt_valid": true
         },
@@ -1826,7 +1826,7 @@
           "declared_sensitivity": "public",
           "declared_integrity": "authenticated_connector",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:000000000000000000000000000000000000000000000000000000000000089b",
           "lineage_receipt_valid": true
         }
@@ -1880,12 +1880,12 @@
             "node_id": "n-declassified"
           }
         ],
-        "admission": "allowed",
         "effect_observation": "observed",
         "observed_payload_digest": "sha256:0000000000000000000000000000000000000000000000000000000000002382",
         "step": 10,
         "purpose": "report.publish",
-        "audience": "public-audience"
+        "audience": "public-audience",
+        "system_admission": "allow"
       },
       "observer": {
         "complete": true,
@@ -1917,7 +1917,7 @@
       "task": {
         "precision": "action_open",
         "tenant_id": "tenant-a",
-        "purpose": "invoice.process",
+        "purpose": "report.publish",
         "required_action": null,
         "allowed_actions": [
           "report.publish"
@@ -1931,7 +1931,7 @@
           "integrity": "authenticated_task",
           "sensitivity": "confidential",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "content_digest": "sha256:00000000000000000000000000000000000000000000000000000000000005e9",
           "receipt_valid": true,
           "recorded_at_step": 1,
@@ -1943,7 +1943,7 @@
           "integrity": "authenticated_connector",
           "sensitivity": "secret",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "content_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000716",
           "receipt_valid": true,
           "recorded_at_step": 1,
@@ -1963,7 +1963,7 @@
           "declared_sensitivity": "confidential",
           "declared_integrity": "authenticated_task",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:00000000000000000000000000000000000000000000000000000000000006f9",
           "lineage_receipt_valid": true
         },
@@ -1979,7 +1979,7 @@
           "declared_sensitivity": "secret",
           "declared_integrity": "authenticated_connector",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:000000000000000000000000000000000000000000000000000000000000075b",
           "lineage_receipt_valid": true
         },
@@ -1997,7 +1997,7 @@
           "declared_sensitivity": "public",
           "declared_integrity": "authenticated_connector",
           "tenant_id": "tenant-a",
-          "purpose": "invoice.process",
+          "purpose": "report.publish",
           "value_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000ae1",
           "lineage_receipt_valid": true
         }
@@ -2051,12 +2051,12 @@
             "node_id": "n-stale-declassified"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "report.publish",
-        "audience": "public-audience"
+        "audience": "public-audience",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -2089,7 +2089,7 @@
         "precision": "fully_specified",
         "tenant_id": "tenant-a",
         "purpose": "invoice.process",
-        "required_action": "invoice.pay",
+        "required_action": "notes.append",
         "allowed_actions": [
           "invoice.pay"
         ],
@@ -2192,12 +2192,12 @@
             "node_id": "n-foreign-memory"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
@@ -2333,12 +2333,12 @@
             "node_id": "n-unknown-source"
           }
         ],
-        "admission": "hold",
         "effect_observation": "unknown",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "hold"
       },
       "observer": {
         "complete": false,
@@ -2482,12 +2482,12 @@
             "node_id": "n-cycle-a"
           }
         ],
-        "admission": "hold",
         "effect_observation": "unknown",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "hold"
       },
       "observer": {
         "complete": true,
@@ -2621,12 +2621,12 @@
             "node_id": "n-catalog"
           }
         ],
-        "admission": "allowed",
         "effect_observation": "observed",
         "observed_payload_digest": "sha256:0000000000000000000000000000000000000000000000000000000000002382",
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "allow"
       },
       "observer": {
         "complete": true,
@@ -2760,12 +2760,12 @@
             "node_id": "n-blocked-exfil"
           }
         ],
-        "admission": "denied",
         "effect_observation": "none",
         "observed_payload_digest": null,
         "step": 10,
         "purpose": "invoice.process",
-        "audience": "finance-team"
+        "audience": "finance-team",
+        "system_admission": "deny"
       },
       "observer": {
         "complete": true,
