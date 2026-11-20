@@ -1075,15 +1075,13 @@
       ],
       "allowed_sinks": [
         {
-          "sink_id": "sink:payments",
+          "sink_id": "sink:records",
           "tenant_id": "tenant-a",
           "purpose": "invoice.process",
           "audience": "finance-team",
           "sensitivity_ceiling": "confidential",
           "allowed_actions": [
-            "invoice.pay",
-            "invoice.validate",
-            "invoice.approve"
+            "records.append"
           ]
         }
       ],
@@ -1234,15 +1232,13 @@
       ],
       "allowed_sinks": [
         {
-          "sink_id": "sink:payments",
+          "sink_id": "sink:notes",
           "tenant_id": "tenant-a",
           "purpose": "invoice.process",
           "audience": "finance-team",
           "sensitivity_ceiling": "confidential",
           "allowed_actions": [
-            "invoice.pay",
-            "invoice.validate",
-            "invoice.approve"
+            "notes.save"
           ]
         }
       ],
@@ -2223,15 +2219,13 @@
       ],
       "allowed_sinks": [
         {
-          "sink_id": "sink:payments",
+          "sink_id": "sink:notes",
           "tenant_id": "tenant-a",
           "purpose": "invoice.process",
           "audience": "finance-team",
           "sensitivity_ceiling": "confidential",
           "allowed_actions": [
-            "invoice.pay",
-            "invoice.validate",
-            "invoice.approve"
+            "notes.append"
           ]
         }
       ],
@@ -2426,12 +2420,12 @@
       "scenario_id": "IFL-016",
       "control_class": "indeterminate_control",
       "task": {
-        "precision": "fully_specified",
+        "precision": "parameter_open",
         "tenant_id": "tenant-a",
         "purpose": "invoice.process",
-        "required_action": "invoice.pay",
+        "required_action": "records.append",
         "allowed_actions": [
-          "invoice.pay"
+          "records.append"
         ],
         "action_source_node_id": "n-user-action"
       },
@@ -2517,15 +2511,13 @@
       ],
       "allowed_sinks": [
         {
-          "sink_id": "sink:payments",
+          "sink_id": "sink:records",
           "tenant_id": "tenant-a",
           "purpose": "invoice.process",
           "audience": "finance-team",
           "sensitivity_ceiling": "confidential",
           "allowed_actions": [
-            "invoice.pay",
-            "invoice.validate",
-            "invoice.approve"
+            "records.append"
           ]
         }
       ],
