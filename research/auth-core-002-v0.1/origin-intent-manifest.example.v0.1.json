@@ -1,0 +1,75 @@
+{
+  "profile": "luminous-origin-intent-provenance",
+  "version": "0.1",
+  "manifest_id": "OIPM-DESIGN-EXAMPLE-001",
+  "task": {
+    "task_ref": "task:document-summary-01",
+    "principal_ref": "principal:example-user",
+    "precision": "fully_specified",
+    "intent_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "fixed_action": "documents.summarize",
+    "fixed_target": "tenant-a/document-42",
+    "preauthorized_actions": [],
+    "action_selection_delegation": null,
+    "parameter_delegations": []
+  },
+  "action_selection": {
+    "action_id": "documents.summarize",
+    "target_ref": "tenant-a/document-42",
+    "operation_ref": "documents.summarize",
+    "selection_source_ref": "principal",
+    "selection_basis": "principal_instruction",
+    "origin_state": "principal_fixed"
+  },
+  "source_registry": [
+    {
+      "source_ref": "principal",
+      "source_class": "principal_instruction",
+      "writer_control": "principal",
+      "content_taint": "principal_controlled",
+      "lineage_state": "complete",
+      "attestation": {
+        "receipt_ref": "synthetic:principal-request",
+        "receipt_digest": null,
+        "attester_role": "principal",
+        "status": "valid"
+      }
+    },
+    {
+      "source_ref": "invoice-document",
+      "source_class": "user_named_document",
+      "writer_control": "third_party",
+      "content_taint": "untrusted_external",
+      "lineage_state": "complete",
+      "attestation": {
+        "receipt_ref": "synthetic:connector-receipt",
+        "receipt_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "attester_role": "connector",
+        "status": "valid"
+      }
+    }
+  ],
+  "parameter_bindings": [],
+  "transformations": [],
+  "authority_reference": {
+    "canonical_grant_ref": null,
+    "grant_digest": null,
+    "policy_epoch": null
+  },
+  "request_binding": {
+    "action_id": "documents.summarize",
+    "participant_ref": "participant:document-service",
+    "target_ref": "tenant-a/document-42",
+    "operation_ref": "documents.summarize",
+    "arguments_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "purpose_ref": "purpose:document-review",
+    "context_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "policy_epoch": "epoch:example",
+    "attempt_id": "attempt:example-01",
+    "manifest_digest": null
+  },
+  "manifest_digest_profile": "JCS_CANONICAL_EXCLUDING_MANIFEST_DIGEST_V1",
+  "manifest_digest": null,
+  "record_disposition": "not_claimed",
+  "claim_ceiling": "non_authoritative_provenance_only"
+}
