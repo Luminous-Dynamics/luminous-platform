@@ -60,6 +60,12 @@ jobs:
       - name: Run oracle coverage mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_oracle_coverage.py
 
+      - name: Validate trajectory-wide effective privilege contract
+        run: python3 tools/agentic-endpoint-security-v1/check_trajectory_privilege.py
+
+      - name: Run trajectory privilege mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_trajectory_privilege.py
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
 
