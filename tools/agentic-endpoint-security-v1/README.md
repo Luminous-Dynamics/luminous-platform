@@ -27,3 +27,8 @@ The existing read-only benchmark workflow also runs the standard-library CAPC ch
 ## Information-flow lifecycle benchmark
 
 The existing read-only benchmark job also runs the standard-library source-to-sink information-flow checker and mutation tests. This supplement consumes the AUTH-CORE-002 #503 origin/intent manifest contract and tests taint/source lineage through summaries, embeddings, memory and child-agent handoffs. It verifies exact observed sink-parameter digests, distinguishes policy-oracle decisions from system admission, and includes a scoped declassification positive control. It does not create another provenance ledger, DLP product, memory store or runtime flow-control service. See [IFL v0.1](../../docs/INFORMATION_FLOW_LIFECYCLE_BENCHMARK_V0_1.md).
+
+
+## Typed information-flow reference model
+
+\`src/information_flow.rs\` adds a dependency-free typed evaluator for source/derived data lineage, sensitivity and integrity propagation, exact declassification receipts, source-to-sink parameter rules, action-origin scope, and independent sink-observation matching. Its 9 authored unit tests cover the core semantics. It does not parse the JSON corpus or prove runtime flow control; the Python fixture checker and Rust typed tests are independent partial implementations, not yet a full differential replay.
