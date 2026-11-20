@@ -43,6 +43,97 @@ def request_policy_digest_mismatch(case: dict[str, Any]) -> bool:
     ])
 
 
+def assurance_claims_for_commit(case: dict[str, Any]) -> list[dict[str, Any]] | None:
+    prereq = case["prerequisite_set"]
+    commit = case["commit"]
+    revalidation = commit["assurance_revalidation"]
+    if commit["assurance_snapshot_matches_preflight"]:
+        if revalidation["state"] != "not_attempted":
+            return None
+        return prereq["claims"]
+
+    if revalidation["state"] != commit["revalidation_state"]:
+        return None
+    if revalidation["state"] != "passed":
+        return []
+    if (
+        revalidation["request_digest"] != case["request"]["request_digest"]
+        or revalidation["prerequisite_set_digest"] != prereq["set_digest"]
+        or revalidation["snapshot_digest"] != commit["assurance_snapshot_digest_at_linearization"]
+        or not revalidation["result_ref"]
+        or not revalidation["result_digest"]
+    ):
+        return None
+
+    old_claims = prereq["claims"]
+    fresh_claims = revalidation["validated_claims"]
+    if len(old_claims) != len(fresh_claims):
+        return None
+    old_by_id = {claim["claim_id"]: claim for claim in old_claims}
+    if len(old_by_id) != len(old_claims):
+        return None
+    fresh_ids = [claim["claim_id"] for claim in fresh_claims]
+    if set(fresh_ids) != set(old_by_id) or len(set(fresh_ids)) != len(fresh_ids):
+        return None
+    for fresh in fresh_claims:
+        old = old_by_id[fresh["claim_id"]]
+        for field in ("property", "subject_manifest_digest"):
+            if fresh[field] != old[field]:
+                return None
+        changed = (
+            fresh["qualification_result_ref"] != old["qualification_result_ref"]
+            or fresh["qualification_result_digest"] != old["qualification_result_digest"]
+        )
+        if changed:
+            if (
+                fresh.get("predecessor_qualification_result_ref") != old["qualification_result_ref"]
+                or fresh.get("predecessor_qualification_result_digest") != old["qualification_result_digest"]
+                or fresh["qualification_result_ref"] == old["qualification_result_ref"]
+                or fresh["qualification_result_digest"] == old["qualification_result_digest"]
+            ):
+                return None
+        elif fresh.get("predecessor_qualification_result_ref") is not None or fresh.get("predecessor_qualification_result_digest") is not None:
+            return None
+    return fresh_claims
+
+
+def assurance_revalidation_shape_valid(case: dict[str, Any]) -> bool:
+    commit = case["commit"]
+    revalidation = commit["assurance_revalidation"]
+    if revalidation["state"] != commit["revalidation_state"]:
+        return False
+    if commit["assurance_snapshot_matches_preflight"]:
+        return revalidation["state"] == "not_attempted" and not revalidation["validated_claims"]
+    if revalidation["state"] == "not_attempted":
+        return False
+    return (
+        revalidation["request_digest"] == case["request"]["request_digest"]
+        and revalidation["prerequisite_set_digest"] == case["prerequisite_set"]["set_digest"]
+        and revalidation["snapshot_digest"] == commit["assurance_snapshot_digest_at_linearization"]
+        and bool(revalidation["result_ref"])
+        and bool(revalidation["result_digest"])
+    )
+
+
+def authority_revalidation_shape_valid(case: dict[str, Any]) -> bool:
+    commit = case["commit"]
+    receipt = commit["authority_revalidation"]
+    if receipt["state"] != commit["authority_revalidation_state"]:
+        return False
+    if commit["authority_snapshot_matches_preflight"]:
+        return receipt["state"] == "not_attempted"
+    if receipt["state"] == "not_attempted":
+        return False
+    return (
+        receipt["request_digest"] == case["request"]["request_digest"]
+        and receipt["grant_ref"] == case["request"]["authority_grant_ref"]
+        and receipt["snapshot_digest"] == commit["authority_snapshot_digest_at_linearization"]
+        and receipt["authority_state"] == commit["authority_state_at_linearization"]
+        and bool(receipt["result_ref"])
+        and bool(receipt["result_digest"])
+    )
+
+
 def assurance_result(case: dict[str, Any]) -> str:
     policy = case["consumer_policy"]
     prereq = case["prerequisite_set"]
@@ -70,19 +161,24 @@ def assurance_result(case: dict[str, Any]) -> str:
     )
     if commit["assurance_snapshot_matches_preflight"] != assurance_snapshot_equal:
         return "denied"
+    if not assurance_revalidation_shape_valid(case):
+        return "denied"
+    claims = assurance_claims_for_commit(case)
+    if claims is None:
+        return "denied"
     if not commit["assurance_snapshot_matches_preflight"]:
-        if commit["revalidation_state"] == "passed":
-            pass
-        elif commit["revalidation_state"] == "failed":
+        if commit["revalidation_state"] == "failed":
             return "denied"
-        else:
+        if commit["revalidation_state"] == "indeterminate":
+            return "indeterminate"
+        if commit["revalidation_state"] != "passed":
             return "indeterminate"
 
     if commit["linearization_order"] == "unresolved_race":
         return "indeterminate"
 
     saw_indeterminate = False
-    for claim in prereq["claims"]:
+    for claim in claims:
         if not claim["subject_matches"]:
             return "denied"
         state = claim["lifecycle_state_at_commit"]
@@ -136,6 +232,8 @@ def authority_result(case: dict[str, Any]) -> str:
     )
     if commit["authority_snapshot_matches_preflight"] != authority_snapshot_equal:
         return "denied"
+    if not authority_revalidation_shape_valid(case):
+        return "denied"
     if not commit["authority_snapshot_matches_preflight"]:
         if commit["authority_revalidation_state"] == "failed":
             return "denied"
@@ -182,8 +280,8 @@ def main() -> int:
         raise SystemExit("APAC digests are synthetic placeholders, not canonical cryptographic commitments")
 
     cases = suite["scenarios"]
-    if len(cases) != 24:
-        raise SystemExit(f"expected 24 APAC scenarios, found {len(cases)}")
+    if len(cases) != 27:
+        raise SystemExit(f"expected 27 APAC scenarios, found {len(cases)}")
     ids: set[str] = set()
     class_counts: dict[str, int] = {}
     for case in cases:
@@ -205,6 +303,14 @@ def main() -> int:
             raise SystemExit(f"{sid}: request is not bound to consumer policy")
         if request["prerequisite_set_digest"] != prereq["set_digest"]:
             raise SystemExit(f"{sid}: request is not bound to prerequisite-set digest")
+        if not assurance_revalidation_shape_valid(case):
+            raise SystemExit(f"{sid}: assurance revalidation receipt is not bound to the exact request/set/snapshot")
+        if not authority_revalidation_shape_valid(case):
+            raise SystemExit(f"{sid}: authority revalidation receipt is not bound to exact request/grant/snapshot")
+        if case["commit"]["assurance_revalidation"]["state"] == "passed":
+            fresh = assurance_claims_for_commit(case)
+            if fresh is None:
+                raise SystemExit(f"{sid}: successful assurance revalidation lacks exact fresh claim results")
         if preflight["policy_digest"] != policy["policy_digest"]:
             raise SystemExit(f"{sid}: preflight policy digest mismatch")
         if preflight["prerequisite_set_digest"] != prereq["set_digest"]:
