@@ -11,6 +11,7 @@ on:
       - "tools/assurance-prerequisite-admission-v0-1/src/lib.rs"
       - "tools/assurance-prerequisite-admission-v0-1/Cargo.toml"
 
+# Export canonical formatting after IFL revocation model changes.
 permissions:
   contents: read
 
