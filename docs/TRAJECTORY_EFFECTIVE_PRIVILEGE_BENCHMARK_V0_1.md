@@ -34,14 +34,14 @@ The fixture schema records:
 
 A child grant is invalid when its parent is missing/cyclic, the parent did not delegate to that actor, the root session changes, scope expands, child activation precedes the parent, child expiry exceeds the parent, budget expands, or delegation is not permitted along the chain. Parent revocation propagates through the grant lineage for event-time authorization. A later revocation does not rewrite an earlier valid effect.
 
-**Unauthorized attempt** is a count, not by itself a confirmed breach: attempts correctly denied are expected. **Unauthorized admission** means an ungranted attempt was allowed. **Unauthorized effect** requires an independently observed protected effect without a valid grant. Post-revocation effects are reported separately. Unknown/incomplete observation cannot produce a clean qualified outcome.
+**Unauthorized attempt** is a count, not by itself a confirmed breach: attempts correctly denied are expected. **Unauthorized admission** means an ungranted attempt was allowed. **Unauthorized effect** requires an independently observed protected effect without a valid grant. A record labelled observed by an incomplete or non-independent source is not counted as verified effect truth. Post-revocation effects are reported separately. Unknown/incomplete observation cannot produce a clean qualified outcome.
 
 ## Independent metrics (no composite score)
 
 - excess granted authority (grant union minus task-required);
 - excess reachable authority (trajectory availability union minus task-required);
 - cumulative and peak excess-availability exposure by step;
-- exercised authority and observed effect sets;
+- exercised authority and independently observed effect sets;
 - unauthorized attempts, unauthorized admissions and confirmed unauthorized effects;
 - post-revocation effects and stale descendant acceptance;
 - delegation violations by grant lineage;
