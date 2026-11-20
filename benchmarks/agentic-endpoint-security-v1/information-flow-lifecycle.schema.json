@@ -29,7 +29,7 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 20,
+      "minItems": 22,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -49,7 +49,8 @@
         "content_digest",
         "receipt_valid",
         "recorded_at_step",
-        "expires_at_step"
+        "expires_at_step",
+        "revoked_at_step"
       ],
       "properties": {
         "source_id": {
@@ -102,6 +103,13 @@
         },
         "expires_at_step": {
           "type": "integer",
+          "minimum": 0
+        },
+        "revoked_at_step": {
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 0
         }
       },
