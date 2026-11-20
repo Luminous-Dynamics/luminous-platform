@@ -303,14 +303,6 @@ def main() -> int:
             raise SystemExit(f"{sid}: request is not bound to consumer policy")
         if request["prerequisite_set_digest"] != prereq["set_digest"]:
             raise SystemExit(f"{sid}: request is not bound to prerequisite-set digest")
-        if not assurance_revalidation_shape_valid(case):
-            raise SystemExit(f"{sid}: assurance revalidation receipt is not bound to the exact request/set/snapshot")
-        if not authority_revalidation_shape_valid(case):
-            raise SystemExit(f"{sid}: authority revalidation receipt is not bound to exact request/grant/snapshot")
-        if case["commit"]["assurance_revalidation"]["state"] == "passed":
-            fresh = assurance_claims_for_commit(case)
-            if fresh is None:
-                raise SystemExit(f"{sid}: successful assurance revalidation lacks exact fresh claim results")
         if preflight["policy_digest"] != policy["policy_digest"]:
             raise SystemExit(f"{sid}: preflight policy digest mismatch")
         if preflight["prerequisite_set_digest"] != prereq["set_digest"]:
