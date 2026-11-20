@@ -474,6 +474,24 @@ def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
                 raise ValueError(f'{case["scenario_id"]}: malformed lineage node digest')
         if case["flow"]["effect_observation"] == "observed" and case["flow"]["observed_payload_digest"] is None:
             raise ValueError(f'{case["scenario_id"]}: observed sink effect requires payload digest')
+        parameter_fields = [item["field"] for item in case["flow"]["parameter_bindings"]]
+        observed_fields = [item["field"] for item in case["flow"]["observed_bindings"]]
+        if len(set(parameter_fields)) != len(parameter_fields):
+            raise ValueError(f'{case["scenario_id"]}: duplicate parameter binding field')
+        if len(set(observed_fields)) != len(observed_fields):
+            raise ValueError(f'{case["scenario_id"]}: duplicate observed sink field')
+        if case["flow"]["effect_observation"] == "observed":
+            if set(observed_fields) != set(parameter_fields):
+                raise ValueError(f'{case["scenario_id"]}: observed sink fields must exactly match parameter bindings')
+            if not DIGEST_RE.fullmatch(case["flow"]["observed_payload_digest"] or ""):
+                raise ValueError(f'{case["scenario_id"]}: malformed observed payload digest')
+            if any(not DIGEST_RE.fullmatch(item["observed_value_digest"] or "") for item in case["flow"]["observed_bindings"]):
+                raise ValueError(f'{case["scenario_id"]}: malformed observed parameter digest')
+        elif observed_fields or case["flow"]["observed_payload_digest"] is not None:
+            raise ValueError(f'{case["scenario_id"]}: non-observed effect cannot carry observed payload values')
+        rule_fields = [item["field"] for item in case["parameter_rules"]]
+        if len(set(rule_fields)) != len(rule_fields):
+            raise ValueError(f'{case["scenario_id"]}: duplicate parameter rule field')
 
 
 def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, int]:
