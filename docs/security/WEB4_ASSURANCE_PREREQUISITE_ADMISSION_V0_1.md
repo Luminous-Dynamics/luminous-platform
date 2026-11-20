@@ -64,7 +64,7 @@ An offline participant can continue only operations explicitly permitted by its 
 ## 6. Synthetic contract artifacts
 
 - assurance-prerequisite-admission.schema.v0.1.json: Draft 2020-12 schema for prerequisite-set identity, exact request binding, preflight/commit snapshots and effect outcomes.
-- assurance-prerequisite-admission.fixtures.v0.1.json: 24 synthetic scenarios (8 positive, 11 negative, 5 indeterminate), including explicit-empty-set controls, stale/withdrawn/expired/superseded claims, partial dependency inventory, property-specific non-impact, conditional transfer, post-commit invalidation, claim-before-commit races, authority snapshot revalidation, policy/prerequisite-set substitution, partition/unknown-outcome and reconciliation.
+- assurance-prerequisite-admission.fixtures.v0.1.json: 27 synthetic scenarios (9 positive, 13 negative, 5 indeterminate), including explicit-empty-set controls, stale/withdrawn/expired/superseded claims, partial dependency inventory, property-specific non-impact, conditional transfer, post-commit invalidation, claim-before-commit races, authority snapshot revalidation, policy/prerequisite-set substitution, partition/unknown-outcome and reconciliation.
 - scripts/validate_assurance_prerequisite_admission.py: test-only schema and deterministic reference evaluator.
 - .github/workflows/assurance-prerequisite-admission.yml: read-only, path-scoped conformance workflow.
 
@@ -128,3 +128,12 @@ The v0.1 suite is synthetic. It does not establish integration with Mycelix comm
 ### Digest limitation
 
 The fixture values use synthetic fixed-shape digest strings so schemas and binding invariants can be tested deterministically. v0.1 does **not** compute or verify canonical set/request/claim hashes, signature validity, transparency receipts or cryptographic attestations. A runtime adapter must consume the canonical digest/serialization commitments from its owner-native WAEP/WALP/Mycelix/ASSURE interfaces; it must not treat the fixture's sample digest bytes as proof.
+
+
+## 10. Fresh revalidation receipt requirement
+
+A changed assurance snapshot cannot be accepted on a bare \`revalidation_state = passed\` flag. The commit record must carry an owner-qualified revalidation receipt bound to the exact request digest, prerequisite-set digest and commit-time assurance snapshot digest. A successful receipt must include one fresh claim evaluation for every required prerequisite, with the same claim ID, property and subject scope. The evaluator uses these fresh commit-time claim results—not the preflight claim records.
+
+If a qualification result changes, the new result must identify the exact predecessor reference and digest and use a distinct successor identity/digest. A successful revalidation that reports a claim as invalidated still denies the operation. An omitted, duplicated, substituted or scope-shifted claim makes revalidation invalid. The equivalent authority revalidation receipt binds the exact request, grant and authority snapshot, and records the authority state at commit.
+
+This is the difference between *asserting that revalidation passed* and supplying evidence that the exact prerequisites were re-evaluated at the effect boundary.
