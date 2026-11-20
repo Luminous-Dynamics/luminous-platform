@@ -224,13 +224,15 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "uniqueItems": true
         },
         "allowed_source_classes": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "uniqueItems": true
         }
       },
       "additionalProperties": false
@@ -296,7 +298,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "uniqueItems": true
         },
         "output_node_id": {
           "type": "string"
@@ -357,7 +360,8 @@
             ],
             "properties": {
               "field": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1
               },
               "node_id": {
                 "type": "string"
@@ -411,13 +415,12 @@
             ],
             "properties": {
               "field": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1
               },
               "observed_value_digest": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
               }
             },
             "additionalProperties": false
@@ -639,7 +642,8 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/declass"
-          }
+          },
+          "uniqueItems": true
         },
         "flow": {
           "$ref": "#/$defs/flow"
