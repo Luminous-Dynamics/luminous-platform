@@ -12,3 +12,8 @@ The Rust suite contains **28 authored tests** across the evidence-dimension eval
 - A prior scorer prototype passed 20 standard-library unit tests. The scorer was subsequently refactored to separate independent oracle outcomes from system dispositions and require canonical digests for the runtime/configuration/task/scenario identity; its current committed suite has 30 authored tests, including ten new regressions, which have not been run locally. The 10 oracle-contract mutation tests are also unrun locally. Exact-head CI is required; no real endpoint or adaptive attack result is implied.
 
 - [Independent oracle fidelity v1](../../docs/ENDPOINT_ORACLE_FIDELITY_V1.md) and `oracle-coverage.json` freeze 10 side-effect channels, five observer roles, and 10 observer-fault controls. The manifest checker and its mutation tests are wired into CI; they validate the contract, not actual OS observer execution.
+
+
+## Trajectory-wide effective privilege model
+
+`src/trajectory.rs` adds an independent typed model for task-required, granted, available, exercised and independently observed authority across a trajectory. It evaluates delegated grant attenuation, parent-to-child revocation, event-time grant validity, excess exposure, unauthorized admission/effects, observer gaps and false refusals. The model is normalized-fact logic only; it does not discover tool aliases, authenticate grant tokens, observe real effects or enforce runtime ACLs. Its tests run as part of the existing dependency-free Cargo test job.
