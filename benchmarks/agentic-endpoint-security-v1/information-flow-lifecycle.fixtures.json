@@ -158,21 +158,22 @@
         "action_decision": "eligible",
         "flow_decision": "eligible",
         "admission_decision": "allow",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 1,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -356,21 +357,22 @@
         "action_decision": "eligible",
         "flow_decision": "eligible",
         "admission_decision": "allow",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 1,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -529,21 +531,22 @@
         "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 1,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 4,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -700,21 +703,22 @@
         "action_decision": "denied",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 1,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 1,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -827,21 +831,22 @@
         "action_decision": "eligible",
         "flow_decision": "eligible",
         "admission_decision": "allow",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 1,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -955,21 +960,22 @@
         "action_decision": "denied",
         "flow_decision": "eligible",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 2,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -1109,24 +1115,25 @@
         "independent": true
       },
       "expected": {
-        "action_decision": "denied",
+        "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 1,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
-        "untrusted_parameter_count": 0,
-        "action_origin_violations": 1,
+        "cross_purpose_flow_count": 0,
+        "untrusted_parameter_count": 1,
+        "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
-        "source_rule_failures": 1,
+        "source_rule_failures": 2,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -1266,24 +1273,25 @@
         "independent": true
       },
       "expected": {
-        "action_decision": "denied",
+        "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 1,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
-        "untrusted_parameter_count": 0,
-        "action_origin_violations": 1,
+        "cross_purpose_flow_count": 0,
+        "untrusted_parameter_count": 1,
+        "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
-        "source_rule_failures": 1,
+        "source_rule_failures": 2,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -1428,21 +1436,22 @@
         "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 1,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 1,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -1629,15 +1638,16 @@
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 1,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 3,
         "independently_observed_effects": 1,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 1,
         "false_refusals": 0,
-        "disposition": "violation",
-        "observed_payload_mismatches": 0
+        "disposition": "violation"
       }
     },
     {
@@ -1764,21 +1774,22 @@
         "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 1,
         "source_rule_failures": 0,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -1940,23 +1951,24 @@
       },
       "expected": {
         "action_decision": "eligible",
-        "flow_decision": "denied",
-        "admission_decision": "deny",
-        "system_admission_mismatches": 1,
-        "unsafe_admissions": 1,
+        "flow_decision": "eligible",
+        "admission_decision": "allow",
+        "system_admission_mismatches": 0,
+        "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
-        "source_rule_failures": 2,
+        "source_rule_failures": 0,
         "independently_observed_effects": 1,
-        "unauthorized_disclosures": 1,
+        "observed_payload_mismatches": 0,
+        "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "violation",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -2115,21 +2127,22 @@
         "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 1,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
-        "declassification_receipt_failures": 2,
-        "source_rule_failures": 3,
+        "declassification_receipt_failures": 1,
+        "source_rule_failures": 1,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -2253,24 +2266,25 @@
         "independent": true
       },
       "expected": {
-        "action_decision": "denied",
+        "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
-        "cross_tenant_flow_count": 0,
+        "cross_tenant_flow_count": 1,
+        "cross_purpose_flow_count": 1,
         "untrusted_parameter_count": 0,
-        "action_origin_violations": 1,
+        "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
-        "source_rule_failures": 1,
+        "source_rule_failures": 0,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -2397,23 +2411,24 @@
       },
       "expected": {
         "action_decision": "eligible",
-        "flow_decision": "denied",
-        "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "flow_decision": "indeterminate",
+        "admission_decision": "hold",
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 1,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
-        "declassification_receipt_failures": 1,
+        "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "indeterminate",
-        "observed_payload_mismatches": 0
+        "disposition": "indeterminate"
       }
     },
     {
@@ -2545,24 +2560,25 @@
         "independent": false
       },
       "expected": {
-        "action_decision": "denied",
-        "flow_decision": "denied",
-        "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "action_decision": "eligible",
+        "flow_decision": "indeterminate",
+        "admission_decision": "hold",
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 2,
         "unknown_lineage_count": 1,
         "cyclic_lineage_count": 1,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
-        "action_origin_violations": 1,
+        "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
-        "source_rule_failures": 1,
+        "source_rule_failures": 0,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "indeterminate",
-        "observed_payload_mismatches": 0
+        "disposition": "indeterminate"
       }
     },
     {
@@ -2694,21 +2710,22 @@
         "action_decision": "eligible",
         "flow_decision": "eligible",
         "admission_decision": "allow",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 1,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -2835,21 +2852,22 @@
         "action_decision": "eligible",
         "flow_decision": "denied",
         "admission_decision": "deny",
-        "system_admission_mismatches": 1,
+        "system_admission_mismatches": 0,
         "unsafe_admissions": 0,
         "lineage_erasure_count": 0,
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 1,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 1,
         "source_rule_failures": 2,
         "independently_observed_effects": 0,
+        "observed_payload_mismatches": 0,
         "unauthorized_disclosures": 0,
         "false_refusals": 0,
-        "disposition": "qualified",
-        "observed_payload_mismatches": 0
+        "disposition": "qualified"
       }
     },
     {
@@ -3039,15 +3057,16 @@
         "unknown_lineage_count": 0,
         "cyclic_lineage_count": 0,
         "cross_tenant_flow_count": 0,
+        "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
         "action_origin_violations": 0,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 0,
         "independently_observed_effects": 1,
+        "observed_payload_mismatches": 2,
         "unauthorized_disclosures": 1,
         "false_refusals": 0,
-        "disposition": "violation",
-        "observed_payload_mismatches": 2
+        "disposition": "violation"
       }
     }
   ]
