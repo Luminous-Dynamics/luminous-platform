@@ -257,8 +257,6 @@ def evaluate_authorization_episode(episode):
                 valid = False
             if commit_at is not None and (grant["not_before"] > commit_at or grant["expires_at"] <= commit_at):
                 valid = False
-    elif attempt["effect_state"] == "unknown":
-        indeterminate = True
 
     if not valid:
         authorization_state = "not_authorized"
@@ -565,8 +563,6 @@ def evaluate_effect_capability_fixture(fixture):
             unknown_snapshot = True
         elif check["usage_reservation_state"] != "consumed" or not check["usage_reservation_id"]:
             valid = False
-    elif effect_state == "unknown":
-        unknown_snapshot = True
 
     if not valid:
         authorization_state = "not_authorized"
