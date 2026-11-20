@@ -47,8 +47,8 @@ def main() -> int:
         raise SystemExit("WALP must not introduce an aggregate assurance score")
 
     records = suite["records"]
-    if len(records) != 27:
-        raise SystemExit(f"expected 27 WALP fixtures, found {len(records)}")
+    if len(records) != 28:
+        raise SystemExit(f"expected 28 WALP fixtures, found {len(records)}")
 
     seen: set[str] = set()
     lifecycle_counts: dict[str, int] = {}
@@ -80,6 +80,8 @@ def main() -> int:
             raise SystemExit(f"{rid}: incomplete dependency inventory cannot support a current claim")
         if inventory["coverage_status"] == "unknown" and inventory["unresolved_dependency_count"] == 0:
             raise SystemExit(f"{rid}: unknown dependency inventory must disclose unresolved coverage")
+        if inventory["coverage_status"] == "partial" and inventory["unresolved_dependency_count"] == 0:
+            raise SystemExit(f"{rid}: partial dependency inventory must disclose unresolved dependencies")
 
         transition = lifecycle["transition_kind"]
         transition_state = {
@@ -148,6 +150,14 @@ def main() -> int:
             evidence_ref = dependency["change_evidence_ref"]
             if change == "unchanged" and baseline != observed:
                 raise SystemExit(f"{rid}/{dependency['dependency_id']}: unchanged dependency has differing digests")
+            if change != "unknown" and (baseline is None or observed is None):
+                raise SystemExit(f"{rid}/{dependency['dependency_id']}: classified dependency change requires both exact digests")
+            if change == "unknown" and inventory["coverage_status"] == "complete":
+                raise SystemExit(f"{rid}/{dependency['dependency_id']}: unknown edge contradicts complete dependency inventory")
+            if change == "material_change" and not dependency["affected_claim_properties"]:
+                raise SystemExit(f"{rid}/{dependency['dependency_id']}: material change must name affected claim properties")
+            if change == "controlled_non_material_change" and dependency["affected_claim_properties"]:
+                raise SystemExit(f"{rid}/{dependency['dependency_id']}: non-material bridge cannot silently mark claim properties as materially affected")
             if change in {"controlled_non_material_change", "material_change"}:
                 if baseline == observed:
                     raise SystemExit(f"{rid}/{dependency['dependency_id']}: changed dependency has identical digests")
