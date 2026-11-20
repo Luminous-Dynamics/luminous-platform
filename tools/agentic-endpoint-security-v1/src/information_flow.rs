@@ -530,7 +530,7 @@ pub fn evaluate(input: &Input) -> Evaluation {
     let mut cross_purpose_flow_count = 0usize;
     let mut untrusted_parameter_count = 0usize;
     let mut source_rule_failures = 0usize;
-    let mut declassification_receipt_failures = 0usize;
+    let mut sink_declass_failure_nodes = BTreeSet::new();
     let mut unknown_flow = false;
 
     let mut bindings: BTreeMap<String, Vec<String>> = BTreeMap::new();
@@ -631,7 +631,7 @@ pub fn evaluate(input: &Input) -> Evaluation {
                 });
                 if !valid_receipt {
                     flow_decision = Decision::Denied;
-                    declassification_receipt_failures += 1;
+                    sink_declass_failure_nodes.insert(node_id.clone());
                 }
             }
         }
@@ -726,7 +726,7 @@ pub fn evaluate(input: &Input) -> Evaluation {
         cross_purpose_flow_count,
         untrusted_parameter_count,
         action_origin_violations,
-        declassification_receipt_failures: faults.declass_failure_nodes.len().max(declassification_receipt_failures),
+        declassification_receipt_failures: faults.declass_failure_nodes.union(&sink_declass_failure_nodes).count(),
         independently_observed_effect,
         observed_payload_mismatches,
         unauthorized_disclosure,
