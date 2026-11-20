@@ -34,6 +34,31 @@ class AdaptiveProtocolContractTests(unittest.TestCase):
             299,
         )
 
+    def test_taxonomy_coverage_is_pinned_and_multi_axis(self):
+        coverage = self.document["technique_coverage"]
+        self.assertEqual(coverage["taxonomy"]["classes"], 6)
+        self.assertEqual(coverage["taxonomy"]["techniques"], 34)
+        self.assertEqual(coverage["taxonomy"]["sweep_units"], 132)
+        self.assertTrue(coverage["separation"]["existing_query_turn_budgets_remain_distinct"])
+
+    def test_generation_label_cannot_be_promoted_to_success_label(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["technique_coverage"]["separation"]["generation_subtechnique_is_provenance_only"] = False
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_coverage_arm_cannot_early_stop_after_first_success(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["technique_coverage"]["coverage_protocol"]["early_stop"]["coverage_arm_must_continue_until_all_preregistered_applicable_units_attempted_or_budget_exhausted"] = False
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_taxonomy_commitment_cannot_drift_silently(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["technique_coverage"]["taxonomy"]["taxonomy_blob_sha"] = "0" * 40
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
     def test_external_network_cannot_be_enabled(self):
         mutated = copy.deepcopy(self.document)
         mutated["constraints"]["external_network_access"] = True
