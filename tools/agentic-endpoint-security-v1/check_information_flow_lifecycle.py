@@ -232,27 +232,28 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
     action = lineage.derive(flow["action_source_node_id"])
     action_decision = "eligible"
     action_origin_violations = 0
+
     if not action_source_matches:
         action_decision = "denied"
         action_origin_violations += 1
-    elif action["unknown"]:
-        action_decision = "indeterminate"
-    elif (
+    if (
         task["precision"] in {"fully_specified", "parameter_open"}
         and flow["action"] != task["required_action"]
     ):
         action_decision = "denied"
         action_origin_violations += 1
-    elif task["precision"] == "action_open" and flow["action"] not in task["allowed_actions"]:
+    if task["precision"] == "action_open" and flow["action"] not in task["allowed_actions"]:
         action_decision = "denied"
         action_origin_violations += 1
-    elif any(
+    if any(
         sources[source_id]["source_class"] in {"external_untrusted", "agent_generated"}
         for source_id in action["sources"]
         if source_id in sources
     ):
         action_decision = "denied"
         action_origin_violations += 1
+    if action["unknown"] and action_decision != "denied":
+        action_decision = "indeterminate"
 
     sink = next(
         (item for item in case["allowed_sinks"] if item["sink_id"] == flow["sink_id"]),
