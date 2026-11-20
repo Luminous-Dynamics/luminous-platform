@@ -208,6 +208,13 @@ def evaluate_authorization_episode(episode):
         valid = False
     if attempt["broker_permit_issued_at"] > attempt["participant_admitted_at"]:
         valid = False
+    # The grant must be current when the broker issues the permit as well as at
+    # participant admission and the actual protected effect.
+    for grant in chain:
+        if grant["not_before"] > attempt["broker_permit_issued_at"] or grant["expires_at"] <= attempt["broker_permit_issued_at"]:
+            valid = False
+        if grant["revoked_at"] is not None and grant["revoked_at"] <= attempt["broker_permit_issued_at"]:
+            valid = False
 
     if approval["required"]:
         if (
@@ -219,6 +226,39 @@ def evaluate_authorization_episode(episode):
             or approval["approved_at"] > attempt["broker_permit_issued_at"]
         ):
             valid = False
+
+    if attempt["effect_state"] in {"committed", "partially_committed"}:
+        commit_at = attempt["effect_committed_at"]
+        checked_at = attempt["effect_authority_checked_at"]
+        if commit_at is None or commit_at < attempt["participant_admitted_at"]:
+            indeterminate = True
+        elif attempt["broker_permit_expires_at"] <= commit_at:
+            valid = False
+        elif attempt["broker_permit_issued_at"] > commit_at:
+            valid = False
+        if attempt["effect_authority_state_at_commit"] == "revoked":
+            valid = False
+        elif attempt["effect_authority_state_at_commit"] in {"unknown", "not_applicable"}:
+            indeterminate = True
+        if checked_at is None or checked_at != commit_at or not attempt["effect_authority_check_participant_verified"]:
+            indeterminate = True
+        if attempt["permit_nonce_consumed"] is False:
+            valid = False
+        elif attempt["permit_nonce_consumed"] == "unknown":
+            indeterminate = True
+        if attempt["usage_reservation_state"] == "not_consumed":
+            valid = False
+        elif attempt["usage_reservation_state"] == "unknown":
+            indeterminate = True
+        elif attempt["usage_reservation_state"] != "consumed" or not attempt["usage_reservation_id"]:
+            valid = False
+        for grant in chain:
+            if grant["revoked_at"] is not None and commit_at is not None and grant["revoked_at"] <= commit_at:
+                valid = False
+            if commit_at is not None and (grant["not_before"] > commit_at or grant["expires_at"] <= commit_at):
+                valid = False
+    elif attempt["effect_state"] == "unknown":
+        indeterminate = True
 
     if not valid:
         authorization_state = "not_authorized"
@@ -489,6 +529,44 @@ def evaluate_effect_capability_fixture(fixture):
         effect_state = "unknown"
     else:
         effect_state = effect["state"]
+
+    if effect_state in {"committed", "partially_committed"}:
+        committed_at = effect["committed_at"]
+        check = effect["authority_check"]
+        if committed_at is None or committed_at < now:
+            unknown_snapshot = True
+        if permit["expires_at"] <= committed_at or permit["not_before"] > committed_at:
+            valid = False
+        if snapshot["valid_until"] <= committed_at:
+            unknown_snapshot = True
+        if check["checked_at"] is None or check["checked_at"] != committed_at or check["participant_verified"] is not True:
+            unknown_snapshot = True
+        if check["policy_epoch"] != request["policy_epoch"]:
+            valid = False
+        expected_grant_ids = set(grant_ids)
+        observed_grants = {item["grant_id"]: item["state"] for item in check["grant_states"]}
+        if len(observed_grants) != len(check["grant_states"]) or set(observed_grants) != expected_grant_ids:
+            unknown_snapshot = True
+        for grant in grants:
+            if grant["not_before"] > committed_at or grant["expires_at"] <= committed_at:
+                valid = False
+            state_at_commit = observed_grants.get(grant["grant_id"], "unknown")
+            if state_at_commit == "revoked":
+                valid = False
+            elif state_at_commit == "unknown":
+                unknown_revocation = True
+        if check["permit_nonce_consumed"] is False:
+            valid = False
+        elif check["permit_nonce_consumed"] == "unknown":
+            unknown_snapshot = True
+        if check["usage_reservation_state"] == "not_consumed":
+            valid = False
+        elif check["usage_reservation_state"] == "unknown":
+            unknown_snapshot = True
+        elif check["usage_reservation_state"] != "consumed" or not check["usage_reservation_id"]:
+            valid = False
+    elif effect_state == "unknown":
+        unknown_snapshot = True
 
     if not valid:
         authorization_state = "not_authorized"
@@ -1148,7 +1226,7 @@ def main() -> int:
         auth_counts[actual["authorization_state"]] += 1
         if actual["task_state"] == "correct" and actual["unauthorized_effect"] == "true":
             task_success_but_unauthorized += 1
-    if len(auth_ids) != 14 or task_success_but_unauthorized < 5:
+    if len(auth_ids) != 20 or task_success_but_unauthorized < 11:
         raise SystemExit("authorization benchmark must retain fourteen episodes and at least five task-success/unauthorized-effect cases")
     print(f"AUTHORIZATION_ASSURANCE_FIXTURES=PASS {auth_counts} TASK_SUCCESS_WITH_UNAUTHORIZED_EFFECT={task_success_but_unauthorized}")
 
@@ -1298,12 +1376,12 @@ def main() -> int:
         capability_counts["unauthorized_effect_indeterminate"] += int(actual["unauthorized_effect"] == "indeterminate")
         capability_counts["effect_reconciliation"] += int(actual["effect_disposition"] == "reconcile_same_attempt")
     expected_counts = {
-        "authorized":5, "not_authorized":22, "indeterminate":2,
-        "participant_decision_correct":26, "fail_closed_violation":2,
-        "unauthorized_effect_true":1, "unauthorized_effect_indeterminate":2,
+        "authorized":6, "not_authorized":25, "indeterminate":3,
+        "participant_decision_correct":27, "fail_closed_violation":6,
+        "unauthorized_effect_true":4, "unauthorized_effect_indeterminate":3,
         "effect_reconciliation":2,
     }
-    if len(capability_ids) != 29 or capability_suite["fixture_count"] != 29 or capability_counts != expected_counts:
+    if len(capability_ids) != 34 or capability_suite["fixture_count"] != 34 or capability_counts != expected_counts:
         raise SystemExit(f"unexpected effect-bound capability results: {capability_counts}")
     print(f"EFFECT_BOUND_CAPABILITY_FIXTURES=PASS {capability_counts}")
 
