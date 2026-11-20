@@ -75,3 +75,10 @@ Do not compare unmatched ASR, task success, or latency results. First reproduce 
 ## Claim ceiling
 
 This v0.1 contract is a synthetic semantic checker. It does not discover every alternate path, verify signatures, authenticate grants, prove cache invalidation at a real resource, observe operating-system/network effects, demonstrate distributed revocation linearizability, or establish physical/OT safety. Live claims require instrumented resource-side observers, real adapter runs, exact-head evidence, and independent replication.
+
+
+## Independent typed Rust reference model
+
+The existing dependency-free Rust benchmark crate now exports a typed trajectory evaluator in \`tools/agentic-endpoint-security-v1/src/trajectory.rs\`. It keeps authority atoms typed and evaluates granted/available scope, per-step excess exposure, event-time grant validity, recursive delegation attenuation, ancestor revocation, independently observed effects, false refusals and indeterminate observer states.
+
+Ten authored Rust tests cover positive authorization, available-scope excess, parent-to-child revocation, scope and expiry/budget widening, actor/session substitution, observer gaps, unauthorized intermediate effects and pre-revocation ordering. The Cargo test and formatting checks run in the existing PR #141 workflow. The Rust evaluator is an independent semantic implementation, not a parser for the JSON fixture file; exact agreement is still a future differential-test step, and neither implementation observes real OS/resource effects.
