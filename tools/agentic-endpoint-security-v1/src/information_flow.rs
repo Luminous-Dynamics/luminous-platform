@@ -474,8 +474,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
         );
     }
 
+    let action_source_matches =
+        input.flow.action_source_node_id == input.task.action_source_node_id;
     let action_lineage = derive_lineage(
-        &input.task.action_source_node_id,
+        &input.flow.action_source_node_id,
         input,
         &sources,
         &nodes,
@@ -483,33 +485,37 @@ pub fn evaluate(input: &Input) -> Evaluation {
         &mut visiting,
         &mut faults,
     );
-    let mut action_decision = if action_lineage.unknown {
+    let mut action_decision = if !action_source_matches {
+        Decision::Denied
+    } else if action_lineage.unknown {
         Decision::Indeterminate
     } else {
         Decision::Eligible
     };
-    let mut action_origin_violations = 0usize;
-    match input.task.precision {
-        TaskPrecision::FullySpecified | TaskPrecision::ParameterOpen => {
-            if input.task.required_action.as_deref() != Some(input.flow.action.as_str()) {
-                action_decision = Decision::Denied;
-                action_origin_violations += 1;
+    let mut action_origin_violations = usize::from(!action_source_matches);
+    if action_source_matches {
+        match input.task.precision {
+            TaskPrecision::FullySpecified | TaskPrecision::ParameterOpen => {
+                if input.task.required_action.as_deref() != Some(input.flow.action.as_str()) {
+                    action_decision = Decision::Denied;
+                    action_origin_violations += 1;
+                }
+            }
+            TaskPrecision::ActionOpen => {
+                if !input.task.allowed_actions.contains(&input.flow.action) {
+                    action_decision = Decision::Denied;
+                    action_origin_violations += 1;
+                }
             }
         }
-        TaskPrecision::ActionOpen => {
-            if !input.task.allowed_actions.contains(&input.flow.action) {
-                action_decision = Decision::Denied;
-                action_origin_violations += 1;
-            }
+        if action_lineage.sources.iter().any(|source_id| {
+            sources.get(source_id).is_some_and(|source| {
+                matches!(source.class, SourceClass::ExternalUntrusted | SourceClass::AgentGenerated)
+            })
+        }) {
+            action_decision = Decision::Denied;
+            action_origin_violations += 1;
         }
-    }
-    if action_lineage.sources.iter().any(|source_id| {
-        sources.get(source_id).is_some_and(|source| {
-            matches!(source.class, SourceClass::ExternalUntrusted | SourceClass::AgentGenerated)
-        })
-    }) {
-        action_decision = Decision::Denied;
-        action_origin_violations += 1;
     }
 
     let sink = input.sinks.iter().find(|sink| sink.id == input.flow.sink_id);
@@ -882,6 +888,25 @@ mod tests {
         let result = evaluate(&input);
         assert_eq!(result.lineage_erasure_count, 1);
         assert_eq!(result.flow_decision, Decision::Denied);
+    }
+
+    #[test]
+    fn flow_cannot_substitute_action_origin_node() {
+        let mut input = base_input();
+        let attacker = source(
+            "source:attacker-action",
+            SourceClass::ExternalUntrusted,
+            Integrity::UntrustedContent,
+            Sensitivity::Confidential,
+        );
+        let node = source_node("node:attacker-action", &attacker);
+        input.sources.push(attacker);
+        input.nodes.push(node);
+        input.flow.action_source_node_id = "node:attacker-action".into();
+        let result = evaluate(&input);
+        assert_eq!(result.action_decision, Decision::Denied);
+        assert_eq!(result.admission_decision, AdmissionDecision::Deny);
+        assert_eq!(result.action_origin_violations, 1);
     }
 
     #[test]
