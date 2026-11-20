@@ -40,7 +40,7 @@ The integrity lattice in v0.1 is a simplified test vocabulary, not a universal i
 
 ## Frozen synthetic corpus
 
-19 cases: 5 positive controls, 12 negative controls and 2 indeterminate controls. They cover fully specified parameters, named-source parameter delegation, recipient substitution, source-driven action changes, finite action-open choices, summary/paraphrase laundering, embedding and memory lineage, child-agent handoff, mixed-origin joins, secret-to-public declassification, stale/misbound receipts, cross-tenant memory, unknown source receipts, cyclic lineage, benign named-source utility, blocked exfiltration, a deliberately unsafe allow, and independent sink-payload substitution.
+20 cases: 5 positive controls, 13 negative controls and 2 indeterminate controls. They cover fully specified parameters, named-source parameter delegation, recipient substitution, source-driven action changes, finite action-open choices, action-origin substitution, summary/paraphrase laundering, embedding and memory lineage, child-agent handoff, mixed-origin joins, secret-to-public declassification, stale/misbound receipts, cross-tenant memory, unknown source receipts, cyclic lineage, benign named-source utility, blocked exfiltration, a deliberately unsafe allow, and independent sink-payload substitution.
 
 Files:
 - \`benchmarks/agentic-endpoint-security-v1/information-flow-lifecycle.schema.json\`
