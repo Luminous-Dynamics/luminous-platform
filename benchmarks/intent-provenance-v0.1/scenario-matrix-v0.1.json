@@ -39,7 +39,9 @@
         "dispatch",
         "participant_effect",
         "task_postcondition"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-002",
@@ -67,7 +69,9 @@
         "authority",
         "participant_effect",
         "task_postcondition"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-003",
@@ -95,7 +99,9 @@
         "authority",
         "participant_effect",
         "task_postcondition"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-004",
@@ -123,7 +129,9 @@
         "authority",
         "participant_effect",
         "task_postcondition"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-005",
@@ -152,7 +160,9 @@
         "participant_effect",
         "task_postcondition",
         "human_effort"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-006",
@@ -180,7 +190,9 @@
         "participant_effect",
         "task_postcondition",
         "attack_failure_mode"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-007",
@@ -209,7 +221,9 @@
         "dispatch",
         "participant_effect",
         "task_postcondition"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-008",
@@ -236,7 +250,9 @@
         "authority",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-009",
@@ -264,7 +280,9 @@
         "dispatch",
         "participant_effect",
         "human_effort"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-010",
@@ -292,7 +310,9 @@
         "dispatch",
         "participant_effect",
         "attack_failure_mode"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-011",
@@ -319,7 +339,9 @@
         "field_delegation",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-012",
@@ -346,7 +368,9 @@
         "delegation",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-013",
@@ -374,7 +398,9 @@
         "dispatch",
         "participant_effect",
         "human_effort"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-014",
@@ -401,7 +427,9 @@
         "field_delegation",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-015",
@@ -428,7 +456,9 @@
         "field_delegation",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-016",
@@ -457,7 +487,9 @@
         "participant_effect",
         "attack_failure_mode",
         "human_effort"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-017",
@@ -486,7 +518,9 @@
         "dispatch",
         "participant_effect",
         "attack_failure_mode"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-018",
@@ -514,7 +548,9 @@
         "authority",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-019",
@@ -540,7 +576,9 @@
         "authority",
         "dispatch",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-020",
@@ -569,7 +607,9 @@
         "dispatch",
         "participant_effect",
         "session_state"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-021",
@@ -596,7 +636,9 @@
         "dispatch",
         "route_inventory",
         "participant_effect"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-022",
@@ -624,7 +666,9 @@
         "participant_effect",
         "reconciliation",
         "task_postcondition"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-023",
@@ -651,7 +695,9 @@
         "dispatch",
         "participant_effect",
         "linearizability"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-024",
@@ -679,7 +725,9 @@
         "participant_effect",
         "availability",
         "safe_state"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-025",
@@ -707,7 +755,9 @@
         "dispatch",
         "participant_effect",
         "credential_inventory"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-026",
@@ -735,7 +785,9 @@
         "participant_effect",
         "physical_safety",
         "safe_state"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-027",
@@ -765,7 +817,9 @@
         "dispatch",
         "participant_effect",
         "attack_failure_mode"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     },
     {
       "scenario_id": "IPAB-028",
@@ -794,7 +848,9 @@
         "participant_effect",
         "task_postcondition",
         "attack_failure_mode"
-      ]
+      ],
+      "expected_duplicate_effects": 0,
+      "new_attempts_before_reconciliation": 0
     }
   ],
   "claim_ceiling": "protocol_and_synthetic_scenario_design_only"
