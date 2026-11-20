@@ -1,0 +1,38 @@
+{
+  "profile": "luminous-intent-provenance-run",
+  "version": "0.1",
+  "run_id": "IPAB-DESIGN-ONLY-001",
+  "status": "not_executed",
+  "scenario_matrix_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "arm": "origin_intent_provenance",
+  "agent": {
+    "model_id": "not_selected",
+    "model_revision": null,
+    "harness_id": "not_selected",
+    "harness_revision": "not_selected"
+  },
+  "environment": {
+    "isolation_profile": "synthetic_isolated",
+    "participant_id": "synthetic-participant-only",
+    "credential_scope": "synthetic_test_only",
+    "hardware_profile": "not_selected"
+  },
+  "attack_budget": {
+    "adaptive": false,
+    "max_queries": 0,
+    "feedback_visibility": "none",
+    "held_out": false
+  },
+  "randomness": {
+    "seed": 0,
+    "deterministic_schedules": 1
+  },
+  "execution": {
+    "started_at": null,
+    "finished_at": null,
+    "attempt_count": 0,
+    "raw_episode_digest": null,
+    "evaluator_revision": null
+  },
+  "result_claim": "not_claimed"
+}
