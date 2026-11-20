@@ -81,7 +81,7 @@ Unknown dependency coverage is not proof of no impact. Where a relevant dependen
 
 ## 7. Synthetic conformance suite
 
-The v0.1 fixture set covers:
+The v0.1 fixture set contains 27 synthetic records and covers:
 - exact current claims and bounded terminal-in-view claims;
 - preregistered controlled-equivalence bridges;
 - targeted requalification after one property dependency changes;
