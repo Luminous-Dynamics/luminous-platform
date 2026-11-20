@@ -1,0 +1,625 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:agent-information-flow-lifecycle:0.1",
+  "title": "Agent Information Flow Lifecycle Benchmark v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "manifest_contract_owner",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-agent-information-flow-lifecycle"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "manifest_contract_owner": {
+      "const": "AUTH-CORE-002-issue-503"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 16,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "source_class",
+        "integrity",
+        "sensitivity",
+        "tenant_id",
+        "purpose",
+        "content_digest",
+        "receipt_valid",
+        "recorded_at_step",
+        "expires_at_step"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_class": {
+          "enum": [
+            "user_task",
+            "allowlisted_connector",
+            "external_untrusted",
+            "memory",
+            "agent_generated"
+          ]
+        },
+        "integrity": {
+          "enum": [
+            "authenticated_task",
+            "authenticated_connector",
+            "derived",
+            "untrusted_content",
+            "unknown"
+          ]
+        },
+        "sensitivity": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "secret",
+            "unknown"
+          ]
+        },
+        "tenant_id": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "content_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "receipt_valid": {
+          "type": "boolean"
+        },
+        "recorded_at_step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_step": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "node_id",
+        "kind",
+        "source_id",
+        "parent_node_ids",
+        "transform_kind",
+        "declared_source_ids",
+        "declared_sensitivity",
+        "declared_integrity",
+        "tenant_id",
+        "purpose",
+        "value_digest",
+        "lineage_receipt_valid"
+      ],
+      "properties": {
+        "node_id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "source",
+            "derived"
+          ]
+        },
+        "source_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parent_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "transform_kind": {
+          "enum": [
+            "source",
+            "extract",
+            "normalize",
+            "summarize",
+            "paraphrase",
+            "embed",
+            "memory_store",
+            "memory_retrieve",
+            "agent_handoff",
+            "join",
+            "declassify"
+          ]
+        },
+        "declared_source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "declared_sensitivity": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "secret",
+            "unknown"
+          ]
+        },
+        "declared_integrity": {
+          "enum": [
+            "authenticated_task",
+            "authenticated_connector",
+            "derived",
+            "untrusted_content",
+            "unknown"
+          ]
+        },
+        "tenant_id": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "value_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "lineage_receipt_valid": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rule": {
+      "type": "object",
+      "required": [
+        "field",
+        "mode",
+        "allowed_source_ids",
+        "allowed_source_classes"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "fixed",
+            "delegated",
+            "explicit_untrusted_ok"
+          ]
+        },
+        "allowed_source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_source_classes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "sink": {
+      "type": "object",
+      "required": [
+        "sink_id",
+        "tenant_id",
+        "purpose",
+        "audience",
+        "sensitivity_ceiling",
+        "allowed_actions"
+      ],
+      "properties": {
+        "sink_id": {
+          "type": "string"
+        },
+        "tenant_id": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "sensitivity_ceiling": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "secret"
+          ]
+        },
+        "allowed_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "declass": {
+      "type": "object",
+      "required": [
+        "receipt_id",
+        "source_ids",
+        "output_node_id",
+        "sink_id",
+        "audience",
+        "purpose",
+        "valid",
+        "expires_at_step",
+        "owner_id"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string"
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "output_node_id": {
+          "type": "string"
+        },
+        "sink_id": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "expires_at_step": {
+          "type": "integer"
+        },
+        "owner_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "flow": {
+      "type": "object",
+      "required": [
+        "sink_id",
+        "action",
+        "action_source_node_id",
+        "parameter_bindings",
+        "admission",
+        "effect_observation",
+        "observed_payload_digest",
+        "step",
+        "purpose",
+        "audience"
+      ],
+      "properties": {
+        "sink_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "action_source_node_id": {
+          "type": "string"
+        },
+        "parameter_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "field",
+              "node_id"
+            ],
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "node_id": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "admission": {
+          "enum": [
+            "allowed",
+            "denied",
+            "unknown"
+          ]
+        },
+        "effect_observation": {
+          "enum": [
+            "observed",
+            "none",
+            "unknown"
+          ]
+        },
+        "observed_payload_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "step": {
+          "type": "integer"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "action_decision",
+        "flow_decision",
+        "admission_decision",
+        "lineage_erasure_count",
+        "unknown_lineage_count",
+        "cyclic_lineage_count",
+        "cross_tenant_flow_count",
+        "untrusted_parameter_count",
+        "action_origin_violations",
+        "declassification_receipt_failures",
+        "source_rule_failures",
+        "independently_observed_effects",
+        "unauthorized_disclosures",
+        "false_refusals",
+        "disposition"
+      ],
+      "properties": {
+        "action_decision": {
+          "enum": [
+            "eligible",
+            "denied",
+            "indeterminate"
+          ]
+        },
+        "flow_decision": {
+          "enum": [
+            "eligible",
+            "denied",
+            "indeterminate"
+          ]
+        },
+        "admission_decision": {
+          "enum": [
+            "allow",
+            "deny",
+            "hold"
+          ]
+        },
+        "lineage_erasure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_lineage_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cyclic_lineage_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cross_tenant_flow_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "untrusted_parameter_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "action_origin_violations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "declassification_receipt_failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_rule_failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "independently_observed_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_disclosures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_refusals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disposition": {
+          "enum": [
+            "qualified",
+            "violation",
+            "indeterminate"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "control_class",
+        "task",
+        "sources",
+        "lineage_nodes",
+        "parameter_rules",
+        "allowed_sinks",
+        "declassification_receipts",
+        "flow",
+        "observer",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^IFL-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "task": {
+          "type": "object",
+          "required": [
+            "precision",
+            "tenant_id",
+            "purpose",
+            "required_action",
+            "allowed_actions",
+            "action_source_node_id"
+          ],
+          "properties": {
+            "precision": {
+              "enum": [
+                "fully_specified",
+                "parameter_open",
+                "action_open"
+              ]
+            },
+            "tenant_id": {
+              "type": "string"
+            },
+            "purpose": {
+              "type": "string"
+            },
+            "required_action": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "allowed_actions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "action_source_node_id": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "lineage_nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "parameter_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rule"
+          }
+        },
+        "allowed_sinks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sink"
+          }
+        },
+        "declassification_receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/declass"
+          }
+        },
+        "flow": {
+          "$ref": "#/$defs/flow"
+        },
+        "observer": {
+          "type": "object",
+          "required": [
+            "complete",
+            "independent"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
