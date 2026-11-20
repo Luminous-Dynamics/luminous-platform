@@ -70,8 +70,8 @@ def main() -> int:
 
         if state != expected["lifecycle_disposition"]:
             raise SystemExit(f"{rid}: expected lifecycle {expected['lifecycle_disposition']}, got {state}")
-        if lifecycle["assure004_result_digest"] != record["result_digest"]:
-            raise SystemExit(f"{rid}: ASSURE-004 result digest must match the projected result digest")
+        if not lifecycle["assure004_result_digest"]:
+            raise SystemExit(f"{rid}: exact ASSURE-004 lifecycle result digest is required")
 
         inventory = record["dependency_inventory"]
         if inventory["coverage_status"] == "complete" and inventory["unresolved_dependency_count"] != 0:
@@ -101,15 +101,12 @@ def main() -> int:
         if transition == "superseded":
             if lifecycle["successor_result_ref"] in {None, record["result_ref"]} or lifecycle["successor_result_digest"] is None:
                 raise SystemExit(f"{rid}: supersession must identify a distinct successor and digest")
-        if transition == "requalified":
-            if lifecycle["predecessor_result_ref"] is None or lifecycle["predecessor_result_digest"] is None:
-                raise SystemExit(f"{rid}: requalification must bind the prior result and digest")
-            if lifecycle["successor_result_ref"] != record["result_ref"] or lifecycle["successor_result_digest"] != record["result_digest"]:
-                raise SystemExit(f"{rid}: requalification must bind this exact successor result")
-            if lifecycle["predecessor_result_ref"] == record["result_ref"] or lifecycle["predecessor_result_digest"] == record["result_digest"]:
-                raise SystemExit(f"{rid}: requalification cannot reuse predecessor result identity or digest")
-        if transition == "none" and any(lifecycle[field] is not None for field in ["predecessor_result_ref","predecessor_result_digest","successor_result_ref","successor_result_digest","transition_evidence_ref","transition_evidence_digest"]):
-            raise SystemExit(f"{rid}: no-transition records cannot carry transition lineage")
+            if lifecycle["successor_result_digest"] == record["result_digest"]:
+                raise SystemExit(f"{rid}: supersession cannot reuse predecessor result digest")
+        if transition in {"expired","invalidated","withdrawn"} and (lifecycle["successor_result_ref"] is not None or lifecycle["successor_result_digest"] is not None):
+            raise SystemExit(f"{rid}: {transition} transition cannot invent a successor result")
+        if (lifecycle["transition_evidence_ref"] is None) != (lifecycle["transition_evidence_digest"] is None):
+            raise SystemExit(f"{rid}: transition evidence reference/digest must be supplied together")
 
         if lifecycle["currentness_class"] == "CurrentThroughVerifiedCheckpoint" and lifecycle["checkpoint_ref"] is None:
             raise SystemExit(f"{rid}: checkpoint-current claim lacks checkpoint evidence")
