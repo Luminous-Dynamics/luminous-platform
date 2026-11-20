@@ -3,6 +3,7 @@
 from __future__ import annotations
 import copy
 import sys
+import unittest
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -84,3 +85,26 @@ def test_false_refusal_is_separate_from_security_violation() -> None:
     result = checker.evaluate_case(fixture("TWEP-017"))
     assert result["false_refusals"] == 1
     assert result["disposition"] == "qualified"
+
+
+if __name__ == "__main__":
+    test_functions = [
+        test_frozen_scenarios_match_expected,
+        test_parent_revocation_invalidates_child_effect,
+        test_scope_widening_is_not_hidden_by_successful_read,
+        test_expiry_extension_is_rejected,
+        test_actor_substitution_is_rejected,
+        test_alias_and_alternate_credential_paths_expand_available_authority,
+        test_observer_gap_never_becomes_qualified,
+        test_task_success_cannot_erase_unauthorized_intermediate_effect,
+        test_pre_revocation_effect_is_not_retroactively_rewritten,
+        test_delegation_cycle_is_rejected,
+        test_task_oracle_provenance_is_mandatory,
+        test_false_refusal_is_separate_from_security_violation,
+    ]
+    suite = unittest.TestSuite(
+        unittest.FunctionTestCase(test, description=test.__name__)
+        for test in test_functions
+    )
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    raise SystemExit(0 if result.wasSuccessful() else 1)
