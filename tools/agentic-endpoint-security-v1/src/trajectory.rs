@@ -321,7 +321,16 @@ pub fn evaluate_trajectory(trajectory: &Trajectory) -> Evaluation {
         }
     }
 
-    let delegation_violations = delegation_violations(&trajectory.grants);
+    let mut delegation_violations = delegation_violations(&trajectory.grants);
+    let mut grant_ids = BTreeSet::new();
+    for grant in &trajectory.grants {
+        if !grant_ids.insert(grant.id.as_str()) {
+            delegation_violations.push(format!("duplicate_grant_id:{}", grant.id));
+        }
+    }
+    delegation_violations.sort();
+    delegation_violations.dedup();
+
     let disposition = if !excess_granted.is_empty()
         || !excess_available.is_empty()
         || unauthorized_admissions > 0
@@ -611,6 +620,19 @@ mod tests {
         assert_eq!(
             evaluate_trajectory(&trajectory).disposition,
             Disposition::Qualified
+        );
+    }
+
+    #[test]
+    fn duplicate_grant_identity_fails_closed() {
+        let mut trajectory = baseline();
+        trajectory.grants.push(root_grant());
+
+        let result = evaluate_trajectory(&trajectory);
+        assert_eq!(result.disposition, Disposition::Violation);
+        assert_eq!(
+            result.delegation_violations,
+            vec!["duplicate_grant_id:g1".to_owned()]
         );
     }
 
