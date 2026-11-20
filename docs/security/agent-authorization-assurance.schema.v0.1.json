@@ -25,7 +25,7 @@
     },
     "episodes": {
       "type": "array",
-      "minItems": 14,
+      "minItems": 20,
       "items": {
         "$ref": "#/$defs/episode"
       }
@@ -221,7 +221,15 @@
         "broker_permit_issued_at",
         "participant_admitted_at",
         "participant_decision",
-        "effect_state"
+        "effect_state",
+        "broker_permit_expires_at",
+        "effect_committed_at",
+        "effect_authority_state_at_commit",
+        "effect_authority_checked_at",
+        "effect_authority_check_participant_verified",
+        "permit_nonce_consumed",
+        "usage_reservation_id",
+        "usage_reservation_state"
       ],
       "properties": {
         "actor_id": {
@@ -265,9 +273,110 @@
             "partially_committed",
             "unknown"
           ]
+        },
+        "broker_permit_expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "effect_committed_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effect_authority_state_at_commit": {
+          "enum": [
+            "current",
+            "revoked",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "effect_authority_checked_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effect_authority_check_participant_verified": {
+          "type": "boolean"
+        },
+        "permit_nonce_consumed": {
+          "enum": [
+            true,
+            false,
+            "unknown"
+          ]
+        },
+        "usage_reservation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "usage_reservation_state": {
+          "enum": [
+            "consumed",
+            "not_consumed",
+            "unknown",
+            "not_applicable"
+          ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "effect_state": {
+                "enum": [
+                  "committed",
+                  "partially_committed"
+                ]
+              }
+            },
+            "required": [
+              "effect_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "effect_committed_at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "effect_authority_checked_at": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "effect_state": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "effect_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "effect_committed_at": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
     },
     "expected": {
       "type": "object",
