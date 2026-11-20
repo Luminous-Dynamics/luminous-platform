@@ -41,7 +41,7 @@ The profile explicitly lists the domains it requires. Sharing a domain outside t
 
 ## Frozen synthetic coverage
 
-16 scenarios: 4 positive controls, 9 negative controls and 3 indeterminate controls. The suite covers:
+16 scenarios: 5 positive controls, 8 negative controls and 3 indeterminate controls. The suite covers:
 - different processes sharing event streams and signing roots;
 - shared signing root, credential root, clock authority, storage backend and control plane;
 - missing critical-domain identity;
