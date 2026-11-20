@@ -32,7 +32,10 @@ def load(path: Path) -> Any:
 
 def _domain_state(witness: dict[str, Any], required: list[str]) -> tuple[bool, bool]:
     values = [witness["domains"].get(name) for name in required]
-    unknown = any(not isinstance(value, str) or not value for value in values)
+    unknown = any(
+        not isinstance(value, str) or not value or value.strip().casefold() == "unknown"
+        for value in values
+    )
     return not unknown, unknown
 
 
@@ -71,6 +74,9 @@ def evaluate_case(case: dict[str, Any], profile: dict[str, Any]) -> dict[str, An
     required = profile["required_disjoint_domains"]
     quorum = profile["minimum_independent_witnesses"]
     witnesses = case["witnesses"]
+    witness_ids = [witness["witness_id"] for witness in witnesses]
+    if len(witness_ids) != len(set(witness_ids)):
+        raise ValueError(f'{case["scenario_id"]}: duplicate witness identity')
     subject = case["subject_domains"]
 
     unknown_ids: list[str] = []
@@ -225,8 +231,8 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
                 f"{scenario_id}: expected {case['expected']!r}, computed {actual!r}"
             )
     expected_counts = {
-        "positive_control": 4,
-        "negative_control": 9,
+        "positive_control": 5,
+        "negative_control": 8,
         "indeterminate_control": 3,
     }
     if counts != expected_counts:
