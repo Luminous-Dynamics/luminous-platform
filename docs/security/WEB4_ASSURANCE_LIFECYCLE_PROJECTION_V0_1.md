@@ -140,3 +140,24 @@ This yields a useful composition:
 **signed/transparent statements + machine-readable assessment results + artifact provenance + canonical lifecycle/applicability outcomes → claim-specific Web4 projection**
 
 The novelty to test is not another ledger or attestation format. It is whether a system can derive the smallest justified requalification scope while keeping historical results immutable, making missing dependency coverage explicit, and refusing to infer deployment authority from evidence availability.
+
+
+## 11. Benchmarking targeted requalification
+
+The first suite contains **29 synthetic projections** and intentionally tests both over- and under-invalidation. The target is not to invalidate every claim after every change. It is to invalidate exactly the claims for which a verified dependency/applicability path establishes impact, while keeping unaffected claim properties usable under their own currentness requirements.
+
+Add these separate evaluation measures:
+
+| Measure | Definition | Proposed target |
+|---|---|---:|
+| Silent carry-forward rate | Materially affected claims still exposed as eligible without a qualifying successor | 0 |
+| False-current rate | Claims exposed as current with incomplete dependency coverage or invalid lifecycle lineage | 0 |
+| Over-invalidation rate | Claims invalidated despite a qualified non-impact/applicability result | 0 on deterministic controls |
+| Targeted requalification selectivity | Unaffected claim properties retained with explicit non-impact evidence / all unaffected properties | 100% on deterministic controls |
+| Requalification completeness | Affected claim properties with a new exact subject/campaign/evidence result / all affected properties requiring requalification | 100% on deterministic controls |
+| Event-to-consumer lag | Time from independently evidenced material event to consumer projection update, when a qualified event source exists | Report p50/p95/p99; no universal threshold yet |
+| Dependency coverage | Declared and independently resolved relevant dependency edges / total in-scope edges | Report by scope; unknown remains visible |
+
+These measures are not combined into one assurance score. A benchmark system must pass the hard safety gates and positive non-impact controls simultaneously. Blanket invalidation is not a successful strategy.
+
+A useful adversarial question is: can a verifier distinguish a truly irrelevant change to a neighbouring component from a change to a shared observer, policy, route, parser, firmware or trust root that actually supports the claim? The dependency/applicability oracle—not the component's human-readable name—must decide.
