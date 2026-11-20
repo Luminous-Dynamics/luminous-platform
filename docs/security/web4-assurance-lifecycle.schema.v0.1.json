@@ -1,0 +1,468 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:web4:assurance-lifecycle-projection:0.1",
+  "title": "Luminous Web4 Assurance Lifecycle Projection v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "records",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-web4-assurance-lifecycle-projection"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "records": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "claim_ceiling": {
+      "const": "synthetic_projection_conformance_only"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableDigest": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/digest"
+        }
+      ]
+    },
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "record": {
+      "type": "object",
+      "required": [
+        "record_id",
+        "result_ref",
+        "claim",
+        "historical_qualification",
+        "applicability",
+        "dependencies",
+        "lifecycle",
+        "consumer_requirement",
+        "carry_forward",
+        "expected"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "pattern": "^WALP-[0-9]{3}$"
+        },
+        "result_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim": {
+          "type": "object",
+          "required": [
+            "waep_profile_id",
+            "waep_schema_revision",
+            "claim_id",
+            "property",
+            "scope_subject_id",
+            "subject_manifest_digest",
+            "campaign_semantics_digest",
+            "evidence_root_digest"
+          ],
+          "properties": {
+            "waep_profile_id": {
+              "const": "luminous-web4-waep"
+            },
+            "waep_schema_revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "claim_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "property": {
+              "type": "string",
+              "minLength": 1
+            },
+            "scope_subject_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "subject_manifest_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "campaign_semantics_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "evidence_root_digest": {
+              "$ref": "#/$defs/digest"
+            }
+          },
+          "additionalProperties": false
+        },
+        "historical_qualification": {
+          "type": "object",
+          "required": [
+            "assure000_claim_ref",
+            "assure000_result_ref",
+            "assure001_subject_ref",
+            "assure002_campaign_ref",
+            "assure003_resolver_result_ref",
+            "historical_disposition",
+            "evidence_maturity"
+          ],
+          "properties": {
+            "assure000_claim_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assure000_result_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assure001_subject_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assure002_campaign_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assure003_resolver_result_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "historical_disposition": {
+              "enum": [
+                "supported_within_scope",
+                "refuted",
+                "contradicted",
+                "indeterminate",
+                "unsupported",
+                "not_claimed"
+              ]
+            },
+            "evidence_maturity": {
+              "enum": [
+                "specified",
+                "structurally_checked",
+                "source_test_authored",
+                "exact_head_test_executed",
+                "runtime_boundary_exercised",
+                "participant_effect_observed",
+                "independently_reviewed",
+                "externally_reproduced"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "applicability": {
+          "type": "object",
+          "required": [
+            "mycelix_result_ref",
+            "status",
+            "impact_snapshot_digest",
+            "bridge_evidence_ref",
+            "affected_claim_properties"
+          ],
+          "properties": {
+            "mycelix_result_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "status": {
+              "enum": [
+                "exact_subject",
+                "controlled_equivalent",
+                "conditionally_transferable",
+                "requires_targeted_revalidation",
+                "historical_only",
+                "inapplicable",
+                "unknown"
+              ]
+            },
+            "impact_snapshot_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "bridge_evidence_ref": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "affected_claim_properties": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "dependencies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "dependency_id",
+              "role",
+              "baseline_digest",
+              "observed_digest",
+              "change_state",
+              "change_evidence_ref",
+              "affected_claim_properties"
+            ],
+            "properties": {
+              "dependency_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "baseline_digest": {
+                "$ref": "#/$defs/nullableDigest"
+              },
+              "observed_digest": {
+                "$ref": "#/$defs/nullableDigest"
+              },
+              "change_state": {
+                "enum": [
+                  "unchanged",
+                  "controlled_non_material_change",
+                  "material_change",
+                  "unknown"
+                ]
+              },
+              "change_evidence_ref": {
+                "$ref": "#/$defs/nullableString"
+              },
+              "affected_claim_properties": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "lifecycle": {
+          "type": "object",
+          "required": [
+            "assure004_result_ref",
+            "state",
+            "lineage_state",
+            "transition_kind",
+            "predecessor_result_ref",
+            "successor_result_ref",
+            "competing_successor_refs",
+            "transition_evidence_ref",
+            "registration_view_ref",
+            "currentness_class",
+            "checkpoint_ref"
+          ],
+          "properties": {
+            "assure004_result_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "state": {
+              "enum": [
+                "current",
+                "expired",
+                "invalidated",
+                "withdrawn",
+                "superseded",
+                "requires_requalification",
+                "indeterminate",
+                "forked"
+              ]
+            },
+            "lineage_state": {
+              "enum": [
+                "complete",
+                "incomplete",
+                "forked",
+                "cyclic",
+                "unknown"
+              ]
+            },
+            "transition_kind": {
+              "enum": [
+                "none",
+                "expired",
+                "invalidated",
+                "withdrawn",
+                "superseded",
+                "requalified"
+              ]
+            },
+            "predecessor_result_ref": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "successor_result_ref": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "competing_successor_refs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "transition_evidence_ref": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "registration_view_ref": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "currentness_class": {
+              "enum": [
+                "TerminalInSuppliedView",
+                "CurrentThroughVerifiedCheckpoint",
+                "NotRequiredByProfile",
+                "Unknown"
+              ]
+            },
+            "checkpoint_ref": {
+              "$ref": "#/$defs/nullableString"
+            }
+          },
+          "additionalProperties": false
+        },
+        "consumer_requirement": {
+          "type": "object",
+          "required": [
+            "acceptable_applicability",
+            "required_currentness_classes",
+            "on_unsatisfied"
+          ],
+          "properties": {
+            "acceptable_applicability": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "exact_subject",
+                  "controlled_equivalent",
+                  "conditionally_transferable"
+                ]
+              }
+            },
+            "required_currentness_classes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "TerminalInSuppliedView",
+                  "CurrentThroughVerifiedCheckpoint",
+                  "NotRequiredByProfile"
+                ]
+              }
+            },
+            "on_unsatisfied": {
+              "enum": [
+                "block",
+                "restricted",
+                "manual_review"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "carry_forward": {
+          "type": "object",
+          "required": [
+            "support_conclusion",
+            "replication_conclusion",
+            "independence_conclusion",
+            "deployment_authority"
+          ],
+          "properties": {
+            "support_conclusion": {
+              "const": false
+            },
+            "replication_conclusion": {
+              "const": false
+            },
+            "independence_conclusion": {
+              "const": false
+            },
+            "deployment_authority": {
+              "const": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected": {
+          "type": "object",
+          "required": [
+            "lifecycle_disposition",
+            "consumer_handling",
+            "reason_code"
+          ],
+          "properties": {
+            "lifecycle_disposition": {
+              "enum": [
+                "current",
+                "expired",
+                "invalidated",
+                "withdrawn",
+                "superseded",
+                "requires_requalification",
+                "indeterminate",
+                "forked"
+              ]
+            },
+            "consumer_handling": {
+              "enum": [
+                "eligible_for_policy_evaluation",
+                "restricted",
+                "manual_review",
+                "blocked"
+              ]
+            },
+            "reason_code": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
