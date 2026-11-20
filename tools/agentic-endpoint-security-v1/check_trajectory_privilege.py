@@ -173,7 +173,7 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
     for event in case["events"]:
         key = f'{event["actor"]}|{event["capability"]}'
         exercised.add(key)
-        if event["effect"] == "observed":
+        if event["effect"] == "observed" and observer_ok:
             effects.add(key)
         valid = grant_valid_for_event(event, by_id)
         if not valid:
@@ -213,8 +213,8 @@ def validate_suite(suite: dict[str, Any]) -> dict[str, int]:
     if suite.get("task_required_authority_source") != "independent_task_oracle":
         raise ValueError("task-required authority must come from the independent task oracle")
     cases = suite.get("cases", [])
-    if len(cases) != 17:
-        raise ValueError(f"expected 17 TWEP scenarios, found {len(cases)}")
+    if len(cases) != 18:
+        raise ValueError(f"expected 18 TWEP scenarios, found {len(cases)}")
     seen: set[str] = set()
     counts: dict[str, int] = {}
     for case in cases:
@@ -227,7 +227,7 @@ def validate_suite(suite: dict[str, Any]) -> dict[str, int]:
         computed = evaluate_case(case)
         if computed != case["expected"]:
             raise ValueError(f"{sid}: expected {case['expected']!r}, computed {computed!r}")
-    wanted = {"positive_control": 5, "negative_control": 11, "indeterminate_control": 1}
+    wanted = {"positive_control": 5, "negative_control": 11, "indeterminate_control": 2}
     if counts != wanted:
         raise ValueError(f"unexpected control distribution: {counts!r}")
     return counts
