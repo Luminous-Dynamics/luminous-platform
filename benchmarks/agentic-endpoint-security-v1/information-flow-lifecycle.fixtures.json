@@ -711,7 +711,7 @@
         "cross_tenant_flow_count": 0,
         "cross_purpose_flow_count": 0,
         "untrusted_parameter_count": 0,
-        "action_origin_violations": 2,
+        "action_origin_violations": 3,
         "declassification_receipt_failures": 0,
         "source_rule_failures": 1,
         "independently_observed_effects": 0,
