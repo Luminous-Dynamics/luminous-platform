@@ -128,6 +128,11 @@ class LineageEvaluator:
                     valid = False
                     self.unknown_nodes.add(node_id)
                 if (
+                    source.get("revoked_at_step") is not None
+                    and source["revoked_at_step"] <= self.case["flow"]["step"]
+                ):
+                    valid = False
+                if (
                     node["declared_source_ids"] != [source["source_id"]]
                     or node["declared_sensitivity"] != source["sensitivity"]
                     or node["declared_integrity"] != source["integrity"]
@@ -451,8 +456,8 @@ def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
     if schema.get("$defs", {}).get("case", {}).get("additionalProperties") is not False:
         raise ValueError("case schema must reject unknown fields")
     cases = suite.get("cases")
-    if not isinstance(cases, list) or len(cases) != 20:
-        raise ValueError(f"expected 20 information-flow scenarios, found {len(cases) if isinstance(cases, list) else 'non-array'}")
+    if not isinstance(cases, list) or len(cases) != 22:
+        raise ValueError(f"expected 22 information-flow scenarios, found {len(cases) if isinstance(cases, list) else 'non-array'}")
     for case in cases:
         if set(case) != {
             "scenario_id", "control_class", "task", "sources", "lineage_nodes",
