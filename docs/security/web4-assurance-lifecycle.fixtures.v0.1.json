@@ -55,7 +55,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:verified"
+        "checkpoint_ref": "checkpoint:verified",
+        "assure004_result_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -77,6 +81,13 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "exact_current_subject"
+      },
+      "result_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:001",
+        "dependency_graph_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -130,7 +141,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "TerminalInSuppliedView",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -152,6 +167,13 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "bounded_supplied_view_is_accepted"
+      },
+      "result_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:002",
+        "dependency_graph_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -209,7 +231,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -231,6 +257,13 @@
         "lifecycle_disposition": "requires_requalification",
         "consumer_handling": "blocked",
         "reason_code": "model_subject_drift"
+      },
+      "result_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:003",
+        "dependency_graph_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -288,7 +321,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -310,6 +347,13 @@
         "lifecycle_disposition": "requires_requalification",
         "consumer_handling": "blocked",
         "reason_code": "prompt_identity_drift"
+      },
+      "result_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:004",
+        "dependency_graph_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -363,7 +407,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:verified"
+        "checkpoint_ref": "checkpoint:verified",
+        "assure004_result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -385,11 +433,18 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "preregistered_equivalence_bridge"
+      },
+      "result_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:005",
+        "dependency_graph_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
       "record_id": "WALP-006",
-      "result_ref": "assure-result:006",
+      "result_ref": "assure-result:006-prior",
       "claim": {
         "waep_profile_id": "luminous-web4-waep",
         "waep_schema_revision": "0.1",
@@ -402,10 +457,10 @@
       },
       "historical_qualification": {
         "assure000_claim_ref": "assure-claim:6",
-        "assure000_result_ref": "assure0-result:6",
+        "assure000_result_ref": "assure0-result:006-prior",
         "assure001_subject_ref": "assure1-subject:6",
         "assure002_campaign_ref": "assure2-campaign:6",
-        "assure003_resolver_result_ref": "assure3-result:6",
+        "assure003_resolver_result_ref": "assure3-result:006-prior",
         "historical_disposition": "supported_within_scope",
         "evidence_maturity": "independently_reviewed"
       },
@@ -432,13 +487,17 @@
         "state": "expired",
         "lineage_state": "complete",
         "transition_kind": "expired",
-        "predecessor_result_ref": null,
+        "predecessor_result_ref": "assure-result:006-prior",
         "successor_result_ref": null,
         "competing_successor_refs": [],
         "transition_evidence_ref": "evidence:lease-expiry",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "predecessor_result_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "successor_result_digest": null,
+        "transition_evidence_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -460,11 +519,18 @@
         "lifecycle_disposition": "expired",
         "consumer_handling": "blocked",
         "reason_code": "evidence_lease_expiry"
+      },
+      "result_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:006",
+        "dependency_graph_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
       "record_id": "WALP-007",
-      "result_ref": "assure-result:007",
+      "result_ref": "assure-result:007-prior",
       "claim": {
         "waep_profile_id": "luminous-web4-waep",
         "waep_schema_revision": "0.1",
@@ -477,10 +543,10 @@
       },
       "historical_qualification": {
         "assure000_claim_ref": "assure-claim:7",
-        "assure000_result_ref": "assure0-result:7",
+        "assure000_result_ref": "assure0-result:007-prior",
         "assure001_subject_ref": "assure1-subject:7",
         "assure002_campaign_ref": "assure2-campaign:7",
-        "assure003_resolver_result_ref": "assure3-result:7",
+        "assure003_resolver_result_ref": "assure3-result:007-prior",
         "historical_disposition": "supported_within_scope",
         "evidence_maturity": "independently_reviewed"
       },
@@ -507,13 +573,17 @@
         "state": "withdrawn",
         "lineage_state": "complete",
         "transition_kind": "withdrawn",
-        "predecessor_result_ref": null,
+        "predecessor_result_ref": "assure-result:007-prior",
         "successor_result_ref": null,
         "competing_successor_refs": [],
         "transition_evidence_ref": "evidence:authorized-withdrawal",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "predecessor_result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "successor_result_digest": null,
+        "transition_evidence_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -535,11 +605,18 @@
         "lifecycle_disposition": "withdrawn",
         "consumer_handling": "blocked",
         "reason_code": "evidence_withdrawal"
+      },
+      "result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:007",
+        "dependency_graph_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
       "record_id": "WALP-008",
-      "result_ref": "assure-result:008",
+      "result_ref": "assure-result:008-prior",
       "claim": {
         "waep_profile_id": "luminous-web4-waep",
         "waep_schema_revision": "0.1",
@@ -552,10 +629,10 @@
       },
       "historical_qualification": {
         "assure000_claim_ref": "assure-claim:8",
-        "assure000_result_ref": "assure0-result:8",
+        "assure000_result_ref": "assure0-result:008-prior",
         "assure001_subject_ref": "assure1-subject:8",
         "assure002_campaign_ref": "assure2-campaign:8",
-        "assure003_resolver_result_ref": "assure3-result:8",
+        "assure003_resolver_result_ref": "assure3-result:008-prior",
         "historical_disposition": "supported_within_scope",
         "evidence_maturity": "independently_reviewed"
       },
@@ -586,13 +663,17 @@
         "state": "invalidated",
         "lineage_state": "complete",
         "transition_kind": "invalidated",
-        "predecessor_result_ref": null,
+        "predecessor_result_ref": "assure-result:008-prior",
         "successor_result_ref": null,
         "competing_successor_refs": [],
         "transition_evidence_ref": "event:policy-change",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "predecessor_result_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "successor_result_digest": null,
+        "transition_evidence_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -614,6 +695,13 @@
         "lifecycle_disposition": "invalidated",
         "consumer_handling": "blocked",
         "reason_code": "policy_drift_observed"
+      },
+      "result_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:008",
+        "dependency_graph_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -671,7 +759,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -693,6 +785,13 @@
         "lifecycle_disposition": "requires_requalification",
         "consumer_handling": "blocked",
         "reason_code": "richer_campaign_semantics_changed"
+      },
+      "result_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:009",
+        "dependency_graph_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -746,7 +845,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "TerminalInSuppliedView",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -768,11 +871,18 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "blocked",
         "reason_code": "checkpoint_currentness_not_established"
+      },
+      "result_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:010",
+        "dependency_graph_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
       "record_id": "WALP-011",
-      "result_ref": "assure-result:011",
+      "result_ref": "assure-result:011-prior",
       "claim": {
         "waep_profile_id": "luminous-web4-waep",
         "waep_schema_revision": "0.1",
@@ -785,10 +895,10 @@
       },
       "historical_qualification": {
         "assure000_claim_ref": "assure-claim:11",
-        "assure000_result_ref": "assure0-result:11",
+        "assure000_result_ref": "assure0-result:011-prior",
         "assure001_subject_ref": "assure1-subject:11",
         "assure002_campaign_ref": "assure2-campaign:11",
-        "assure003_resolver_result_ref": "assure3-result:11",
+        "assure003_resolver_result_ref": "assure3-result:011-prior",
         "historical_disposition": "supported_within_scope",
         "evidence_maturity": "independently_reviewed"
       },
@@ -815,13 +925,17 @@
         "state": "superseded",
         "lineage_state": "complete",
         "transition_kind": "superseded",
-        "predecessor_result_ref": "assure-result:010",
-        "successor_result_ref": "assure-result:011",
+        "predecessor_result_ref": "assure-result:011-prior",
+        "successor_result_ref": "assure-result:011-successor",
         "competing_successor_refs": [],
         "transition_evidence_ref": "registration:event-successor",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "predecessor_result_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "successor_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "transition_evidence_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -843,6 +957,13 @@
         "lifecycle_disposition": "superseded",
         "consumer_handling": "restricted",
         "reason_code": "new_successor_discovered"
+      },
+      "result_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:011",
+        "dependency_graph_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -899,7 +1020,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -921,6 +1046,13 @@
         "lifecycle_disposition": "forked",
         "consumer_handling": "blocked",
         "reason_code": "conflicting_successors"
+      },
+      "result_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:012",
+        "dependency_graph_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -968,13 +1100,17 @@
         "state": "indeterminate",
         "lineage_state": "incomplete",
         "transition_kind": "none",
-        "predecessor_result_ref": "missing:predecessor",
+        "predecessor_result_ref": null,
         "successor_result_ref": null,
         "competing_successor_refs": [],
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -996,6 +1132,13 @@
         "lifecycle_disposition": "indeterminate",
         "consumer_handling": "manual_review",
         "reason_code": "incomplete_transition_lineage"
+      },
+      "result_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:013",
+        "dependency_graph_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1043,13 +1186,17 @@
         "state": "indeterminate",
         "lineage_state": "cyclic",
         "transition_kind": "none",
-        "predecessor_result_ref": "assure-result:014",
+        "predecessor_result_ref": null,
         "successor_result_ref": null,
         "competing_successor_refs": [],
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1071,6 +1218,13 @@
         "lifecycle_disposition": "indeterminate",
         "consumer_handling": "blocked",
         "reason_code": "cyclic_transition_graph"
+      },
+      "result_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:014",
+        "dependency_graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1126,7 +1280,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1147,6 +1305,13 @@
         "lifecycle_disposition": "indeterminate",
         "consumer_handling": "manual_review",
         "reason_code": "dependency_coverage_unknown"
+      },
+      "result_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:015",
+        "dependency_graph_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "coverage_status": "partial",
+        "unresolved_dependency_count": 1
       }
     },
     {
@@ -1204,7 +1369,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1226,6 +1395,13 @@
         "lifecycle_disposition": "requires_requalification",
         "consumer_handling": "restricted",
         "reason_code": "one_property_requires_targeted_revalidation"
+      },
+      "result_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:016",
+        "dependency_graph_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1279,7 +1455,11 @@
         "transition_evidence_ref": "evidence:new-qualification",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:new"
+        "checkpoint_ref": "checkpoint:new",
+        "assure004_result_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "predecessor_result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "successor_result_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "transition_evidence_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1301,6 +1481,13 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "new_exact_successor_qualification"
+      },
+      "result_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:017",
+        "dependency_graph_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1358,7 +1545,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1380,6 +1571,13 @@
         "lifecycle_disposition": "requires_requalification",
         "consumer_handling": "blocked",
         "reason_code": "exact_device_subject_changed"
+      },
+      "result_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:018",
+        "dependency_graph_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1435,7 +1633,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1456,6 +1658,13 @@
         "lifecycle_disposition": "indeterminate",
         "consumer_handling": "blocked",
         "reason_code": "observer_common_cause_unknown"
+      },
+      "result_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:019",
+        "dependency_graph_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "coverage_status": "partial",
+        "unresolved_dependency_count": 1
       }
     },
     {
@@ -1509,7 +1718,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:verified"
+        "checkpoint_ref": "checkpoint:verified",
+        "assure004_result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1531,11 +1744,18 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "explicitly_unaffected_dependency"
+      },
+      "result_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:020",
+        "dependency_graph_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
       "record_id": "WALP-021",
-      "result_ref": "assure-result:021",
+      "result_ref": "assure-result:021-prior",
       "claim": {
         "waep_profile_id": "luminous-web4-waep",
         "waep_schema_revision": "0.1",
@@ -1548,10 +1768,10 @@
       },
       "historical_qualification": {
         "assure000_claim_ref": "assure-claim:21",
-        "assure000_result_ref": "assure0-result:21",
+        "assure000_result_ref": "assure0-result:021-prior",
         "assure001_subject_ref": "assure1-subject:21",
         "assure002_campaign_ref": "assure2-campaign:21",
-        "assure003_resolver_result_ref": "assure3-result:21",
+        "assure003_resolver_result_ref": "assure3-result:021-prior",
         "historical_disposition": "supported_within_scope",
         "evidence_maturity": "independently_reviewed"
       },
@@ -1578,13 +1798,17 @@
         "state": "superseded",
         "lineage_state": "complete",
         "transition_kind": "superseded",
-        "predecessor_result_ref": "assure-result:020",
-        "successor_result_ref": "assure-result:021",
+        "predecessor_result_ref": "assure-result:021-prior",
+        "successor_result_ref": "assure-result:021-successor",
         "competing_successor_refs": [],
         "transition_evidence_ref": "event:successor",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "predecessor_result_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "successor_result_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "transition_evidence_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1606,11 +1830,18 @@
         "lifecycle_disposition": "superseded",
         "consumer_handling": "restricted",
         "reason_code": "predecessor_historical_only"
+      },
+      "result_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:021",
+        "dependency_graph_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
       "record_id": "WALP-022",
-      "result_ref": "assure-result:022",
+      "result_ref": "assure-result:022-prior",
       "claim": {
         "waep_profile_id": "luminous-web4-waep",
         "waep_schema_revision": "0.1",
@@ -1623,10 +1854,10 @@
       },
       "historical_qualification": {
         "assure000_claim_ref": "assure-claim:22",
-        "assure000_result_ref": "assure0-result:22",
+        "assure000_result_ref": "assure0-result:022-prior",
         "assure001_subject_ref": "assure1-subject:22",
         "assure002_campaign_ref": "assure2-campaign:22",
-        "assure003_resolver_result_ref": "assure3-result:22",
+        "assure003_resolver_result_ref": "assure3-result:022-prior",
         "historical_disposition": "supported_within_scope",
         "evidence_maturity": "independently_reviewed"
       },
@@ -1653,13 +1884,17 @@
         "state": "invalidated",
         "lineage_state": "complete",
         "transition_kind": "invalidated",
-        "predecessor_result_ref": null,
+        "predecessor_result_ref": "assure-result:022-prior",
         "successor_result_ref": null,
         "competing_successor_refs": [],
         "transition_evidence_ref": "evidence:contradictory-observation",
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "predecessor_result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "successor_result_digest": null,
+        "transition_evidence_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1681,6 +1916,13 @@
         "lifecycle_disposition": "invalidated",
         "consumer_handling": "blocked",
         "reason_code": "contradictory_evidence"
+      },
+      "result_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:022",
+        "dependency_graph_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1738,7 +1980,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1760,6 +2006,13 @@
         "lifecycle_disposition": "requires_requalification",
         "consumer_handling": "blocked",
         "reason_code": "verifier_semantics_changed"
+      },
+      "result_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:023",
+        "dependency_graph_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1813,7 +2066,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "Unknown",
-        "checkpoint_ref": null
+        "checkpoint_ref": null,
+        "assure004_result_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1835,6 +2092,13 @@
         "lifecycle_disposition": "indeterminate",
         "consumer_handling": "manual_review",
         "reason_code": "authoritative_currentness_anchor_missing"
+      },
+      "result_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:024",
+        "dependency_graph_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1890,7 +2154,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:verified"
+        "checkpoint_ref": "checkpoint:verified",
+        "assure004_result_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1913,6 +2181,13 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "eligible_for_policy_evaluation",
         "reason_code": "explicit_conditional_transfer"
+      },
+      "result_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:026",
+        "dependency_graph_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -1966,7 +2241,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:verified"
+        "checkpoint_ref": "checkpoint:verified",
+        "assure004_result_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -1988,6 +2267,13 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "blocked",
         "reason_code": "historical_only_evidence"
+      },
+      "result_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:025",
+        "dependency_graph_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
       }
     },
     {
@@ -2041,7 +2327,11 @@
         "transition_evidence_ref": null,
         "registration_view_ref": "registration-view:exact",
         "currentness_class": "CurrentThroughVerifiedCheckpoint",
-        "checkpoint_ref": "checkpoint:verified"
+        "checkpoint_ref": "checkpoint:verified",
+        "assure004_result_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "predecessor_result_digest": null,
+        "successor_result_digest": null,
+        "transition_evidence_digest": null
       },
       "consumer_requirement": {
         "acceptable_applicability": [
@@ -2063,6 +2353,104 @@
         "lifecycle_disposition": "current",
         "consumer_handling": "blocked",
         "reason_code": "evidence_inapplicable_to_target"
+      },
+      "result_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:027",
+        "dependency_graph_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
+      }
+    },
+    {
+      "record_id": "WALP-028",
+      "result_ref": "assure-result:028",
+      "result_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "claim": {
+        "waep_profile_id": "luminous-web4-waep",
+        "waep_schema_revision": "0.1",
+        "claim_id": "CLM-WEB4-028",
+        "property": "delegation_containment",
+        "scope_subject_id": "subject:agent-deployment-b",
+        "subject_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "campaign_semantics_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "evidence_root_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "historical_qualification": {
+        "assure000_claim_ref": "assure-claim:28",
+        "assure000_result_ref": "assure0-result:028",
+        "assure001_subject_ref": "assure1-subject:028",
+        "assure002_campaign_ref": "assure2-campaign:028",
+        "assure003_resolver_result_ref": "assure3-result:028",
+        "historical_disposition": "supported_within_scope",
+        "evidence_maturity": "structurally_checked"
+      },
+      "applicability": {
+        "mycelix_result_ref": "mycelix-applicability:028",
+        "status": "conditionally_transferable",
+        "impact_snapshot_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "bridge_evidence_ref": "bridge:material-transfer-028",
+        "affected_claim_properties": [
+          "delegation_containment"
+        ]
+      },
+      "dependency_inventory": {
+        "inventory_ref": "mycelix-dependency-impact:028",
+        "dependency_graph_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "coverage_status": "complete",
+        "unresolved_dependency_count": 0
+      },
+      "dependencies": [
+        {
+          "dependency_id": "tool-runtime-revision",
+          "role": "tool_runtime",
+          "baseline_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+          "observed_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+          "change_state": "material_change",
+          "change_evidence_ref": "event:tool-runtime-revision",
+          "affected_claim_properties": [
+            "delegation_containment"
+          ]
+        }
+      ],
+      "lifecycle": {
+        "assure004_result_ref": "assure004:028",
+        "assure004_result_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "state": "current",
+        "lineage_state": "complete",
+        "transition_kind": "none",
+        "predecessor_result_ref": null,
+        "predecessor_result_digest": null,
+        "successor_result_ref": null,
+        "successor_result_digest": null,
+        "competing_successor_refs": [],
+        "transition_evidence_ref": null,
+        "transition_evidence_digest": null,
+        "registration_view_ref": "registration-view:028",
+        "currentness_class": "CurrentThroughVerifiedCheckpoint",
+        "checkpoint_ref": "checkpoint:028"
+      },
+      "consumer_requirement": {
+        "acceptable_applicability": [
+          "exact_subject",
+          "controlled_equivalent",
+          "conditionally_transferable"
+        ],
+        "required_currentness_classes": [
+          "CurrentThroughVerifiedCheckpoint"
+        ],
+        "on_unsatisfied": "block"
+      },
+      "carry_forward": {
+        "support_conclusion": false,
+        "replication_conclusion": false,
+        "independence_conclusion": false,
+        "deployment_authority": false
+      },
+      "expected": {
+        "lifecycle_disposition": "current",
+        "consumer_handling": "eligible_for_policy_evaluation",
+        "reason_code": "material_change_bridge_qualified_for_property"
       }
     }
   ],
