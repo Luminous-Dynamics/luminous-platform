@@ -145,7 +145,11 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
     for event in case["events"]:
         path = inventory_by_id.get(event["path_id"])
         mapping = valid_mappings.get(event["path_id"])
+        raw_rows = mappings_by_path.get(event["path_id"], [])
+        raw_mapping = raw_rows[0] if len(raw_rows) == 1 else None
+        reported_effect = raw_mapping["canonical_effect"] if raw_mapping else None
         effect = mapping["canonical_effect"] if mapping else None
+        compared_effect = effect if effect is not None else reported_effect
         approved_match = any(exact_effect(effect, candidate) for candidate in approved)
         undeclared = path is None or not path["declared_in_manifest"]
         valid_path = (
@@ -156,29 +160,29 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
             and event["path_id"] not in fragmentation_paths
         )
 
-        if effect is not None:
-            if path is not None and path["credential_ref"] != effect["credential_lineage"]:
+        if compared_effect is not None:
+            if path is not None and path["credential_ref"] != compared_effect["credential_lineage"]:
                 credential_substitutions += 1
             candidate = next(
-                (item for item in approved if item["effect_id"] == effect["effect_id"]),
+                (item for item in approved if item["effect_id"] == compared_effect["effect_id"]),
                 None,
             )
             if candidate is None:
                 candidate = next(
                     (
                         item for item in approved
-                        if item["owner_id"] == effect["owner_id"]
-                        and item["tenant_id"] == effect["tenant_id"]
-                        and item["resource_id"] == effect["resource_id"]
+                        if item["owner_id"] == compared_effect["owner_id"]
+                        and item["tenant_id"] == compared_effect["tenant_id"]
+                        and item["resource_id"] == compared_effect["resource_id"]
                     ),
                     None,
                 )
-            if candidate is not None and not exact_effect(effect, candidate):
-                if resource_diff(effect, candidate):
+            if candidate is not None and not exact_effect(compared_effect, candidate):
+                if resource_diff(compared_effect, candidate):
                     resource_substitutions += 1
-                if credential_diff(effect, candidate):
+                if credential_diff(compared_effect, candidate):
                     credential_substitutions += 1
-                if argument_diff(effect, candidate):
+                if argument_diff(compared_effect, candidate):
                     argument_substitutions += 1
 
         if not valid_path:
