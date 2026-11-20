@@ -15,7 +15,7 @@ def fixture(case_id: str) -> dict:
 
 def test_frozen_scenarios_match_expected() -> None:
     suite = checker.load(checker.BASE / "trajectory-privilege.fixtures.json")
-    assert len(suite["cases"]) == 18
+    assert len(suite["cases"]) == 19
     checker.validate_suite(suite)
 
 def test_parent_revocation_invalidates_child_effect() -> None:
@@ -94,6 +94,15 @@ def test_untrusted_effect_report_is_not_independent_effect_truth() -> None:
     assert result["disposition"] == "indeterminate"
 
 
+def test_complete_but_same_trust_domain_observer_is_not_independent() -> None:
+    case = fixture("TWEP-019")
+    assert case["observer"]["complete"] is True
+    assert case["observer"]["independent"] is False
+    result = checker.evaluate_case(case)
+    assert result["observed_effects"] == []
+    assert result["disposition"] == "indeterminate"
+
+
 def test_duplicate_grant_identity_fails_closed() -> None:
     case = fixture("TWEP-001")
     case["grants"].append(copy.deepcopy(case["grants"][0]))
@@ -119,6 +128,7 @@ if __name__ == "__main__":
         test_task_oracle_provenance_is_mandatory,
         test_false_refusal_is_separate_from_security_violation,
         test_untrusted_effect_report_is_not_independent_effect_truth,
+        test_complete_but_same_trust_domain_observer_is_not_independent,
         test_duplicate_grant_identity_fails_closed,
     ]
     suite = unittest.TestSuite(
