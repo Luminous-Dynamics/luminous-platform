@@ -70,6 +70,52 @@ def main() -> int:
 
         if state != expected["lifecycle_disposition"]:
             raise SystemExit(f"{rid}: expected lifecycle {expected['lifecycle_disposition']}, got {state}")
+        if lifecycle["assure004_result_digest"] != record["result_digest"]:
+            raise SystemExit(f"{rid}: ASSURE-004 result digest must match the projected result digest")
+
+        inventory = record["dependency_inventory"]
+        if inventory["coverage_status"] == "complete" and inventory["unresolved_dependency_count"] != 0:
+            raise SystemExit(f"{rid}: complete dependency inventory cannot have unresolved dependencies")
+        if inventory["coverage_status"] != "complete" and state == "current":
+            raise SystemExit(f"{rid}: incomplete dependency inventory cannot support a current claim")
+        if inventory["coverage_status"] == "unknown" and inventory["unresolved_dependency_count"] == 0:
+            raise SystemExit(f"{rid}: unknown dependency inventory must disclose unresolved coverage")
+
+        transition = lifecycle["transition_kind"]
+        transition_state = {
+            "expired": "expired", "invalidated": "invalidated",
+            "withdrawn": "withdrawn", "superseded": "superseded",
+            "requalified": "current",
+        }
+        if transition in transition_state and state != transition_state[transition]:
+            raise SystemExit(f"{rid}: transition kind {transition} conflicts with lifecycle state {state}")
+        if transition == "none" and state in {"expired","invalidated","withdrawn","superseded"}:
+            raise SystemExit(f"{rid}: terminal lifecycle state requires its explicit transition kind")
+        if transition in {"expired","invalidated","withdrawn","superseded"}:
+            if lifecycle["predecessor_result_ref"] != record["result_ref"]:
+                raise SystemExit(f"{rid}: transition must preserve the exact predecessor result identity")
+            if lifecycle["predecessor_result_digest"] != record["result_digest"]:
+                raise SystemExit(f"{rid}: predecessor digest must bind the projected historical result")
+            if lifecycle["transition_evidence_digest"] is None:
+                raise SystemExit(f"{rid}: transition event must bind exact evidence digest")
+        if transition == "superseded":
+            if lifecycle["successor_result_ref"] in {None, record["result_ref"]} or lifecycle["successor_result_digest"] is None:
+                raise SystemExit(f"{rid}: supersession must identify a distinct successor and digest")
+        if transition == "requalified":
+            if lifecycle["predecessor_result_ref"] is None or lifecycle["predecessor_result_digest"] is None:
+                raise SystemExit(f"{rid}: requalification must bind the prior result and digest")
+            if lifecycle["successor_result_ref"] != record["result_ref"] or lifecycle["successor_result_digest"] != record["result_digest"]:
+                raise SystemExit(f"{rid}: requalification must bind this exact successor result")
+            if lifecycle["predecessor_result_ref"] == record["result_ref"] or lifecycle["predecessor_result_digest"] == record["result_digest"]:
+                raise SystemExit(f"{rid}: requalification cannot reuse predecessor result identity or digest")
+        if transition == "none" and any(lifecycle[field] is not None for field in ["predecessor_result_ref","predecessor_result_digest","successor_result_ref","successor_result_digest","transition_evidence_ref","transition_evidence_digest"]):
+            raise SystemExit(f"{rid}: no-transition records cannot carry transition lineage")
+
+        if lifecycle["currentness_class"] == "CurrentThroughVerifiedCheckpoint" and lifecycle["checkpoint_ref"] is None:
+            raise SystemExit(f"{rid}: checkpoint-current claim lacks checkpoint evidence")
+        if lifecycle["currentness_class"] == "TerminalInSuppliedView" and lifecycle["registration_view_ref"] is None:
+            raise SystemExit(f"{rid}: supplied-view terminal claim lacks exact view identity")
+
 
         if lifecycle["transition_kind"] in {"invalidated", "withdrawn", "expired", "superseded", "requalified"}:
             if lifecycle["transition_evidence_ref"] is None:
@@ -83,6 +129,9 @@ def main() -> int:
         if state == "indeterminate" and lifecycle["lineage_state"] == "complete" and lifecycle["currentness_class"] != "TerminalInSuppliedView":
             if expected["reason_code"] != "checkpoint_currentness_not_established":
                 raise SystemExit(f"{rid}: indeterminate lifecycle has no explicit currentness/lineage boundary")
+
+        if inventory["coverage_status"] != "complete" and state == "current":
+            raise SystemExit(f"{rid}: incomplete dependency coverage cannot retain current status")
 
         for dependency in record["dependencies"]:
             baseline = dependency["baseline_digest"]
@@ -98,6 +147,13 @@ def main() -> int:
                     raise SystemExit(f"{rid}/{dependency['dependency_id']}: changed dependency has no evidence reference")
             if change == "unknown" and expected["lifecycle_disposition"] == "current":
                 raise SystemExit(f"{rid}/{dependency['dependency_id']}: unknown dependency cannot silently retain currentness")
+            if change == "material_change" and record["claim"]["property"] in dependency["affected_claim_properties"]:
+                if state == "current" and not (
+                    applicability["status"] == "conditionally_transferable"
+                    and applicability["bridge_evidence_ref"] is not None
+                    and record["claim"]["property"] in applicability["affected_claim_properties"]
+                ):
+                    raise SystemExit(f"{rid}/{dependency['dependency_id']}: material claim-relevant change requires requalification or an explicit transfer bridge")
 
         if applicability["status"] in {"controlled_equivalent", "conditionally_transferable"} and applicability["bridge_evidence_ref"] is None:
             raise SystemExit(f"{rid}: controlled equivalent lacks bridge evidence")
@@ -114,7 +170,11 @@ def main() -> int:
 
         applicable = applicability["status"] in consumer["acceptable_applicability"]
         currentness_ok = lifecycle["currentness_class"] in consumer["required_currentness_classes"]
-        should_be_eligible = state == "current" and applicable and currentness_ok
+        should_be_eligible = (
+            state == "current" and applicable and currentness_ok
+            and inventory["coverage_status"] == "complete"
+            and inventory["unresolved_dependency_count"] == 0
+        )
         actual_eligible = expected["consumer_handling"] == "eligible_for_policy_evaluation"
         if should_be_eligible != actual_eligible:
             raise SystemExit(f"{rid}: consumer eligibility does not match lifecycle/applicability/currentness inputs")
