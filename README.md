@@ -1,6 +1,6 @@
 # Luminous Platform
 
-The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
+The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It is designed for boot-independent host availability and fail-closed authorization of consequential actions on NixOS hosts.
 
 ## Architecture
 

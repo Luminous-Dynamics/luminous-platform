@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:osi-xap-control-matrix:0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "created_on",
+    "source_base",
+    "x805",
+    "osi_layers",
+    "controls",
+    "nonclaims",
+    "control_count"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-osi-xap-control-matrix"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "research_non_normative"
+    },
+    "created_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "source_base": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "x805": {
+      "type": "object",
+      "required": [
+        "security_layers",
+        "planes",
+        "dimensions",
+        "note"
+      ],
+      "properties": {
+        "security_layers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "infrastructure",
+              "services",
+              "applications"
+            ]
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "planes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "management",
+              "control",
+              "end_user"
+            ]
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "access_control",
+              "authentication",
+              "non_repudiation",
+              "data_confidentiality",
+              "communication_security",
+              "data_integrity",
+              "availability",
+              "privacy"
+            ]
+          },
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true
+        },
+        "note": {
+          "type": "string",
+          "minLength": 10
+        }
+      },
+      "additionalProperties": false
+    },
+    "osi_layers": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "required": [
+          "layer",
+          "name",
+          "xenia_boundary"
+        ],
+        "properties": {
+          "layer": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "xenia_boundary": {
+            "enum": [
+              "not_owned",
+              "adapter_partial",
+              "strong",
+              "strong_composition"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 33,
+      "items": {
+        "$ref": "#/$defs/control",
+        "additionalProperties": false
+      }
+    },
+    "nonclaims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 10
+      }
+    },
+    "control_count": {
+      "type": "integer",
+      "minimum": 33
+    }
+  },
+  "$defs": {
+    "control": {
+      "type": "object",
+      "required": [
+        "id",
+        "osi_layer",
+        "x805_security_layer",
+        "plane",
+        "dimensions",
+        "topic",
+        "owner",
+        "implementation_status",
+        "evidence_status",
+        "evidence_refs",
+        "enforcement_points",
+        "residual_assumptions",
+        "qualification_tests",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]{5,40}$"
+        },
+        "osi_layer": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            {
+              "const": "cross_layer"
+            }
+          ]
+        },
+        "x805_security_layer": {
+          "enum": [
+            "infrastructure",
+            "services",
+            "applications",
+            "cross_layer"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "management",
+            "control",
+            "end_user",
+            "cross_plane"
+          ]
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "access_control",
+              "authentication",
+              "non_repudiation",
+              "data_confidentiality",
+              "communication_security",
+              "data_integrity",
+              "availability",
+              "privacy"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 5
+        },
+        "owner": {
+          "type": "object",
+          "required": [
+            "repo",
+            "component"
+          ],
+          "properties": {
+            "repo": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+            },
+            "component": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          "additionalProperties": false
+        },
+        "implementation_status": {
+          "enum": [
+            "implemented_component",
+            "specified",
+            "planned",
+            "external_dependency",
+            "not_evidenced"
+          ]
+        },
+        "evidence_status": {
+          "enum": [
+            "repository_documented",
+            "issue_planned",
+            "external_dependency",
+            "not_evidenced"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "enforcement_points": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 3
+          }
+        },
+        "residual_assumptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 5
+          }
+        },
+        "qualification_tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 5
+          }
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 10
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

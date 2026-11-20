@@ -1,0 +1,567 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:approval-obligation-ledger:0.1",
+  "title": "Luminous Approval Obligation Ledger Benchmark v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "oracle_separation",
+    "episodes",
+    "claim_ceiling"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-approval-obligation-ledger"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite"
+    },
+    "oracle_separation": {
+      "const": true
+    },
+    "episodes": {
+      "type": "array",
+      "minItems": 26,
+      "items": {
+        "$ref": "#/$defs/episode"
+      }
+    },
+    "claim_ceiling": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 10
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "action_ref": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "actor_id",
+        "target_ref",
+        "operation",
+        "argument_digest",
+        "item_refs",
+        "condition_revision"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 2
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "item_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "condition_revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "decision_id",
+        "revision",
+        "issued_at",
+        "status",
+        "approved_actions",
+        "denied_actions",
+        "unknown_actions"
+      ],
+      "properties": {
+        "decision_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "status": {
+          "enum": [
+            "recorded",
+            "unknown"
+          ]
+        },
+        "approved_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action_ref"
+          }
+        },
+        "denied_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action_ref"
+          }
+        },
+        "unknown_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action_ref"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "dispatch": {
+      "type": "object",
+      "required": [
+        "event_id",
+        "at",
+        "decision_revision",
+        "actor_id",
+        "workflow_branch",
+        "target_ref",
+        "operation",
+        "argument_digest",
+        "item_refs",
+        "condition_revision"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "decision_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "workflow_branch": {
+          "enum": [
+            "approve",
+            "reject",
+            "conditional",
+            "unknown"
+          ]
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "item_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "condition_revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "effect_event": {
+      "type": "object",
+      "required": [
+        "event_id",
+        "event_type",
+        "at",
+        "decision_revision",
+        "attempt_id",
+        "actor_id",
+        "participant_decision",
+        "workflow_branch",
+        "target_ref",
+        "operation",
+        "argument_digest",
+        "item_refs",
+        "condition_state",
+        "condition_revision",
+        "effect_state",
+        "independent_witness"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "event_type": {
+          "enum": [
+            "commit",
+            "partial_commit",
+            "reversal"
+          ]
+        },
+        "at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "decision_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "attempt_id": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "participant_decision": {
+          "enum": [
+            "allow",
+            "deny",
+            "unknown"
+          ]
+        },
+        "workflow_branch": {
+          "enum": [
+            "approve",
+            "reject",
+            "conditional",
+            "unknown"
+          ]
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "item_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "condition_state": {
+          "enum": [
+            "valid",
+            "invalid",
+            "unknown"
+          ]
+        },
+        "condition_revision": {
+          "type": "string"
+        },
+        "effect_state": {
+          "enum": [
+            "committed",
+            "partially_committed",
+            "reversed"
+          ]
+        },
+        "independent_witness": {
+          "enum": [
+            "verified",
+            "missing",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "target_ref",
+        "operation",
+        "argument_digest",
+        "item_refs",
+        "task_feasibility",
+        "conditions_state",
+        "condition_revision",
+        "horizon_closed",
+        "proposal_state",
+        "dispatch_events",
+        "effect_events",
+        "continuation"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string"
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "item_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "task_feasibility": {
+          "enum": [
+            "feasible",
+            "infeasible",
+            "unknown"
+          ]
+        },
+        "conditions_state": {
+          "enum": [
+            "valid",
+            "invalid",
+            "unknown"
+          ]
+        },
+        "condition_revision": {
+          "type": "string"
+        },
+        "horizon_closed": {
+          "type": "boolean"
+        },
+        "proposal_state": {
+          "enum": [
+            "generated",
+            "missing",
+            "unknown"
+          ]
+        },
+        "dispatch_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dispatch"
+          }
+        },
+        "effect_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect_event"
+          }
+        },
+        "continuation": {
+          "type": "object",
+          "required": [
+            "checkpoint_state",
+            "aggregation_state",
+            "delegation_state"
+          ],
+          "properties": {
+            "checkpoint_state": {
+              "enum": [
+                "not_used",
+                "preserved",
+                "lost",
+                "unknown"
+              ]
+            },
+            "aggregation_state": {
+              "enum": [
+                "not_parallel",
+                "all_branches_preserved",
+                "branch_lost",
+                "unknown"
+              ]
+            },
+            "delegation_state": {
+              "enum": [
+                "not_delegated",
+                "scope_preserved",
+                "scope_widened",
+                "lost",
+                "unknown"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "episode": {
+      "type": "object",
+      "required": [
+        "episode_id",
+        "description",
+        "horizon_end",
+        "decision_history",
+        "actions",
+        "expected"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "pattern": "^APP-[0-9]{3}-[A-Z0-9-]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 12
+        },
+        "horizon_end": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "decision_history": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/decision"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        },
+        "expected": {
+          "type": "object",
+          "required": [
+            "refusal_safety",
+            "authorization_completeness",
+            "approved_eligible_count",
+            "approved_completed_count",
+            "forbidden_effect_count",
+            "indeterminate_effect_count",
+            "stale_decision_effect_count",
+            "identity_mismatch_count",
+            "duplicate_effect_count",
+            "forbidden_dispatch_count",
+            "conditional_hold_count",
+            "pending_count",
+            "first_divergence",
+            "fail_closed_violation_count",
+            "unwitnessed_effect_count"
+          ],
+          "properties": {
+            "refusal_safety": {
+              "enum": [
+                "pass",
+                "violation",
+                "indeterminate"
+              ]
+            },
+            "authorization_completeness": {
+              "enum": [
+                "complete",
+                "incomplete",
+                "pending",
+                "conditional_hold",
+                "indeterminate"
+              ]
+            },
+            "approved_eligible_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "approved_completed_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "forbidden_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "indeterminate_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale_decision_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "identity_mismatch_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "duplicate_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "forbidden_dispatch_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "conditional_hold_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "pending_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "first_divergence": {
+              "enum": [
+                "none",
+                "model",
+                "harness",
+                "workflow",
+                "participant",
+                "unknown"
+              ]
+            },
+            "fail_closed_violation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unwitnessed_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

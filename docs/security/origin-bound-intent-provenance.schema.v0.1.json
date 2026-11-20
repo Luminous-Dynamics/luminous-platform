@@ -1,0 +1,588 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:origin-bound-intent-provenance:0.1",
+  "title": "Luminous Origin-Bound Intent and Parameter Provenance v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "fixtures"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-origin-bound-intent-provenance"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite"
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 30,
+      "items": {
+        "$ref": "#/$defs/fixture"
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "action": {
+      "type": "object",
+      "required": [
+        "operation",
+        "target_ref",
+        "participant_id",
+        "purpose_ref",
+        "context_ref"
+      ],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 2
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "participant_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "purpose_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "context_ref": {
+          "type": "string",
+          "minLength": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "source_ref",
+        "source_class",
+        "receipt_digest",
+        "receipt_verified",
+        "derived_from_refs"
+      ],
+      "properties": {
+        "source_ref": {
+          "type": "string",
+          "minLength": 2
+        },
+        "source_class": {
+          "enum": [
+            "principal_input",
+            "user_named_source",
+            "authoritative_record",
+            "agent_derived",
+            "attacker_writable",
+            "unknown"
+          ]
+        },
+        "receipt_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "receipt_verified": {
+          "type": "boolean"
+        },
+        "derived_from_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "parameter_policy": {
+      "type": "object",
+      "required": [
+        "name",
+        "required",
+        "allowed_source_refs",
+        "allowed_source_classes",
+        "value_allowlist",
+        "min_numeric_value",
+        "max_numeric_value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "allowed_source_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_source_classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "principal_input",
+              "user_named_source",
+              "authoritative_record",
+              "agent_derived",
+              "attacker_writable",
+              "unknown"
+            ]
+          }
+        },
+        "value_allowlist": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "min_numeric_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "max_numeric_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "request_parameter": {
+      "type": "object",
+      "required": [
+        "name",
+        "value_digest",
+        "numeric_value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "numeric_value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance_parameter": {
+      "type": "object",
+      "required": [
+        "name",
+        "value_digest",
+        "sources",
+        "lineage_complete",
+        "handoff_count",
+        "transformations"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/source"
+          }
+        },
+        "lineage_complete": {
+          "type": "boolean"
+        },
+        "handoff_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "transformations": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "extract",
+              "normalize",
+              "summarize",
+              "paraphrase",
+              "translate",
+              "embed",
+              "memory_store",
+              "memory_read",
+              "tool_handoff",
+              "agent_handoff",
+              "serialize"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "intent": {
+      "type": "object",
+      "required": [
+        "intent_id",
+        "principal_id",
+        "precision",
+        "fixed_action",
+        "authorized_action_set",
+        "parameter_policies"
+      ],
+      "properties": {
+        "intent_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "precision": {
+          "enum": [
+            "fully_specified",
+            "parameter_open",
+            "action_open"
+          ]
+        },
+        "fixed_action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/action"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authorized_action_set": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          }
+        },
+        "parameter_policies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter_policy"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "required": [
+        "principal_id",
+        "actor_id",
+        "request_digest",
+        "origin_manifest_digest",
+        "selected_action",
+        "action_parameters"
+      ],
+      "properties": {
+        "principal_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "origin_manifest_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "selected_action": {
+          "$ref": "#/$defs/action"
+        },
+        "action_parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/request_parameter"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "required": [
+        "manifest_id",
+        "manifest_digest",
+        "intent_id",
+        "principal_id",
+        "request_digest",
+        "collector_id",
+        "collector_verified",
+        "action_selection_origin",
+        "action_source_ref",
+        "action_source_class",
+        "parameters",
+        "action_source_receipt_digest",
+        "action_source_receipt_verified",
+        "action_source_derived_from_refs"
+      ],
+      "properties": {
+        "manifest_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "manifest_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "intent_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "collector_id": {
+          "type": "string",
+          "minLength": 2
+        },
+        "collector_verified": {
+          "type": "boolean"
+        },
+        "action_selection_origin": {
+          "enum": [
+            "principal_explicit",
+            "agent_selected_from_finite_set",
+            "untrusted_content",
+            "unknown"
+          ]
+        },
+        "action_source_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "action_source_class": {
+          "enum": [
+            "principal_input",
+            "user_named_source",
+            "authoritative_record",
+            "agent_derived",
+            "attacker_writable",
+            "unknown"
+          ]
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/provenance_parameter"
+          }
+        },
+        "action_source_receipt_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "action_source_receipt_verified": {
+          "type": "boolean"
+        },
+        "action_source_derived_from_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "intent_state",
+        "provenance_state",
+        "authorization_state",
+        "untrusted_influence_within_authorized_set",
+        "participant_decision_correct",
+        "fail_closed_violation",
+        "unauthorized_effect",
+        "task_state",
+        "effect_disposition"
+      ],
+      "properties": {
+        "intent_state": {
+          "enum": [
+            "compliant",
+            "not_compliant",
+            "indeterminate"
+          ]
+        },
+        "provenance_state": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "indeterminate"
+          ]
+        },
+        "authorization_state": {
+          "enum": [
+            "authorized",
+            "not_authorized",
+            "indeterminate"
+          ]
+        },
+        "untrusted_influence_within_authorized_set": {
+          "type": "boolean"
+        },
+        "participant_decision_correct": {
+          "type": "boolean"
+        },
+        "fail_closed_violation": {
+          "type": "boolean"
+        },
+        "unauthorized_effect": {
+          "enum": [
+            "true",
+            "false",
+            "indeterminate"
+          ]
+        },
+        "task_state": {
+          "enum": [
+            "correct",
+            "incorrect",
+            "unknown"
+          ]
+        },
+        "effect_disposition": {
+          "enum": [
+            "none",
+            "committed",
+            "partially_committed",
+            "reconcile_same_attempt"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "fixture": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "description",
+        "intent",
+        "request",
+        "manifest",
+        "authority_fixture_ref",
+        "participant_decision",
+        "effect",
+        "task_oracle",
+        "expected"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^ORIG-[0-9]{3}-[A-Z0-9-]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        },
+        "intent": {
+          "$ref": "#/$defs/intent"
+        },
+        "request": {
+          "$ref": "#/$defs/request"
+        },
+        "manifest": {
+          "$ref": "#/$defs/manifest"
+        },
+        "authority_fixture_ref": {
+          "type": "string",
+          "pattern": "^CAP-[0-9]{3}-[A-Z0-9-]+$"
+        },
+        "participant_decision": {
+          "enum": [
+            "allow",
+            "deny",
+            "unknown"
+          ]
+        },
+        "effect": {
+          "type": "object",
+          "required": [
+            "state",
+            "postcondition"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "none",
+                "committed",
+                "partially_committed",
+                "unknown"
+              ]
+            },
+            "postcondition": {
+              "enum": [
+                "matches",
+                "mismatch",
+                "not_observed",
+                "unknown"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "task_oracle": {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "correct",
+                "incorrect",
+                "unknown"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

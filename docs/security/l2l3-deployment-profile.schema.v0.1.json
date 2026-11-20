@@ -1,0 +1,1690 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:l2l3-deployment-profile:0.1",
+  "title": "Luminous L2/L3 Deployment Assurance Profile v0.1",
+  "description": "Exact-scope inventory and evidence contract. Not a firewall configuration or proof of security.",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "version",
+    "status",
+    "scope",
+    "devices",
+    "zones",
+    "interfaces",
+    "routes",
+    "dns",
+    "plane_separation",
+    "coverage",
+    "assessment",
+    "nonclaims",
+    "discovery",
+    "ot_network_separation"
+  ],
+  "properties": {
+    "profile_id": {
+      "const": "luminous-l2l3-deployment-profile"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "enum": [
+        "template_only",
+        "synthetic_fixture",
+        "deployment_record"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "required": [
+        "deployment_id",
+        "environment",
+        "operator",
+        "classification",
+        "jurisdiction",
+        "observed_at"
+      ],
+      "properties": {
+        "deployment_id": {
+          "type": "string",
+          "minLength": 3
+        },
+        "environment": {
+          "enum": [
+            "template_only",
+            "lab",
+            "enterprise",
+            "ot",
+            "edge",
+            "cloud",
+            "public_untrusted"
+          ]
+        },
+        "operator": {
+          "type": "string",
+          "minLength": 2
+        },
+        "classification": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "source_revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^([a-f0-9]{40})?$"
+        },
+        "scope_note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "devices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "device_id",
+          "owner",
+          "role",
+          "vendor",
+          "model",
+          "hardware_revision",
+          "firmware_version",
+          "management_plane",
+          "evidence_refs",
+          "operational_function",
+          "operational_criticality",
+          "discovery_method",
+          "discovery_safety_status",
+          "discovery_evidence_refs",
+          "zta_capability",
+          "compensating_control_refs"
+        ],
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "minLength": 2
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 2
+          },
+          "role": {
+            "enum": [
+              "host",
+              "router",
+              "firewall",
+              "switch",
+              "wireless_ap",
+              "resolver",
+              "gateway",
+              "controller",
+              "sensor",
+              "other"
+            ]
+          },
+          "vendor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hardware_revision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "firmware_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "firmware_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^(sha256:[a-f0-9]{64})?$"
+          },
+          "management_plane": {
+            "enum": [
+              "isolated",
+              "shared",
+              "unknown"
+            ]
+          },
+          "physical_access_owner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "operational_function": {
+            "type": "string",
+            "minLength": 2
+          },
+          "operational_criticality": {
+            "enum": [
+              "safety_critical",
+              "mission_critical",
+              "business_critical",
+              "supporting",
+              "unknown"
+            ]
+          },
+          "discovery_method": {
+            "enum": [
+              "vendor_tool",
+              "passive_monitoring",
+              "ot_aware_active_scan",
+              "independent_active_scan",
+              "manual_inspection",
+              "declared_configuration",
+              "unknown"
+            ]
+          },
+          "discovery_safety_status": {
+            "enum": [
+              "tested_nonproduction",
+              "approved_planned_downtime",
+              "passive_only",
+              "not_assessed",
+              "not_applicable"
+            ]
+          },
+          "discovery_evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "zta_capability": {
+            "enum": [
+              "native",
+              "gateway_mediated",
+              "unsupported",
+              "unknown"
+            ]
+          },
+          "compensating_control_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "zone_id",
+          "name",
+          "purpose",
+          "plane",
+          "owner",
+          "default_ingress",
+          "default_egress",
+          "enforcement_refs",
+          "member_interface_refs",
+          "evidence_refs",
+          "network_function"
+        ],
+        "properties": {
+          "zone_id": {
+            "type": "string",
+            "minLength": 2
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 4
+          },
+          "plane": {
+            "enum": [
+              "management",
+              "control",
+              "end_user",
+              "shared",
+              "unknown"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 2
+          },
+          "default_ingress": {
+            "enum": [
+              "deny",
+              "allow",
+              "unknown"
+            ]
+          },
+          "default_egress": {
+            "enum": [
+              "deny",
+              "allow",
+              "unknown"
+            ]
+          },
+          "enforcement_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "member_interface_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "network_function": {
+            "enum": [
+              "management",
+              "operational",
+              "enterprise",
+              "ot_dmz",
+              "vendor_remote_access",
+              "security_monitoring",
+              "safety",
+              "edge",
+              "other",
+              "unknown"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "interface_id",
+          "device_ref",
+          "name",
+          "medium",
+          "zone_ref",
+          "link_admission",
+          "link_protection",
+          "ipv4",
+          "ipv6",
+          "bridge_members",
+          "tunnel_ref",
+          "owner",
+          "inventory_status",
+          "evidence_refs"
+        ],
+        "properties": {
+          "interface_id": {
+            "type": "string",
+            "minLength": 2
+          },
+          "device_ref": {
+            "type": "string",
+            "minLength": 2
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "medium": {
+            "enum": [
+              "ethernet",
+              "wifi",
+              "bluetooth",
+              "loopback",
+              "veth",
+              "tunnel",
+              "virtual",
+              "serial",
+              "other"
+            ]
+          },
+          "mac_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vlan_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 4094
+          },
+          "zone_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link_admission": {
+            "enum": [
+              "802.1x",
+              "psk",
+              "certificate",
+              "static_allowlist",
+              "none",
+              "unknown",
+              "not_applicable"
+            ]
+          },
+          "link_protection": {
+            "enum": [
+              "macsec",
+              "wpa3_enterprise",
+              "wpa3_personal",
+              "wpa2",
+              "wired_unprotected",
+              "end_to_end_only",
+              "unknown",
+              "not_applicable"
+            ]
+          },
+          "ipv4": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ipv6": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bridge_members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tunnel_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 2
+          },
+          "inventory_status": {
+            "enum": [
+              "verified",
+              "declared",
+              "unknown",
+              "not_applicable"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "route_id",
+          "ip_family",
+          "source_zone",
+          "destination",
+          "protocol",
+          "ports",
+          "direction",
+          "disposition",
+          "enforcement_point",
+          "owner",
+          "status",
+          "evidence_refs"
+        ],
+        "properties": {
+          "route_id": {
+            "type": "string",
+            "minLength": 2
+          },
+          "ip_family": {
+            "enum": [
+              "ipv4",
+              "ipv6",
+              "dual_stack"
+            ]
+          },
+          "source_zone": {
+            "type": "string",
+            "minLength": 2
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 2
+          },
+          "protocol": {
+            "enum": [
+              "tcp",
+              "udp",
+              "icmp",
+              "icmpv6",
+              "any",
+              "other"
+            ]
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          },
+          "direction": {
+            "enum": [
+              "ingress",
+              "egress",
+              "east_west",
+              "management",
+              "control"
+            ]
+          },
+          "disposition": {
+            "enum": [
+              "allow",
+              "deny",
+              "unknown"
+            ]
+          },
+          "enforcement_point": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 2
+          },
+          "status": {
+            "enum": [
+              "verified",
+              "declared",
+              "unknown",
+              "out_of_scope"
+            ]
+          },
+          "out_of_scope_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "dns": {
+      "type": "object",
+      "required": [
+        "mode",
+        "resolvers",
+        "allowed_resolver_refs",
+        "fallback_policy",
+        "dnssec_validation",
+        "plaintext_fallback",
+        "search_domain_policy",
+        "unknown_resolver_paths",
+        "evidence_refs"
+      ],
+      "properties": {
+        "resolvers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "resolver_id",
+              "owner",
+              "address_or_uri",
+              "transport",
+              "trust_status",
+              "evidence_refs"
+            ],
+            "properties": {
+              "resolver_id": {
+                "type": "string",
+                "minLength": 2
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 2
+              },
+              "address_or_uri": {
+                "type": "string",
+                "minLength": 3
+              },
+              "transport": {
+                "enum": [
+                  "udp",
+                  "tcp",
+                  "dot",
+                  "doh",
+                  "doq",
+                  "local_stub",
+                  "other",
+                  "unknown"
+                ]
+              },
+              "trust_status": {
+                "enum": [
+                  "approved",
+                  "untrusted",
+                  "unknown"
+                ]
+              },
+              "dnssec_validation": {
+                "enum": [
+                  "enabled",
+                  "disabled",
+                  "unknown",
+                  "not_applicable"
+                ]
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "allowed_resolver_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fallback_policy": {
+          "enum": [
+            "deny",
+            "approved_resolvers_only",
+            "system_default",
+            "unknown"
+          ]
+        },
+        "dnssec_validation": {
+          "enum": [
+            "enabled",
+            "disabled",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "plaintext_fallback": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "search_domain_policy": {
+          "enum": [
+            "restricted",
+            "declared",
+            "unrestricted",
+            "unknown"
+          ]
+        },
+        "unknown_resolver_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "mode": {
+          "enum": [
+            "managed",
+            "static_allowlist",
+            "none",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "resolvers": {
+                "maxItems": 0
+              },
+              "allowed_resolver_refs": {
+                "maxItems": 0
+              },
+              "fallback_policy": {
+                "const": "deny"
+              },
+              "unknown_resolver_paths": {
+                "maxItems": 0
+              },
+              "plaintext_fallback": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "managed",
+                  "static_allowlist"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "resolvers": {
+                "minItems": 1
+              },
+              "allowed_resolver_refs": {
+                "minItems": 1
+              },
+              "fallback_policy": {
+                "not": {
+                  "const": "unknown"
+                }
+              },
+              "unknown_resolver_paths": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "plane_separation": {
+      "type": "object",
+      "required": [
+        "management_zone_refs",
+        "control_zone_refs",
+        "end_user_zone_refs",
+        "allowed_cross_plane_flows",
+        "unknown_cross_plane_paths",
+        "evidence_refs"
+      ],
+      "properties": {
+        "management_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "control_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "end_user_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_cross_plane_flows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "from_zone",
+              "to_zone",
+              "purpose",
+              "enforcement_point",
+              "owner"
+            ],
+            "properties": {
+              "from_zone": {
+                "type": "string"
+              },
+              "to_zone": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "enforcement_point": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "unknown_cross_plane_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "physical_device_inventory_complete",
+        "interface_inventory_complete",
+        "ipv4_route_inventory_complete",
+        "ipv6_route_inventory_complete",
+        "tunnel_inventory_complete",
+        "bridge_inventory_complete",
+        "namespace_inventory_complete",
+        "dns_inventory_complete",
+        "egress_policy_complete",
+        "plane_separation_verified",
+        "unknown_devices",
+        "unknown_interfaces",
+        "unknown_routes",
+        "unknown_tunnels",
+        "unknown_resolvers",
+        "unknown_enforcement_points"
+      ],
+      "properties": {
+        "physical_device_inventory_complete": {
+          "type": "boolean"
+        },
+        "interface_inventory_complete": {
+          "type": "boolean"
+        },
+        "ipv4_route_inventory_complete": {
+          "type": "boolean"
+        },
+        "ipv6_route_inventory_complete": {
+          "type": "boolean"
+        },
+        "tunnel_inventory_complete": {
+          "type": "boolean"
+        },
+        "bridge_inventory_complete": {
+          "type": "boolean"
+        },
+        "namespace_inventory_complete": {
+          "type": "boolean"
+        },
+        "dns_inventory_complete": {
+          "type": "boolean"
+        },
+        "egress_policy_complete": {
+          "type": "boolean"
+        },
+        "plane_separation_verified": {
+          "type": "boolean"
+        },
+        "unknown_devices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_interfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_routes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_tunnels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_resolvers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_enforcement_points": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "assessment": {
+      "type": "object",
+      "required": [
+        "status",
+        "complete_mediation_claim",
+        "claim_scope",
+        "assessor",
+        "assessed_at",
+        "evidence_refs"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_assessed",
+            "incomplete",
+            "qualified_for_declared_scope"
+          ]
+        },
+        "complete_mediation_claim": {
+          "type": "boolean"
+        },
+        "claim_scope": {
+          "type": "string",
+          "minLength": 4
+        },
+        "assessor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assessed_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "nonclaims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 10
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "required": [
+        "methods_used",
+        "active_scan_policy",
+        "active_scan_scope",
+        "active_scan_approval_refs",
+        "nonproduction_test_refs",
+        "passive_sensor_coverage_points",
+        "coverage_limitations",
+        "unknown_non_ip_or_isolated_assets",
+        "manual_inspection_refs",
+        "evidence_refs"
+      ],
+      "properties": {
+        "methods_used": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "vendor_tool",
+              "passive_monitoring",
+              "ot_aware_active_scan",
+              "independent_active_scan",
+              "manual_inspection",
+              "declared_configuration",
+              "unknown"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "active_scan_policy": {
+          "enum": [
+            "disabled",
+            "nonproduction_only",
+            "approved_planned_downtime",
+            "unrestricted",
+            "unknown"
+          ]
+        },
+        "active_scan_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "active_scan_approval_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "nonproduction_test_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "passive_sensor_coverage_points": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "coverage_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknown_non_ip_or_isolated_assets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manual_inspection_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "active_scan_policy": {
+                "const": "nonproduction_only"
+              }
+            },
+            "required": [
+              "active_scan_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "nonproduction_test_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "active_scan_policy": {
+                "const": "approved_planned_downtime"
+              }
+            },
+            "required": [
+              "active_scan_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "active_scan_approval_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "active_scan_policy": {
+                "const": "unrestricted"
+              }
+            },
+            "required": [
+              "active_scan_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "coverage_limitations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ot_network_separation": {
+      "type": "object",
+      "required": [
+        "applicability",
+        "management_zone_refs",
+        "operational_zone_refs",
+        "external_vendor_access_zone_refs",
+        "security_monitoring_zone_refs",
+        "telemetry_ingress",
+        "shared_infrastructure_exceptions",
+        "evidence_refs"
+      ],
+      "properties": {
+        "applicability": {
+          "enum": [
+            "applicable",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "management_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "operational_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "external_vendor_access_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "security_monitoring_zone_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "telemetry_ingress": {
+          "enum": [
+            "one_way_only",
+            "controlled_two_way",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "shared_infrastructure_exceptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "description",
+              "owner",
+              "risk",
+              "compensating_controls"
+            ],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "risk": {
+                "type": "string"
+              },
+              "compensating_controls": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "const": "applicable"
+              }
+            },
+            "required": [
+              "applicability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "management_zone_refs": {
+                "minItems": 1
+              },
+              "operational_zone_refs": {
+                "minItems": 1
+              },
+              "security_monitoring_zone_refs": {
+                "minItems": 1
+              },
+              "telemetry_ingress": {
+                "enum": [
+                  "one_way_only",
+                  "controlled_two_way"
+                ]
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "telemetry_ingress": {
+                "const": "controlled_two_way"
+              }
+            },
+            "required": [
+              "telemetry_ingress"
+            ]
+          },
+          "then": {
+            "properties": {
+              "shared_infrastructure_exceptions": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "assessment": {
+            "properties": {
+              "complete_mediation_claim": {
+                "const": true
+              }
+            },
+            "required": [
+              "complete_mediation_claim"
+            ]
+          }
+        },
+        "required": [
+          "assessment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "assessment": {
+            "properties": {
+              "assessor": {
+                "type": "string",
+                "minLength": 2
+              },
+              "assessed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          },
+          "coverage": {
+            "properties": {
+              "physical_device_inventory_complete": {
+                "const": true
+              },
+              "interface_inventory_complete": {
+                "const": true
+              },
+              "ipv4_route_inventory_complete": {
+                "const": true
+              },
+              "ipv6_route_inventory_complete": {
+                "const": true
+              },
+              "tunnel_inventory_complete": {
+                "const": true
+              },
+              "bridge_inventory_complete": {
+                "const": true
+              },
+              "namespace_inventory_complete": {
+                "const": true
+              },
+              "dns_inventory_complete": {
+                "const": true
+              },
+              "egress_policy_complete": {
+                "const": true
+              },
+              "plane_separation_verified": {
+                "const": true
+              },
+              "unknown_devices": {
+                "maxItems": 0
+              },
+              "unknown_interfaces": {
+                "maxItems": 0
+              },
+              "unknown_routes": {
+                "maxItems": 0
+              },
+              "unknown_tunnels": {
+                "maxItems": 0
+              },
+              "unknown_resolvers": {
+                "maxItems": 0
+              },
+              "unknown_enforcement_points": {
+                "maxItems": 0
+              }
+            }
+          },
+          "devices": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "vendor": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "hardware_revision": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "firmware_version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                },
+                "zta_capability": {
+                  "enum": [
+                    "native",
+                    "gateway_mediated",
+                    "unsupported"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "zta_capability": {
+                        "const": "unsupported"
+                      }
+                    },
+                    "required": [
+                      "zta_capability"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "compensating_control_refs": {
+                        "minItems": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "zones": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "default_ingress": {
+                  "enum": [
+                    "deny",
+                    "allow"
+                  ]
+                },
+                "default_egress": {
+                  "enum": [
+                    "deny",
+                    "allow"
+                  ]
+                },
+                "enforcement_refs": {
+                  "minItems": 1
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                },
+                "network_function": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          },
+          "interfaces": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "inventory_status": {
+                  "const": "verified"
+                },
+                "zone_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "routes": {
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "status": {
+                  "const": "verified"
+                },
+                "disposition": {
+                  "enum": [
+                    "allow",
+                    "deny"
+                  ]
+                },
+                "enforcement_point": {
+                  "type": "string",
+                  "minLength": 2
+                },
+                "evidence_refs": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "dns": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "managed",
+                  "static_allowlist",
+                  "none"
+                ]
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          },
+          "plane_separation": {
+            "properties": {
+              "management_zone_refs": {
+                "minItems": 1
+              },
+              "control_zone_refs": {
+                "minItems": 1
+              },
+              "end_user_zone_refs": {
+                "minItems": 1
+              },
+              "unknown_cross_plane_paths": {
+                "maxItems": 0
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          },
+          "discovery": {
+            "properties": {
+              "active_scan_policy": {
+                "enum": [
+                  "disabled",
+                  "nonproduction_only",
+                  "approved_planned_downtime"
+                ]
+              },
+              "coverage_limitations": {
+                "maxItems": 0
+              },
+              "unknown_non_ip_or_isolated_assets": {
+                "maxItems": 0
+              },
+              "evidence_refs": {
+                "minItems": 1
+              },
+              "methods_used": {
+                "minItems": 1,
+                "items": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          },
+          "ot_network_separation": {
+            "properties": {
+              "applicability": {
+                "enum": [
+                  "applicable",
+                  "not_applicable"
+                ]
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        "required": [
+          "devices",
+          "zones",
+          "interfaces",
+          "routes"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope": {
+            "properties": {
+              "environment": {
+                "const": "ot"
+              }
+            },
+            "required": [
+              "environment"
+            ]
+          }
+        },
+        "required": [
+          "scope"
+        ]
+      },
+      "then": {
+        "properties": {
+          "discovery": {
+            "properties": {
+              "active_scan_policy": {
+                "enum": [
+                  "disabled",
+                  "nonproduction_only",
+                  "approved_planned_downtime"
+                ]
+              },
+              "methods_used": {
+                "minItems": 1
+              },
+              "evidence_refs": {
+                "minItems": 1
+              }
+            }
+          },
+          "ot_network_separation": {
+            "properties": {
+              "applicability": {
+                "enum": [
+                  "applicable",
+                  "not_applicable"
+                ]
+              }
+            }
+          },
+          "devices": {
+            "items": {
+              "properties": {
+                "zta_capability": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          },
+          "zones": {
+            "items": {
+              "properties": {
+                "network_function": {
+                  "not": {
+                    "const": "unknown"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

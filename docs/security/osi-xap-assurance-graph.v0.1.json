@@ -1,0 +1,508 @@
+{
+  "profile": "luminous-osi-xap-assurance-graph",
+  "version": "0.1",
+  "status": "synthetic_fixture_suite",
+  "fixtures": [
+    {
+      "expected_disposition": "qualified",
+      "expected_reason": "Every declared ingress-to-sink path crosses both required authorization boundaries; inventory is complete.",
+      "graph": {
+        "graph_id": "XAP-G001-MEDIATED",
+        "scope": "Synthetic remote configuration operation with two required enforcement points",
+        "inventory": {
+          "complete": true,
+          "unknown_nodes": [],
+          "unknown_edges": [],
+          "source": "Evaluator-owned synthetic graph fixture"
+        },
+        "nodes": [
+          {
+            "id": "ingress",
+            "type": "untrusted_ingress",
+            "fault_domain": null,
+            "enforcement_roles": []
+          },
+          {
+            "id": "agent",
+            "type": "workload",
+            "fault_domain": "agent-runtime",
+            "enforcement_roles": []
+          },
+          {
+            "id": "broker",
+            "type": "enforcement_point",
+            "fault_domain": "broker",
+            "enforcement_roles": [
+              "broker_authorization"
+            ]
+          },
+          {
+            "id": "participant",
+            "type": "enforcement_point",
+            "fault_domain": "participant-service",
+            "enforcement_roles": [
+              "participant_authorization"
+            ]
+          },
+          {
+            "id": "effect",
+            "type": "consequential_sink",
+            "fault_domain": "participant-service",
+            "enforcement_roles": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "from": "ingress",
+            "to": "agent",
+            "type": "proposes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e2",
+            "from": "agent",
+            "to": "broker",
+            "type": "routes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e3",
+            "from": "broker",
+            "to": "participant",
+            "type": "enforces",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e4",
+            "from": "participant",
+            "to": "effect",
+            "type": "commits",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        ],
+        "claim": {
+          "claim_id": "C-G001",
+          "property": "complete_mediation",
+          "scope": "remote configuration sink",
+          "source_node_refs": [
+            "ingress"
+          ],
+          "sink_node_refs": [
+            "effect"
+          ],
+          "required_enforcement_roles": [
+            "broker_authorization",
+            "participant_authorization"
+          ]
+        }
+      }
+    },
+    {
+      "expected_disposition": "refuted",
+      "expected_reason": "A known IPv6 alternate route reaches the sink without the required broker and participant authorization.",
+      "graph": {
+        "graph_id": "XAP-G002-IPV6-BYPASS",
+        "scope": "Synthetic dual-stack host with a declared IPv6 alternate path",
+        "inventory": {
+          "complete": true,
+          "unknown_nodes": [],
+          "unknown_edges": [],
+          "source": "Evaluator-owned synthetic graph fixture"
+        },
+        "nodes": [
+          {
+            "id": "ingress",
+            "type": "untrusted_ingress",
+            "fault_domain": null,
+            "enforcement_roles": []
+          },
+          {
+            "id": "agent",
+            "type": "workload",
+            "fault_domain": "agent-runtime",
+            "enforcement_roles": []
+          },
+          {
+            "id": "broker",
+            "type": "enforcement_point",
+            "fault_domain": "broker",
+            "enforcement_roles": [
+              "broker_authorization"
+            ]
+          },
+          {
+            "id": "participant",
+            "type": "enforcement_point",
+            "fault_domain": "participant-service",
+            "enforcement_roles": [
+              "participant_authorization"
+            ]
+          },
+          {
+            "id": "ipv6",
+            "type": "network_path",
+            "fault_domain": "ipv6-interface",
+            "enforcement_roles": []
+          },
+          {
+            "id": "effect",
+            "type": "consequential_sink",
+            "fault_domain": "participant-service",
+            "enforcement_roles": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "from": "ingress",
+            "to": "agent",
+            "type": "proposes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e2",
+            "from": "agent",
+            "to": "broker",
+            "type": "routes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e3",
+            "from": "broker",
+            "to": "participant",
+            "type": "enforces",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e4",
+            "from": "participant",
+            "to": "effect",
+            "type": "commits",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e5",
+            "from": "agent",
+            "to": "ipv6",
+            "type": "routes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e6",
+            "from": "ipv6",
+            "to": "effect",
+            "type": "commits",
+            "inventory_status": "verified",
+            "notes": "Known bypass route without required authorization boundaries."
+          }
+        ],
+        "claim": {
+          "claim_id": "C-G002",
+          "property": "complete_mediation",
+          "scope": "all host network paths to consequential sink",
+          "source_node_refs": [
+            "ingress"
+          ],
+          "sink_node_refs": [
+            "effect"
+          ],
+          "required_enforcement_roles": [
+            "broker_authorization",
+            "participant_authorization"
+          ]
+        }
+      }
+    },
+    {
+      "expected_disposition": "indeterminate",
+      "expected_reason": "The known path is mediated, but an unenumerated tunnel prevents complete route inventory.",
+      "graph": {
+        "graph_id": "XAP-G003-UNKNOWN-TUNNEL",
+        "scope": "Synthetic host with incomplete tunnel inventory",
+        "inventory": {
+          "complete": false,
+          "unknown_nodes": [
+            "unidentified tunnel endpoint"
+          ],
+          "unknown_edges": [
+            "unobserved tunnel from workload to remote participant"
+          ],
+          "source": "Evaluator-owned synthetic graph fixture with withheld edge"
+        },
+        "nodes": [
+          {
+            "id": "ingress",
+            "type": "untrusted_ingress",
+            "fault_domain": null,
+            "enforcement_roles": []
+          },
+          {
+            "id": "agent",
+            "type": "workload",
+            "fault_domain": "agent-runtime",
+            "enforcement_roles": []
+          },
+          {
+            "id": "broker",
+            "type": "enforcement_point",
+            "fault_domain": "broker",
+            "enforcement_roles": [
+              "broker_authorization"
+            ]
+          },
+          {
+            "id": "participant",
+            "type": "enforcement_point",
+            "fault_domain": "participant-service",
+            "enforcement_roles": [
+              "participant_authorization"
+            ]
+          },
+          {
+            "id": "effect",
+            "type": "consequential_sink",
+            "fault_domain": "participant-service",
+            "enforcement_roles": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "from": "ingress",
+            "to": "agent",
+            "type": "proposes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e2",
+            "from": "agent",
+            "to": "broker",
+            "type": "routes",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e3",
+            "from": "broker",
+            "to": "participant",
+            "type": "enforces",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e4",
+            "from": "participant",
+            "to": "effect",
+            "type": "commits",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        ],
+        "claim": {
+          "claim_id": "C-G003",
+          "property": "complete_mediation",
+          "scope": "all host network paths to consequential sink",
+          "source_node_refs": [
+            "ingress"
+          ],
+          "sink_node_refs": [
+            "effect"
+          ],
+          "required_enforcement_roles": [
+            "broker_authorization",
+            "participant_authorization"
+          ]
+        }
+      }
+    },
+    {
+      "expected_disposition": "refuted",
+      "expected_reason": "Two observers depend on the same time authority and collector; they are not independent under this fault-domain model.",
+      "graph": {
+        "graph_id": "XAP-G004-SHARED-OBSERVER",
+        "scope": "Synthetic participant and observer evidence with common infrastructure",
+        "inventory": {
+          "complete": true,
+          "unknown_nodes": [],
+          "unknown_edges": [],
+          "source": "Evaluator-owned synthetic graph fixture"
+        },
+        "nodes": [
+          {
+            "id": "participant-observer",
+            "type": "observer",
+            "fault_domain": "host-cluster-A",
+            "enforcement_roles": []
+          },
+          {
+            "id": "independent-observer",
+            "type": "observer",
+            "fault_domain": "host-cluster-B",
+            "enforcement_roles": []
+          },
+          {
+            "id": "time-service",
+            "type": "shared_dependency",
+            "fault_domain": "time-authority-A",
+            "enforcement_roles": []
+          },
+          {
+            "id": "collector",
+            "type": "shared_dependency",
+            "fault_domain": "collector-A",
+            "enforcement_roles": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "from": "participant-observer",
+            "to": "time-service",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e2",
+            "from": "independent-observer",
+            "to": "time-service",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e3",
+            "from": "participant-observer",
+            "to": "collector",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e4",
+            "from": "independent-observer",
+            "to": "collector",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        ],
+        "claim": {
+          "claim_id": "C-G004",
+          "property": "evidence_independence",
+          "scope": "two purportedly independent observer domains",
+          "observer_node_refs": [
+            "participant-observer",
+            "independent-observer"
+          ]
+        }
+      }
+    },
+    {
+      "expected_disposition": "qualified",
+      "expected_reason": "The two observers have distinct fault domains and disjoint declared transitive dependencies in this complete graph.",
+      "graph": {
+        "graph_id": "XAP-G005-DISTINCT-OBSERVER",
+        "scope": "Synthetic observers with separately owned dependencies",
+        "inventory": {
+          "complete": true,
+          "unknown_nodes": [],
+          "unknown_edges": [],
+          "source": "Evaluator-owned synthetic graph fixture"
+        },
+        "nodes": [
+          {
+            "id": "observer-A",
+            "type": "observer",
+            "fault_domain": "observer-domain-A",
+            "enforcement_roles": []
+          },
+          {
+            "id": "observer-B",
+            "type": "observer",
+            "fault_domain": "observer-domain-B",
+            "enforcement_roles": []
+          },
+          {
+            "id": "clock-A",
+            "type": "shared_dependency",
+            "fault_domain": "clock-domain-A",
+            "enforcement_roles": []
+          },
+          {
+            "id": "clock-B",
+            "type": "shared_dependency",
+            "fault_domain": "clock-domain-B",
+            "enforcement_roles": []
+          },
+          {
+            "id": "collector-A",
+            "type": "shared_dependency",
+            "fault_domain": "collector-domain-A",
+            "enforcement_roles": []
+          },
+          {
+            "id": "collector-B",
+            "type": "shared_dependency",
+            "fault_domain": "collector-domain-B",
+            "enforcement_roles": []
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "from": "observer-A",
+            "to": "clock-A",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e2",
+            "from": "observer-A",
+            "to": "collector-A",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e3",
+            "from": "observer-B",
+            "to": "clock-B",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          },
+          {
+            "id": "e4",
+            "from": "observer-B",
+            "to": "collector-B",
+            "type": "depends_on",
+            "inventory_status": "verified",
+            "notes": ""
+          }
+        ],
+        "claim": {
+          "claim_id": "C-G005",
+          "property": "evidence_independence",
+          "scope": "two observer domains with separate declared dependencies",
+          "observer_node_refs": [
+            "observer-A",
+            "observer-B"
+          ]
+        }
+      }
+    }
+  ]
+}

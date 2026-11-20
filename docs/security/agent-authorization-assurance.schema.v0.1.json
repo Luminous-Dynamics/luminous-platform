@@ -1,0 +1,522 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:security:agent-authorization-assurance-benchmark:0.1",
+  "title": "Luminous Agent Authorization Assurance Benchmark v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "oracle_separation",
+    "episodes"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-agent-authorization-assurance-benchmark"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite"
+    },
+    "oracle_separation": {
+      "const": true
+    },
+    "episodes": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "$ref": "#/$defs/episode"
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "request": {
+      "type": "object",
+      "required": [
+        "request_id",
+        "target_ref",
+        "operation",
+        "request_digest",
+        "policy_revision",
+        "created_at"
+      ],
+      "properties": {
+        "request_id": {
+          "type": "string"
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_revision": {
+          "type": "string"
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      },
+      "additionalProperties": false
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "required",
+        "approved_by",
+        "request_digest",
+        "policy_revision",
+        "approved_at"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "approved_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "request_digest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "policy_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approved_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "grant": {
+      "type": "object",
+      "required": [
+        "grant_id",
+        "principal_id",
+        "issuer_id",
+        "subject_id",
+        "parent_grant_id",
+        "target_refs",
+        "operations",
+        "request_digest",
+        "policy_revision",
+        "not_before",
+        "expires_at",
+        "revocation_status",
+        "revoked_at",
+        "may_delegate"
+      ],
+      "properties": {
+        "grant_id": {
+          "type": "string"
+        },
+        "principal_id": {
+          "type": "string"
+        },
+        "issuer_id": {
+          "type": "string"
+        },
+        "subject_id": {
+          "type": "string"
+        },
+        "parent_grant_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_revision": {
+          "type": "string"
+        },
+        "not_before": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "revocation_status": {
+          "enum": [
+            "current",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "may_delegate": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attempt": {
+      "type": "object",
+      "required": [
+        "actor_id",
+        "target_ref",
+        "operation",
+        "request_digest",
+        "policy_revision",
+        "broker_permit_request_digest",
+        "broker_permit_policy_revision",
+        "broker_permit_issued_at",
+        "participant_admitted_at",
+        "participant_decision",
+        "effect_state",
+        "broker_permit_expires_at",
+        "effect_committed_at",
+        "effect_authority_state_at_commit",
+        "effect_authority_checked_at",
+        "effect_authority_check_participant_verified",
+        "permit_nonce_consumed",
+        "usage_reservation_id",
+        "usage_reservation_state"
+      ],
+      "properties": {
+        "actor_id": {
+          "type": "string"
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_revision": {
+          "type": "string"
+        },
+        "broker_permit_request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "broker_permit_policy_revision": {
+          "type": "string"
+        },
+        "broker_permit_issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "participant_admitted_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "participant_decision": {
+          "enum": [
+            "allow",
+            "deny",
+            "unknown"
+          ]
+        },
+        "effect_state": {
+          "enum": [
+            "none",
+            "committed",
+            "partially_committed",
+            "unknown"
+          ]
+        },
+        "broker_permit_expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "effect_committed_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effect_authority_state_at_commit": {
+          "enum": [
+            "current",
+            "revoked",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "effect_authority_checked_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effect_authority_check_participant_verified": {
+          "type": "boolean"
+        },
+        "permit_nonce_consumed": {
+          "enum": [
+            true,
+            false,
+            "unknown"
+          ]
+        },
+        "usage_reservation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "usage_reservation_state": {
+          "enum": [
+            "consumed",
+            "not_consumed",
+            "unknown",
+            "not_applicable"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "effect_state": {
+                "enum": [
+                  "committed",
+                  "partially_committed"
+                ]
+              }
+            },
+            "required": [
+              "effect_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "effect_committed_at": {
+                "$ref": "#/$defs/timestamp"
+              },
+              "effect_authority_checked_at": {
+                "$ref": "#/$defs/timestamp"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "effect_state": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "effect_state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "effect_committed_at": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "authorization_state",
+        "participant_decision_correct",
+        "unauthorized_effect",
+        "task_state",
+        "effect_observed",
+        "fail_closed_violation"
+      ],
+      "properties": {
+        "authorization_state": {
+          "enum": [
+            "authorized",
+            "not_authorized",
+            "indeterminate"
+          ]
+        },
+        "participant_decision_correct": {
+          "type": "boolean"
+        },
+        "unauthorized_effect": {
+          "enum": [
+            "true",
+            "false",
+            "indeterminate"
+          ]
+        },
+        "task_state": {
+          "enum": [
+            "correct",
+            "incorrect",
+            "unknown"
+          ]
+        },
+        "effect_observed": {
+          "enum": [
+            "matches",
+            "mismatch",
+            "not_observed",
+            "unknown"
+          ]
+        },
+        "fail_closed_violation": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "episode": {
+      "type": "object",
+      "required": [
+        "episode_id",
+        "description",
+        "trace",
+        "oracle",
+        "expected"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "pattern": "^AUTH-[0-9]{3}-[A-Z0-9-]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        },
+        "trace": {
+          "type": "object",
+          "required": [
+            "principal_id",
+            "request",
+            "approval",
+            "grants",
+            "delegation_chain",
+            "attempt"
+          ],
+          "properties": {
+            "principal_id": {
+              "type": "string"
+            },
+            "request": {
+              "$ref": "#/$defs/request"
+            },
+            "approval": {
+              "$ref": "#/$defs/approval"
+            },
+            "grants": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/grant"
+              }
+            },
+            "delegation_chain": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "attempt": {
+              "$ref": "#/$defs/attempt"
+            }
+          },
+          "additionalProperties": false
+        },
+        "oracle": {
+          "type": "object",
+          "required": [
+            "task_state",
+            "effect_postcondition"
+          ],
+          "properties": {
+            "task_state": {
+              "enum": [
+                "correct",
+                "incorrect",
+                "unknown"
+              ]
+            },
+            "effect_postcondition": {
+              "enum": [
+                "matches",
+                "mismatch",
+                "not_observed",
+                "unknown"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

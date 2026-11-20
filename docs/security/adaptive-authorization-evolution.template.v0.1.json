@@ -1,0 +1,91 @@
+{
+  "profile": "luminous-adaptive-authorization-evolution",
+  "version": "0.1",
+  "status": "template_only",
+  "frozen_inputs": {
+    "task_model_digest": null,
+    "task_model_version": null,
+    "tool_bundle_digest": null,
+    "environment_digest": null,
+    "benchmark_suite_digest": null,
+    "task_split_digest": null,
+    "policy_semantics_digest": null,
+    "authorization_oracle_digest": null,
+    "participant_oracle_digest": null,
+    "effect_observer_digest": null,
+    "evaluator_digest": null,
+    "base_harness_digest": null
+  },
+  "mutation_boundary": {
+    "harness_mutable": true,
+    "stressor_mutable": true,
+    "task_model_mutable": false,
+    "tool_bundle_mutable": false,
+    "environment_mutable": false,
+    "benchmark_semantics_mutable": false,
+    "policy_semantics_mutable": false,
+    "authorization_oracle_mutable": false,
+    "participant_oracle_mutable": false,
+    "effect_observer_mutable": false,
+    "evaluator_mutable": false
+  },
+  "promotion_rule": {
+    "stressor_requires_task_preservation": true,
+    "stressor_requires_attack_objective_success": true,
+    "attack_objective_must_use_frozen_oracle": true,
+    "incomplete_execution_promotable": false,
+    "oracle_change_invalidates_run": true
+  },
+  "objective_dimensions": [
+    "clean_task_success",
+    "attacked_task_success",
+    "benign_false_denial",
+    "unauthorized_effect",
+    "fail_closed_violation",
+    "authorization_indeterminate",
+    "participant_decision_correctness",
+    "effect_observation_completeness",
+    "runtime_validity",
+    "latency",
+    "energy",
+    "memory",
+    "cost",
+    "human_recovery_burden"
+  ],
+  "search_budget": {
+    "harness_expansions": null,
+    "stressor_expansions": null,
+    "per_candidate_attempts": null,
+    "random_seeds": [],
+    "wall_clock_seconds": null,
+    "resource_limits_digest": null
+  },
+  "isolation": {
+    "disposable_execution": true,
+    "no_production_credentials": true,
+    "network_egress": "unknown",
+    "host_privilege": "unknown",
+    "read_only_diagnoser": true,
+    "separate_expander": true,
+    "human_review_before_deployment": true
+  },
+  "evaluation": {
+    "paired_seeds": true,
+    "hidden_holdout_stressor_split": true,
+    "positive_controls": true,
+    "negative_controls": true,
+    "independent_authorization_oracle": true,
+    "independent_participant_oracle": true,
+    "independent_effect_observer": true,
+    "results_paired_by_case_seed": true,
+    "confidence_method": "not_set",
+    "runs": []
+  },
+  "claim_ceiling": [
+    "Template only; no search or harness execution has been performed.",
+    "Task model, tools, environment, policy semantics, authorization oracle, participant oracle, effect observer and evaluator are immutable during a search stage.",
+    "Only the harness implementation and benchmark-defined adversarial stressor input may change.",
+    "No production credentials, live external side effects or physical actuation are allowed.",
+    "No better-than-SOTA or production-security claim follows from this protocol."
+  ]
+}

@@ -1,0 +1,4208 @@
+{
+  "profile": "luminous-effect-bound-capability-fixtures",
+  "version": "0.1",
+  "status": "synthetic_fixture_suite",
+  "fixtures": [
+    {
+      "scenario_id": "CAP-001-EXACT-ROOT",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:05Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:05Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-001",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-001-exact-root",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-002-NARROW-CHILD",
+      "mode": "delegated",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1"
+          ],
+          "operations": [
+            "config:read"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:30:00Z",
+          "expires_at": "2026-11-19T12:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:05Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:05Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-child",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-001",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-002-narrow-child",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-003-CHILD-RESOURCE-WIDEN",
+      "mode": "delegated",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-3"
+          ],
+          "operations": [
+            "config:read"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:30:00Z",
+          "expires_at": "2026-11-19T12:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-child",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-003-child-resource-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-004-CHILD-OPERATION-WIDEN",
+      "mode": "delegated",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:30:00Z",
+          "expires_at": "2026-11-19T12:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-child",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-004-child-operation-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-005-CHILD-TIME-WIDEN",
+      "mode": "delegated",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1"
+          ],
+          "operations": [
+            "config:read"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T09:00:00Z",
+          "expires_at": "2026-11-19T15:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-child",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-005-child-time-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-006-COMPOSITION-INTERSECTION",
+      "mode": "composition",
+      "capabilities": [
+        {
+          "grant_id": "grant-a",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-b",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1"
+          ],
+          "operations": [
+            "config:read"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-001",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:05Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:05Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-a",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-b",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-001",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-006-composition-intersection",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-a",
+          "grant-b"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-007-COMPOSITION-NEVER-UNION",
+      "mode": "composition",
+      "capabilities": [
+        {
+          "grant_id": "grant-a",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1"
+          ],
+          "operations": [
+            "config:read"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-b",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-a",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-b",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-007-composition-never-union",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-a",
+          "grant-b"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-008-ACTOR-SUBSTITUTION",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:impostor",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-008-actor-substitution",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-009-ARGUMENT-DIGEST-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-009-argument-digest-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-010-POLICY-EPOCH-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-6",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-6",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-010-policy-epoch-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-011-REVOKED-GRANT",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "revoked",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "revoked"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-011-revoked-grant",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-012-UNKNOWN-REVOCATION",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "unknown",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "unknown"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "indeterminate",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-012-unknown-revocation",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-013-PERMIT-REPLAY",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 2,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-013-permit-replay",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-014-EVIDENCE-IS-NOT-AUTHORITY",
+      "mode": "single",
+      "capabilities": [],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": true,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-014-evidence-is-not-authority",
+        "participant_id": "participant:router-api",
+        "grant_ids": [],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-015-UNKNOWN-EFFECT-RECONCILE",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "unknown",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "unknown",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": false,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "unknown"
+            }
+          ],
+          "policy_epoch": null,
+          "permit_nonce_consumed": "unknown",
+          "usage_reservation_id": null,
+          "usage_reservation_state": "unknown"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "reconcile_same_attempt"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-015-unknown-effect-reconcile",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-016-PERMIT-ATTEMPT-SUBSTITUTION",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-other",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-016-permit-attempt-substitution",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-017-PERMIT-EXPIRED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T10:59:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-017-permit-expired",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-018-REVOKED-GRANT-COMMITTED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "revoked",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-018-revoked-grant-committed",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:05Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:05Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "revoked"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-001",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "true",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-018-revoked-grant-committed",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-019-UNKNOWN-GRANT-COMMITTED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "unknown",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-019-unknown-grant-committed",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:05Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:05Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "unknown"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-001",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "indeterminate",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "indeterminate",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-019-unknown-grant-committed",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-020-VALID-GRANT-FALSE-DENIED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-020-valid-grant-false-denied",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-021-PARTICIPANT-OUTSIDE-GRANT",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:other-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:other-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:other-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-021-participant-outside-grant",
+        "participant_id": "participant:other-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-022-PURPOSE-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:emergency",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:emergency",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-022-purpose-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-023-CONTEXT-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:production",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:production",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-023-context-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-024-EFFECT-BUDGET-EXHAUSTED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-024-effect-budget-exhausted",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 10,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-025-COST-BUDGET-EXCEEDED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1001,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1001,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-025-cost-budget-exceeded",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-026-CHILD-PARTICIPANT-WIDEN",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api",
+            "participant:other-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:other-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:other-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:other-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-child",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-026-child-participant-widen",
+        "participant_id": "participant:other-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-027-CHILD-EFFECT-BUDGET-WIDEN",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 5,
+          "max_cost_microusd": 1000000
+        },
+        {
+          "grant_id": "grant-child",
+          "principal_id": "principal:owner",
+          "issuer_id": "workload:agent-1",
+          "subject_id": "workload:child-2",
+          "parent_grant_id": "grant-root",
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 1,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 6,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:child-2",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:child-2",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            },
+            {
+              "grant_id": "grant-child",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-027-child-effect-budget-widen",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root",
+          "grant-child"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-028-PERMIT-PARTICIPANT-SUBSTITUTION",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:other-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:other-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "indeterminate",
+        "effect_disposition": "reconcile_same_attempt"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-028-permit-participant-substitution",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-029-PERMIT-PURPOSE-CONTEXT-MISMATCH",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-001",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-001",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-001",
+        "consume_count": 1,
+        "purpose_ref": "purpose:emergency",
+        "context_ref": "context:production",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": null,
+        "state": "none",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-001",
+        "postcondition": "not_observed",
+        "committed_at": null,
+        "authority_check": {
+          "checked_at": null,
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": null,
+          "usage_reservation_state": "not_applicable"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "none"
+      },
+      "participant_decision": "deny",
+      "usage_snapshot": {
+        "snapshot_id": "budget-snapshot-cap-029-permit-purpose-context-mismatch",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      }
+    },
+    {
+      "scenario_id": "CAP-030-REVOKED-BEFORE-COMMIT",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-030-revoked-before-commit",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-cap-030-revoked-before-commit",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-030-revoked-before-commit",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-cap-030-revoked-before-commit",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-030-revoked-before-commit",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-cap-030-revoked-before-commit",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:10Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:10Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "revoked"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-cap-030-revoked-before-commit",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "true",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "snapshot-cap-030-revoked-before-commit",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      },
+      "description": "Capability is current at admission but participant's exact commit-time authority receipt shows the grant was revoked before the effect."
+    },
+    {
+      "scenario_id": "CAP-031-EXPIRED-BEFORE-COMMIT",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T11:00:07Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-031-expired-before-commit",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-cap-031-expired-before-commit",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-031-expired-before-commit",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-cap-031-expired-before-commit",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-031-expired-before-commit",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-cap-031-expired-before-commit",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:10Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:10Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-cap-031-expired-before-commit",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "true",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "snapshot-cap-031-expired-before-commit",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      },
+      "description": "Capability and permit are valid at admission but the grant expires before the effect commits."
+    },
+    {
+      "scenario_id": "CAP-032-STALE-COMMIT-CHECK",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-032-stale-commit-check",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-cap-032-stale-commit-check",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-032-stale-commit-check",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-cap-032-stale-commit-check",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-032-stale-commit-check",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-cap-032-stale-commit-check",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:10Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:00Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-cap-032-stale-commit-check",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "indeterminate",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "indeterminate",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "snapshot-cap-032-stale-commit-check",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      },
+      "description": "Participant reuses the admission-time authority snapshot for a later commit; the commit-time state is therefore indeterminate."
+    },
+    {
+      "scenario_id": "CAP-033-PERMIT-NONCE-NOT-CONSUMED",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-033-permit-nonce-not-consumed",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-cap-033-permit-nonce-not-consumed",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-033-permit-nonce-not-consumed",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-cap-033-permit-nonce-not-consumed",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-033-permit-nonce-not-consumed",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-cap-033-permit-nonce-not-consumed",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:10Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:10Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": false,
+          "usage_reservation_id": "reservation:attempt-cap-033-permit-nonce-not-consumed",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "not_authorized",
+        "participant_decision_correct": false,
+        "fail_closed_violation": true,
+        "unauthorized_effect": "true",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "snapshot-cap-033-permit-nonce-not-consumed",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      },
+      "description": "The participant commits an effect although the one-use permit nonce was not consumed."
+    },
+    {
+      "scenario_id": "CAP-034-VALID-COMMIT-TIME-CHECK",
+      "mode": "single",
+      "capabilities": [
+        {
+          "grant_id": "grant-root",
+          "principal_id": "principal:owner",
+          "issuer_id": "principal:owner",
+          "subject_id": "workload:agent-1",
+          "parent_grant_id": null,
+          "target_refs": [
+            "asset:router-1",
+            "asset:router-2"
+          ],
+          "operations": [
+            "config:read",
+            "config:write"
+          ],
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "policy_epoch": "epoch-7",
+          "not_before": "2026-11-19T10:00:00Z",
+          "expires_at": "2026-11-19T14:00:00Z",
+          "revocation_state": "current",
+          "may_delegate": true,
+          "max_delegation_depth": 2,
+          "participant_refs": [
+            "participant:router-api"
+          ],
+          "purpose_refs": [
+            "purpose:maintenance"
+          ],
+          "context_refs": [
+            "context:lab"
+          ],
+          "max_total_effects": 10,
+          "max_cost_microusd": 1000000
+        }
+      ],
+      "request": {
+        "principal_id": "principal:owner",
+        "actor_id": "workload:agent-1",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-034-valid-commit-time-check",
+        "admission_time": "2026-11-19T11:00:00Z",
+        "participant_id": "participant:router-api",
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "permit": {
+        "permit_id": "permit-cap-034-valid-commit-time-check",
+        "actor_id": "workload:agent-1",
+        "participant_id": "participant:router-api",
+        "target_ref": "asset:router-1",
+        "operation": "config:read",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_epoch": "epoch-7",
+        "attempt_id": "attempt-cap-034-valid-commit-time-check",
+        "not_before": "2026-11-19T10:59:00Z",
+        "expires_at": "2026-11-19T11:05:00Z",
+        "nonce_id": "nonce-cap-034-valid-commit-time-check",
+        "consume_count": 1,
+        "purpose_ref": "purpose:maintenance",
+        "context_ref": "context:lab",
+        "requested_cost_microusd": 1000,
+        "budget_snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "effect": {
+        "effect_id": "effect-cap-034-valid-commit-time-check",
+        "state": "committed",
+        "participant_id": "participant:router-api",
+        "attempt_id": "attempt-cap-034-valid-commit-time-check",
+        "postcondition": "matches",
+        "committed_at": "2026-11-19T11:00:10Z",
+        "authority_check": {
+          "checked_at": "2026-11-19T11:00:10Z",
+          "participant_verified": true,
+          "grant_states": [
+            {
+              "grant_id": "grant-root",
+              "state": "current"
+            }
+          ],
+          "policy_epoch": "epoch-7",
+          "permit_nonce_consumed": true,
+          "usage_reservation_id": "reservation:attempt-cap-034-valid-commit-time-check",
+          "usage_reservation_state": "consumed"
+        }
+      },
+      "evidence_only": false,
+      "expected": {
+        "authorization_state": "authorized",
+        "participant_decision_correct": true,
+        "fail_closed_violation": false,
+        "unauthorized_effect": "false",
+        "effect_disposition": "committed"
+      },
+      "participant_decision": "allow",
+      "usage_snapshot": {
+        "snapshot_id": "snapshot-cap-034-valid-commit-time-check",
+        "participant_id": "participant:router-api",
+        "grant_ids": [
+          "grant-root"
+        ],
+        "effect_count_before": 0,
+        "cumulative_cost_microusd": 0,
+        "observed_at": "2026-11-19T10:59:59Z",
+        "valid_until": "2026-11-19T11:00:30Z",
+        "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "participant_verified": true
+      },
+      "description": "Positive control: grant, permit, participant check, nonce consumption and budget reservation all remain valid atomically at effect commit."
+    }
+  ],
+  "fixture_count": 34
+}
