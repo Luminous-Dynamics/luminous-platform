@@ -304,11 +304,11 @@ fn digest_is_well_formed(value: &str) -> bool {
         .is_some_and(|hex| hex.len() == 64 && hex.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
 }
 
-fn find_valid_declassification(
+fn find_valid_declassification<'a>(
     node: &LineageNode,
     lineage: &Lineage,
-    input: &Input,
-) -> Option<&DeclassificationReceipt> {
+    input: &'a Input,
+) -> Option<&'a DeclassificationReceipt> {
     input.declassification_receipts.iter().find(|receipt| {
         receipt.valid
             && receipt.expires_at_step >= input.flow.step
@@ -449,14 +449,17 @@ pub fn evaluate(input: &Input) -> Evaluation {
     let mut sources = BTreeMap::new();
     let mut nodes = BTreeMap::new();
     let mut faults = Faults::default();
+    let mut duplicate_identity = false;
     for source in &input.sources {
         if sources.insert(source.id.clone(), source.clone()).is_some() {
             faults.unknown_nodes.insert("duplicate-source-id".into());
+            duplicate_identity = true;
         }
     }
     for node in &input.nodes {
         if nodes.insert(node.id.clone(), node.clone()).is_some() {
             faults.unknown_nodes.insert("duplicate-node-id".into());
+            duplicate_identity = true;
         }
     }
 
@@ -492,7 +495,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
     } else {
         Decision::Eligible
     };
-    let mut action_origin_violations = usize::from(!action_source_matches);
+    let mut action_origin_violations = 0usize;
+    if !action_source_matches {
+        action_origin_violations += 1;
+    }
     if action_source_matches {
         match input.task.precision {
             TaskPrecision::FullySpecified | TaskPrecision::ParameterOpen => {
@@ -519,7 +525,11 @@ pub fn evaluate(input: &Input) -> Evaluation {
     }
 
     let sink = input.sinks.iter().find(|sink| sink.id == input.flow.sink_id);
-    let mut flow_decision = Decision::Eligible;
+    let mut flow_decision = if duplicate_identity {
+        Decision::Denied
+    } else {
+        Decision::Eligible
+    };
     let mut cross_tenant_flow_count = 0usize;
     let mut cross_purpose_flow_count = 0usize;
     let mut untrusted_parameter_count = 0usize;
@@ -1019,6 +1029,26 @@ mod tests {
         assert_eq!(result.observed_payload_mismatches, 1);
         assert!(result.unauthorized_disclosure);
         assert_eq!(result.disposition, Disposition::SecurityViolation);
+    }
+
+    #[test]
+    fn duplicate_source_identity_fails_closed() {
+        let mut input = base_input();
+        input.sources.push(input.sources[0].clone());
+        let result = evaluate(&input);
+        assert_eq!(result.flow_decision, Decision::Denied);
+        assert_eq!(result.admission_decision, AdmissionDecision::Deny);
+        assert!(result.unknown_lineage_count > 0);
+    }
+
+    #[test]
+    fn duplicate_node_identity_fails_closed() {
+        let mut input = base_input();
+        input.nodes.push(input.nodes[0].clone());
+        let result = evaluate(&input);
+        assert_eq!(result.flow_decision, Decision::Denied);
+        assert_eq!(result.admission_decision, AdmissionDecision::Deny);
+        assert!(result.unknown_lineage_count > 0);
     }
 
     #[test]
