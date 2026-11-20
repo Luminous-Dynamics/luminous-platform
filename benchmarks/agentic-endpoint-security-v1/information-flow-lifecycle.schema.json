@@ -29,7 +29,7 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 16,
+      "minItems": 19,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -334,7 +334,8 @@
         "step",
         "purpose",
         "audience",
-        "system_admission"
+        "system_admission",
+        "observed_bindings"
       ],
       "properties": {
         "sink_id": {
@@ -399,6 +400,28 @@
             "hold",
             "unknown"
           ]
+        },
+        "observed_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "field",
+              "observed_value_digest"
+            ],
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "observed_value_digest": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -422,7 +445,8 @@
         "false_refusals",
         "disposition",
         "system_admission_mismatches",
-        "unsafe_admissions"
+        "unsafe_admissions",
+        "observed_payload_mismatches"
       ],
       "properties": {
         "action_decision": {
@@ -504,6 +528,10 @@
         "unsafe_admissions": {
           "type": "integer",
           "minimum": 0
+        },
+        "observed_payload_mismatches": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false
@@ -521,7 +549,8 @@
         "declassification_receipts",
         "flow",
         "observer",
-        "expected"
+        "expected",
+        "flow"
       ],
       "properties": {
         "scenario_id": {
