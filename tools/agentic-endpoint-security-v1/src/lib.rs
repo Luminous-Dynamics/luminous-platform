@@ -13,7 +13,9 @@
 mod trace;
 pub mod trajectory;
 
-pub use trace::{evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord};
+pub use trace::{
+    evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Authorization {
@@ -651,4 +653,3 @@ mod tests {
     }
 }
 
-pub use trajectory::{evaluate_trajectory, Authority as TrajectoryAuthority, AvailableWindow, Evaluation as TrajectoryEvaluation, Grant as TrajectoryGrant, TraceEvent as TrajectoryTraceEvent, Trajectory, ObserverQuality as TrajectoryObserverQuality, Admission as TrajectoryAdmission, EffectObservation as TrajectoryEffectObservation, Disposition as TrajectoryDisposition};
