@@ -17,3 +17,8 @@ The Rust suite contains **28 authored tests** across the evidence-dimension eval
 ## Trajectory-wide effective privilege model
 
 `src/trajectory.rs` adds an independent typed model for task-required, granted, available, exercised and independently observed authority across a trajectory. It evaluates delegated grant attenuation, parent-to-child revocation, event-time grant validity, excess exposure, unauthorized admission/effects, observer gaps and false refusals. The model is normalized-fact logic only; it does not discover tool aliases, authenticate grant tokens, observe real effects or enforce runtime ACLs. Its tests run as part of the existing dependency-free Cargo test job.
+
+
+## Canonical authority path closure (CAPC)
+
+The existing read-only benchmark workflow also runs the standard-library CAPC checker and mutation tests. CAPC qualifies owner-issued resource/effect identity across independently inventoried MCP/REST/SDK/direct paths. It is not a policy engine, resource registry, route discovery service, or effect observer. See [CAPC v0.1](../../docs/CANONICAL_AUTHORITY_PATH_CLOSURE_BENCHMARK_V0_1.md).
