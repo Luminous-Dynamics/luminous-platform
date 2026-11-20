@@ -1,0 +1,377 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:agentic-trajectory-effective-privilege:0.1",
+  "title": "Agentic Trajectory Effective Privilege Fixtures v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "task_required_authority_source",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-agentic-trajectory-effective-privilege"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "task_required_authority_source": {
+      "const": "independent_task_oracle"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "cap": {
+      "type": "object",
+      "required": [
+        "actor",
+        "capability"
+      ],
+      "properties": {
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "available": {
+      "type": "object",
+      "required": [
+        "actor",
+        "capability",
+        "from_step",
+        "through_step",
+        "path"
+      ],
+      "properties": {
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from_step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "through_step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "grant": {
+      "type": "object",
+      "required": [
+        "id",
+        "actor",
+        "root_session",
+        "capabilities",
+        "starts_at",
+        "expires_at",
+        "revoked_at",
+        "budget",
+        "parent_grant_id",
+        "delegates_to",
+        "delegation_allowed"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "root_session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "starts_at": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revoked_at": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "budget": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "parent_grant_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "delegates_to": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "delegation_allowed": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "step",
+        "actor",
+        "root_session",
+        "capability",
+        "grant_id",
+        "decision",
+        "effect"
+      ],
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "root_session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grant_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decision": {
+          "enum": [
+            "allowed",
+            "denied",
+            "unknown"
+          ]
+        },
+        "effect": {
+          "enum": [
+            "observed",
+            "none",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "excess_granted",
+        "excess_available",
+        "excess_exposure_steps",
+        "peak_excess_available",
+        "exercised_authority",
+        "observed_effects",
+        "unauthorized_attempts",
+        "unauthorized_admissions",
+        "unauthorized_effects",
+        "post_revocation_effects",
+        "delegation_violations",
+        "false_refusals",
+        "disposition"
+      ],
+      "properties": {
+        "excess_granted": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excess_available": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excess_exposure_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peak_excess_available": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exercised_authority": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "observed_effects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unauthorized_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_admissions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "post_revocation_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "delegation_violations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "false_refusals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disposition": {
+          "enum": [
+            "qualified",
+            "violation",
+            "indeterminate"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "control_class",
+        "task_required",
+        "available",
+        "grants",
+        "events",
+        "observer",
+        "task_success",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^TWEP-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "task_required": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cap"
+          }
+        },
+        "available": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/available"
+          }
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/grant"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "observer": {
+          "type": "object",
+          "required": [
+            "complete",
+            "independent"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "task_success": {
+          "type": "boolean"
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
