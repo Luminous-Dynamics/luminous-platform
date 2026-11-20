@@ -54,7 +54,7 @@ A zero unauthorized-effect count is not meaningful without denominators, complet
 
 ## v0.1 fixture coverage
 
-17 synthetic cases: 5 positive controls, 11 negative controls and 1 indeterminate control. They cover excess grants, tool aliases, parent revocation, blocked stale child attempts, scope/expiry widening, actor substitution, observer gaps, correct final state with unauthorized intermediate effect, targeted revocation that preserves unrelated work, pre-revocation effect ordering, unauthorized redelegation, cyclic lineage, session substitution, alternate-credential exposure and false refusal.
+18 synthetic cases: 5 positive controls, 11 negative controls and 2 indeterminate controls. They cover excess grants, tool aliases, parent revocation, blocked stale child attempts, scope/expiry widening, actor substitution, observer gaps, correct final state with unauthorized intermediate effect, targeted revocation that preserves unrelated work, pre-revocation effect ordering, unauthorized redelegation, cyclic lineage, session substitution, alternate-credential exposure and false refusal.
 
 The expected rows are frozen in \`trajectory-privilege.fixtures.json\`; the schema is \`trajectory-privilege.schema.json\`. The Python checker is test tooling only.
 
@@ -81,4 +81,4 @@ This v0.1 contract is a synthetic semantic checker. It does not discover every a
 
 The existing dependency-free Rust benchmark crate now exports a typed trajectory evaluator in \`tools/agentic-endpoint-security-v1/src/trajectory.rs\`. It keeps authority atoms typed and evaluates granted/available scope, per-step excess exposure, event-time grant validity, recursive delegation attenuation, ancestor revocation, independently observed effects, false refusals and indeterminate observer states.
 
-Ten authored Rust tests cover positive authorization, available-scope excess, parent-to-child revocation, scope and expiry/budget widening, actor/session substitution, observer gaps, unauthorized intermediate effects and pre-revocation ordering. The Cargo test and formatting checks run in the existing PR #141 workflow. The Rust evaluator is an independent semantic implementation, not a parser for the JSON fixture file; exact agreement is still a future differential-test step, and neither implementation observes real OS/resource effects.
+Eleven authored Rust tests cover positive authorization, available-scope excess, parent-to-child revocation, scope and expiry/budget widening, actor/session substitution, observer gaps, unauthorized intermediate effects and pre-revocation ordering. The Cargo test and formatting checks run in the existing PR #141 workflow. The Rust evaluator is an independent semantic implementation, not a parser for the JSON fixture file; exact agreement is still a future differential-test step, and neither implementation observes real OS/resource effects.
