@@ -446,7 +446,8 @@
         "disposition",
         "system_admission_mismatches",
         "unsafe_admissions",
-        "observed_payload_mismatches"
+        "observed_payload_mismatches",
+        "cross_purpose_flow_count"
       ],
       "properties": {
         "action_decision": {
@@ -530,6 +531,10 @@
           "minimum": 0
         },
         "observed_payload_mismatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cross_purpose_flow_count": {
           "type": "integer",
           "minimum": 0
         }
