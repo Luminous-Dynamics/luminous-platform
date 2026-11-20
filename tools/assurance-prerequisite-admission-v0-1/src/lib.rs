@@ -338,6 +338,23 @@ mod tests {
         let claims = vec![claim()]; let r = passed_receipt(claims.clone());
         assert_eq!(evaluate_assurance(&changed(&claims, &r)), Decision::Eligible);
     }
+    #[test] fn indeterminate_revalidation_holds_without_falling_back_to_preflight() {
+        let claims = vec![claim()];
+        let receipt = AssuranceReceipt {
+            state: RevalidationState::Indeterminate,
+            result_ref: Some("assurance-revalidation:uncertain".into()),
+            result_digest: Some("sha256:uncertain".into()),
+            request_digest: Some("sha256:req".into()),
+            prerequisite_set_digest: Some("sha256:set".into()),
+            snapshot_digest: Some("sha256:snapshot-v2".into()),
+            validated_claims: vec![],
+        };
+        assert_eq!(
+            evaluate_assurance(&changed(&claims, &receipt)),
+            Decision::Indeterminate
+        );
+    }
+
     #[test] fn misbound_receipt_denies() {
         let claims = vec![claim()]; let mut r = passed_receipt(claims.clone());
         r.request_digest = Some("sha256:other".into());
