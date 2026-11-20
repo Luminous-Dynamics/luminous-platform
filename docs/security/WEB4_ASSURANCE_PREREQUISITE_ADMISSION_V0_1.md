@@ -64,7 +64,7 @@ An offline participant can continue only operations explicitly permitted by its 
 ## 6. Synthetic contract artifacts
 
 - assurance-prerequisite-admission.schema.v0.1.json: Draft 2020-12 schema for prerequisite-set identity, exact request binding, preflight/commit snapshots and effect outcomes.
-- assurance-prerequisite-admission.fixtures.v0.1.json: 27 synthetic scenarios (9 positive, 13 negative, 5 indeterminate), including explicit-empty-set controls, stale/withdrawn/expired/superseded claims, partial dependency inventory, property-specific non-impact, conditional transfer, post-commit invalidation, claim-before-commit races, authority snapshot revalidation, policy/prerequisite-set substitution, partition/unknown-outcome and reconciliation.
+- assurance-prerequisite-admission.fixtures.v0.1.json: 33 synthetic scenarios (9 positive, 19 negative, 5 indeterminate), including explicit-empty-set controls, stale/withdrawn/expired/superseded claims, partial dependency inventory, property-specific non-impact, conditional transfer, post-commit invalidation, claim-before-commit races, authority snapshot revalidation, policy/prerequisite-set substitution, partition/unknown-outcome and reconciliation.
 - scripts/validate_assurance_prerequisite_admission.py: test-only schema and deterministic reference evaluator.
 - .github/workflows/assurance-prerequisite-admission.yml: read-only, path-scoped conformance workflow.
 
