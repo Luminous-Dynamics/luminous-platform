@@ -1,0 +1,1326 @@
+{
+  "profile": "luminous-observer-independence-closure",
+  "version": "0.1",
+  "status": "synthetic_fixture_suite_not_executed",
+  "no_aggregate_score": true,
+  "claim_profiles": {
+    "critical_effect_truth_v0": {
+      "profile_id": "critical_effect_truth_v0",
+      "required_disjoint_domains": [
+        "process_runtime",
+        "event_stream",
+        "signing_root",
+        "credential_root",
+        "clock_authority",
+        "storage_backend",
+        "control_plane"
+      ],
+      "minimum_independent_witnesses": 2
+    }
+  },
+  "cases": [
+    {
+      "scenario_id": "OIC-001",
+      "control_class": "positive_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        },
+        {
+          "witness_id": "c",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "c:process_runtime",
+            "event_stream": "c:event_stream",
+            "signing_root": "c:signing_root",
+            "credential_root": "c:credential_root",
+            "clock_authority": "c:clock_authority",
+            "storage_backend": "c:storage_backend",
+            "control_plane": "c:control_plane",
+            "operator": "c:operator",
+            "provider": "c:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:c",
+          "attestation_ref": "attestation:c"
+        }
+      ],
+      "expected": {
+        "witness_count": 3,
+        "known_domain_witnesses": 3,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 3,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "OIC-002",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "shared:event_stream",
+            "signing_root": "shared:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "shared:event_stream",
+            "signing_root": "shared:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "event_stream",
+              "signing_root"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-003",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "shared:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "shared:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "signing_root"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-004",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "shared:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "shared:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "credential_root"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-005",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "shared:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "shared:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "clock_authority"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-006",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "shared:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "shared:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "storage_backend"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-007",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "shared:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "shared:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "control_plane"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-008",
+      "control_class": "indeterminate_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": null,
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 1,
+        "unknown_domain_witnesses": 1,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 1,
+        "maximum_independent_sets": [
+          [
+            "a"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "unknown",
+        "final_disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "OIC-009",
+      "control_class": "indeterminate_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "no_effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 2,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "conflict",
+        "final_disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "OIC-010",
+      "control_class": "positive_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "no_effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "no_effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 2,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "no_effect",
+        "final_disposition": "qualified_no_effect"
+      }
+    },
+    {
+      "scenario_id": "OIC-011",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "subject:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "subject:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [
+          "a",
+          "b"
+        ],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 0,
+        "maximum_independent_sets": [],
+        "quorum": 2,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "OIC-012",
+      "control_class": "positive_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "shared:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "shared:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        },
+        {
+          "witness_id": "c",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "c:process_runtime",
+            "event_stream": "c:event_stream",
+            "signing_root": "c:signing_root",
+            "credential_root": "c:credential_root",
+            "clock_authority": "c:clock_authority",
+            "storage_backend": "c:storage_backend",
+            "control_plane": "c:control_plane",
+            "operator": "c:operator",
+            "provider": "c:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:c",
+          "attestation_ref": "attestation:c"
+        }
+      ],
+      "expected": {
+        "witness_count": 3,
+        "known_domain_witnesses": 3,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "storage_backend"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 2,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "c"
+          ],
+          [
+            "b",
+            "c"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "OIC-013",
+      "control_class": "positive_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "shared:operator",
+            "provider": "shared:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "shared:operator",
+            "provider": "shared:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 2,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "OIC-014",
+      "control_class": "positive_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "no_effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "c",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "c:process_runtime",
+            "event_stream": "c:event_stream",
+            "signing_root": "c:signing_root",
+            "credential_root": "c:credential_root",
+            "clock_authority": "c:clock_authority",
+            "storage_backend": "c:storage_backend",
+            "control_plane": "c:control_plane",
+            "operator": "c:operator",
+            "provider": "c:provider"
+          },
+          "observation": "no_effect",
+          "evidence_ref": "evidence:c",
+          "attestation_ref": "attestation:c"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": null,
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 3,
+        "known_domain_witnesses": 2,
+        "unknown_domain_witnesses": 1,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 2,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "c"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "no_effect",
+        "final_disposition": "qualified_no_effect"
+      }
+    },
+    {
+      "scenario_id": "OIC-015",
+      "control_class": "negative_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "shared:credential_root",
+            "clock_authority": "a:clock_authority",
+            "storage_backend": "a:storage_backend",
+            "control_plane": "shared:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "shared:credential_root",
+            "clock_authority": "b:clock_authority",
+            "storage_backend": "b:storage_backend",
+            "control_plane": "shared:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        },
+        {
+          "witness_id": "c",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "c:process_runtime",
+            "event_stream": "c:event_stream",
+            "signing_root": "c:signing_root",
+            "credential_root": "c:credential_root",
+            "clock_authority": "c:clock_authority",
+            "storage_backend": "c:storage_backend",
+            "control_plane": "c:control_plane",
+            "operator": "c:operator",
+            "provider": "c:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:c",
+          "attestation_ref": "attestation:c"
+        }
+      ],
+      "expected": {
+        "witness_count": 3,
+        "known_domain_witnesses": 3,
+        "unknown_domain_witnesses": 0,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 1,
+        "correlated_pairs": [
+          {
+            "left": "a",
+            "right": "b",
+            "shared_domains": [
+              "credential_root",
+              "control_plane"
+            ]
+          }
+        ],
+        "maximum_independent_witnesses": 2,
+        "maximum_independent_sets": [
+          [
+            "a",
+            "c"
+          ],
+          [
+            "b",
+            "c"
+          ]
+        ],
+        "quorum": 2,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "OIC-016",
+      "control_class": "indeterminate_control",
+      "claim_profile_id": "critical_effect_truth_v0",
+      "subject_domains": {
+        "process_runtime": "subject:process_runtime",
+        "event_stream": "subject:event_stream",
+        "signing_root": "subject:signing_root",
+        "credential_root": "subject:credential_root",
+        "clock_authority": "subject:clock_authority",
+        "storage_backend": "subject:storage_backend",
+        "control_plane": "subject:control_plane",
+        "operator": "subject:operator",
+        "provider": "subject:provider"
+      },
+      "witnesses": [
+        {
+          "witness_id": "a",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "a:process_runtime",
+            "event_stream": "a:event_stream",
+            "signing_root": "a:signing_root",
+            "credential_root": "a:credential_root",
+            "clock_authority": null,
+            "storage_backend": "a:storage_backend",
+            "control_plane": "a:control_plane",
+            "operator": "a:operator",
+            "provider": "a:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:a",
+          "attestation_ref": "attestation:a"
+        },
+        {
+          "witness_id": "b",
+          "role": "independent_observer",
+          "domains": {
+            "process_runtime": "b:process_runtime",
+            "event_stream": "b:event_stream",
+            "signing_root": "b:signing_root",
+            "credential_root": "b:credential_root",
+            "clock_authority": null,
+            "storage_backend": "b:storage_backend",
+            "control_plane": "b:control_plane",
+            "operator": "b:operator",
+            "provider": "b:provider"
+          },
+          "observation": "effect",
+          "evidence_ref": "evidence:b",
+          "attestation_ref": "attestation:b"
+        }
+      ],
+      "expected": {
+        "witness_count": 2,
+        "known_domain_witnesses": 0,
+        "unknown_domain_witnesses": 2,
+        "subject_correlated_witnesses": [],
+        "correlated_pair_count": 0,
+        "correlated_pairs": [],
+        "maximum_independent_witnesses": 0,
+        "maximum_independent_sets": [],
+        "quorum": 2,
+        "observation_agreement": "unknown",
+        "final_disposition": "indeterminate"
+      }
+    }
+  ]
+}
