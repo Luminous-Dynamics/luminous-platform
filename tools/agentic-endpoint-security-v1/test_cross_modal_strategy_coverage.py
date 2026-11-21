@@ -62,6 +62,18 @@ class CrossModalTests(unittest.TestCase):
             c["strategy_candidate"]["generator_claimed_technique"]="arbitrary-llm-label"
         self.assertEqual(checker.validate_suite(s2,schema),checker.validate_suite(s,schema))
 
+    def test_reviewers_must_be_blinded_from_generator_and_outcome(self):
+        s,schema=inputs()
+        c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-001")
+        c["blind_attribution"]["generator_metadata_withheld_from_reviewers"]=False
+        reject(s,schema)
+
+    def test_no_effect_requires_complete_independent_oracle(self):
+        s,schema=inputs()
+        c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-002")
+        c["effect_oracle"]["complete"]=False
+        reject(s,schema)
+
     def test_two_reviewer_disagreement_remains_ambiguous(self):
         s,_=inputs()
         c=episode(s,"PAIR-008","text_document")
