@@ -8,14 +8,12 @@ on:
       - "tools/agentic-endpoint-security-v1/src/trace.rs"
       - "tools/agentic-endpoint-security-v1/src/trajectory.rs"
       - "tools/agentic-endpoint-security-v1/src/information_flow.rs"
-      - "tools/assurance-prerequisite-admission-v0-1/src/lib.rs"
-      - "tools/assurance-prerequisite-admission-v0-1/Cargo.toml"
 
 # Export canonical formatting after IFL revocation model changes.
 permissions:
   contents: read
 
-# Temporary canonical-format export for the Rust 1.96.0 benchmark/APAC models.
+# Temporary canonical-format export for the Rust 1.96.0 endpoint benchmark model.
 # Remove this helper after formatted sources are committed to the benchmark branch.
 
 
@@ -44,7 +42,6 @@ jobs:
               "tools/agentic-endpoint-security-v1/src/trace.rs",
               "tools/agentic-endpoint-security-v1/src/trajectory.rs",
               "tools/agentic-endpoint-security-v1/src/information_flow.rs",
-              "tools/assurance-prerequisite-admission-v0-1/src/lib.rs",
           ]
           for path in paths:
               encoded = base64.b64encode(Path(path).read_bytes()).decode("ascii")
