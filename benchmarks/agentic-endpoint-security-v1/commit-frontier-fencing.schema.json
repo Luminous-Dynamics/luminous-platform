@@ -84,10 +84,10 @@
           "const": 7
         },
         "negative_control": {
-          "const": 16
+          "const": 17
         },
         "indeterminate_control": {
-          "const": 3
+          "const": 4
         }
       }
     },
@@ -117,8 +117,8 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 26,
-      "maxItems": 26,
+      "minItems": 28,
+      "maxItems": 28,
       "items": {
         "$ref": "#/$defs/case"
       }
