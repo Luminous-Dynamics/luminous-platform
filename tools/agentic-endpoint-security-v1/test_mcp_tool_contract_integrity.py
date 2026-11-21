@@ -89,6 +89,11 @@ class MTCITests(unittest.TestCase):
   c["oracle"]["observation"]="observed";c["oracle"]["observed_effect_ids"]=["effect:records-read"];c["oracle"]["complete"]=True;c["oracle"]["independent"]=True
   reject(s,schema)
 
+ def test_approval_digest_cannot_be_rewritten_with_presented_descriptor(self):
+  s,schema=inputs();c=case(s,"MTCI-014")
+  c["approval"]["reviewed_descriptor_digest"]="sha256:"+"9"*64
+  reject(s,schema)
+
  def test_invocation_must_bind_approved_descriptor_digest(self):
   s,schema=inputs();c=case(s,"MTCI-014")
   c["invocation"]["descriptor_digest"]= "sha256:"+"9"*64
