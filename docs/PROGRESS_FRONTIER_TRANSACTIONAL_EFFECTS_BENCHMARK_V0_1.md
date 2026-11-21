@@ -6,7 +6,7 @@
 
 TELR tests retries, late commits, stable operation identity and reconciliation. PFTE adds the orthogonal problem of parallel speculative branches and concurrent access to shared resources.
 
-The May 2026 v2 paper *Atomix: Timely, Transactional Tool Use for Reliable Agentic Workflows* separates two conditions for safe settlement: a sealed footprint (which effects/reads belong to the transaction) and per-resource frontiers proving that earlier conflicting work cannot still arrive. Atomix distinguishes bufferable effects, externalized reversible effects and irreversible effects. PFTE tests those semantics with the existing CAPC effect identity and OIC/CFI witness claim ceiling; it does not clone or implement Atomix's runtime.
+The May 2026 v2 paper [*Atomix: Timely, Transactional Tool Use for Reliable Agentic Workflows*](https://arxiv.org/abs/2602.14849) separates two conditions for safe settlement: a sealed footprint (which effects/reads belong to the transaction) and per-resource frontiers proving that earlier conflicting work cannot still arrive. Atomix distinguishes bufferable effects, externalized reversible effects and irreversible effects. PFTE tests those semantics with the existing CAPC effect identity and OIC/CFI witness claim ceiling; it does not clone or implement Atomix's runtime.
 
 ## Core rule
 
