@@ -115,7 +115,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "matched"
+      }
     },
     {
       "scenario_id": "CARI-002",
@@ -227,7 +239,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "implementation_expands_declaration"
+      }
     },
     {
       "scenario_id": "CARI-003",
@@ -358,7 +382,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 2,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 1,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "observed_undeclared_effect"
+      }
     },
     {
       "scenario_id": "CARI-004",
@@ -465,7 +501,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 2,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 1,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "declaration_overstates_implementation"
+      }
     },
     {
       "scenario_id": "CARI-005",
@@ -564,7 +612,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 1,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "indeterminate"
+      }
     },
     {
       "scenario_id": "CARI-006",
@@ -676,7 +736,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "implementation_expands_declaration"
+      }
     },
     {
       "scenario_id": "CARI-007",
@@ -786,7 +858,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 2,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 1,
+        "observed_unmodeled_effect_count": 1,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "observed_unmodeled_effect"
+      }
     },
     {
       "scenario_id": "CARI-008",
@@ -896,7 +980,19 @@
         "complete": true,
         "independent": false
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 2,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 1,
+        "observed_unmodeled_effect_count": 1,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": false,
+        "disposition": "indeterminate"
+      }
     },
     {
       "scenario_id": "CARI-009",
@@ -987,7 +1083,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "matched"
+      }
     },
     {
       "scenario_id": "CARI-010",
@@ -1099,7 +1207,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "implementation_expands_declaration"
+      }
     },
     {
       "scenario_id": "CARI-011",
@@ -1190,7 +1310,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": false,
+        "observer_qualified": true,
+        "disposition": "indeterminate"
+      }
     },
     {
       "scenario_id": "CARI-012",
@@ -1289,7 +1421,19 @@
         "complete": true,
         "independent": true
       },
-      "expected": {}
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 1,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "indeterminate"
+      }
     }
   ]
 }
