@@ -49,7 +49,7 @@ impl Integrity {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SourceClass {
     UserTask,
     AllowlistedConnector,
@@ -244,6 +244,7 @@ pub struct Evaluation {
     pub cross_tenant_flow_count: usize,
     pub cross_purpose_flow_count: usize,
     pub untrusted_parameter_count: usize,
+    pub action_origin_violations: usize,
     pub declassification_receipt_failures: usize,
     pub independently_observed_effect: bool,
     pub observed_payload_mismatches: usize,
@@ -718,7 +719,7 @@ pub fn evaluate(input: &Input) -> Evaluation {
             .chain(observed.keys())
             .collect::<BTreeSet<_>>()
         {
-            if expected.get(*key) != observed.get(*key) {
+            if expected.get(key) != observed.get(key) {
                 observed_payload_mismatches += 1;
             }
         }
