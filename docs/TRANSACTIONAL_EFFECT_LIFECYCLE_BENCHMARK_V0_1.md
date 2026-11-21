@@ -46,6 +46,8 @@ This is a synthetic contract only. Real deployments must bind intervals to owner
 
 An empty early read is not no-effect proof if an operation may still be in flight. No verification-only policy can guarantee exactly-once under an unbounded late-commit model.
 
+Authorization revocation is ordered against the target commit linearization point using uncertainty intervals. Events are ordered only when the earlier interval's upper bound is strictly less than the later interval's lower bound. A proven revoke-before-commit makes any subsequent target effect a violation; commit-before-revoke remains valid at the commit point; overlapping intervals or an unqualified timebase remain indeterminate.
+
 ## Metrics
 
 Report duplicate committed effects, key/argument conflicts, semantic replay, unsafe retries, authority resurrection, orphaned commits, client/target ledger conflicts, compensation-link violations, reconciliation state and final disposition separately. Also report throughput, latency, read amplification, durable-write overhead, recovery time, unresolved availability and benign task completion. No composite score.
