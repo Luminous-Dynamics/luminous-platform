@@ -86,6 +86,7 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         or (e["decision"] == "rejected" and e["effect_observed"]) for e in events
     )
     stale_frontier_acceptance = int(frontier != "ready" and bool(accepted))
+    witness_correlation_acceptance = int(witness_domain_correlation_count > 0 and bool(accepted))
     valid = (
         not owner_unknown and frontier == "ready" and not stale_token and not wrong_binding
         and not policy_mismatch and not op_version_mismatch and not late_epoch and not high_regression
@@ -96,7 +97,8 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
     violations = (
         stale_token_acceptance + late_acceptance + wrong_binding_acceptance + policy_acceptance
         + version_acceptance + toctou + high_regression + atomic_failure + high_mismatch
-        + revision_mismatch + stale_frontier_acceptance + int(invalid_observation)
+        + revision_mismatch + stale_frontier_acceptance + witness_correlation_acceptance
+        + int(invalid_observation)
     )
     if violations:
         disposition = "violation"
@@ -114,6 +116,9 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         disposition = "indeterminate"
     return {
         "frontier_state": frontier,
+        "oic_unknown_domain_count": oic_unknown_domain_count,
+        "witness_domain_correlation_count": witness_domain_correlation_count,
+        "witness_correlation_acceptance_count": witness_correlation_acceptance,
         "stale_token_acceptance_count": stale_token_acceptance,
         "late_epoch_acceptance_count": late_acceptance,
         "wrong_binding_acceptance_count": wrong_binding_acceptance,
@@ -137,6 +142,24 @@ def validate_case(case: dict[str, Any], catalog_ids: set[str]) -> None:
         raise ValueError(f"{case_id}: case fields differ")
     state, cert = case["resource_state"], case["frontier_certificate"]
     operation, fence = case["operation"], case["fence"]
+    oic = case["oic_binding"]
+    if set(oic) != {"profile_id", "oic_case_id", "required_disjoint_domains", "subject_domains", "resource_owner_domains", "witness"}:
+        raise ValueError(f"{case_id}: OIC binding fields differ")
+    if oic["profile_id"] != "critical_effect_truth_v0" or oic["required_disjoint_domains"] != list(CRITICAL_DOMAINS):
+        raise ValueError(f"{case_id}: OIC critical effect-truth profile cannot be weakened")
+    for domain_map_name in ("subject_domains", "resource_owner_domains"):
+        domain_map = oic[domain_map_name]
+        if set(domain_map) != set(DOMAIN_FIELDS):
+            raise ValueError(f"{case_id}: {domain_map_name} must carry the OIC domain inventory")
+    witness = oic["witness"]
+    if set(witness) != {"witness_id", "role", "domains", "evidence_ref", "attestation_ref"}:
+        raise ValueError(f"{case_id}: frontier witness identity fields differ")
+    if witness["role"] not in {"resource_observer", "host_observer", "independent_oracle", "supervisor", "source_inventory"}:
+        raise ValueError(f"{case_id}: invalid OIC witness role")
+    if set(witness["domains"]) != set(DOMAIN_FIELDS):
+        raise ValueError(f"{case_id}: witness must carry the OIC domain inventory")
+    if not witness["witness_id"] or not witness["evidence_ref"] or not witness["attestation_ref"]:
+        raise ValueError(f"{case_id}: OIC witness identity/evidence references must be nonempty")
     if set(state) != {"resource_id", "current_generation", "high_water_generation", "sealed_through_epoch", "owner_revision", "resource_version_at_grant", "current_resource_version", "policy_epoch", "owner_available", "high_water_persisted", "external_witness_generation", "external_witness_independent"}:
         raise ValueError(f"{case_id}: resource-state fields differ")
     for key in ("current_generation", "high_water_generation", "sealed_through_epoch", "owner_revision", "external_witness_generation"):
