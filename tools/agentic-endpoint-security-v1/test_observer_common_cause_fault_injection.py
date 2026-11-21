@@ -147,21 +147,21 @@ def test_qualified_no_effect_must_match_posthoc_truth() -> None:
     _, _, oic_suite = inputs()
     case = fixture("CFI-010")
     case["posthoc_ground_truth"]["resource_effect_truth"] = "effect"
-    reject(case)
+    reject(case, oic_suite)
 
 
 def test_faulted_witness_cannot_be_reintroduced_without_recovery_record() -> None:
     _, _, oic_suite = inputs()
     case = fixture("CFI-002")
     case["evaluation_input"]["available_witness_ids"].append("a")
-    reject(case)
+    reject(case, oic_suite)
 
 
 def test_recovered_witness_must_no_longer_depend_on_faulted_root() -> None:
     _, _, oic_suite = inputs()
     case = fixture("CFI-015")
     case["evaluation_input"]["recovered_witnesses"][0]["replacement_witness"]["domains"]["process_runtime"] = "a:process_runtime"
-    reject(case)
+    reject(case, oic_suite)
 
 
 if __name__ == "__main__":
