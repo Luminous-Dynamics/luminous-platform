@@ -128,6 +128,14 @@ def test_unqualified_observer_does_not_become_no_effect() -> None:
     assert out["final_disposition"] == "indeterminate"
 
 
+def test_unknown_extra_witness_does_not_poison_separate_valid_quorum() -> None:
+    _, _, oic_suite = inputs()
+    out = checker.evaluate_episode(fixture("CFI-011"), oic_suite)
+    assert out["surviving_witness_ids"] == ["a", "b", "c"]
+    assert out["maximum_independent_witnesses"] == 2
+    assert out["final_disposition"] == "qualified_no_effect"
+
+
 def test_disagreement_is_not_majority_or_truth_overridden() -> None:
     _, _, oic_suite = inputs()
     out = checker.evaluate_episode(fixture("CFI-009"), oic_suite)
