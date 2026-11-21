@@ -196,6 +196,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         raise ValueError(f"{sid}: operation identity fields differ")
     if operation["effect_id"] not in effect_ids:
         raise ValueError(f"{sid}: unknown CAPC effect identity")
+    if not isinstance(operation["semantic_operation_id"], str) or not operation["semantic_operation_id"]:
+        raise ValueError(f"{sid}: semantic operation identity is required")
     if len(set(operation["expected_batch_items"])) != len(operation["expected_batch_items"]):
         raise ValueError(f"{sid}: duplicate batch-item identity")
 
@@ -225,6 +227,22 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
             raise ValueError(f"{sid}: invalid target effect identity/kind")
         if entry["kind"] == "compensation" and entry["compensates_for"] is None:
             raise ValueError(f"{sid}: compensation needs explicit parent reference")
+        if entry["kind"] == "effect" and entry["compensates_for"] is not None:
+            raise ValueError(f"{sid}: ordinary effect cannot claim to compensate another effect")
+        if entry["batch_item_id"] is not None and entry["batch_item_id"] not in operation["expected_batch_items"]:
+            raise ValueError(f"{sid}: target ledger includes an unknown batch item")
+        if not isinstance(entry["argument_digest"], str) or len(entry["argument_digest"]) != 71 or not entry["argument_digest"].startswith("sha256:"):
+            raise ValueError(f"{sid}: malformed target argument digest")
+    batch_ids = [entry["batch_item_id"] for entry in target["entries"] if entry["kind"] == "effect" and entry["batch_item_id"] is not None]
+    if len(batch_ids) != len(set(batch_ids)):
+        raise ValueError(f"{sid}: duplicate target batch-item commit")
+    if operation["expected_batch_items"] and any(
+        entry["kind"] == "effect" and entry["batch_item_id"] is None
+        for entry in target["entries"]
+    ):
+        raise ValueError(f"{sid}: batch effect missing its item identity")
+    if not operation["expected_batch_items"] and batch_ids:
+        raise ValueError(f"{sid}: non-batch operation contains batch item identities")
 
     client = case["client_ledger"]
     if set(client) != {"complete", "known_commit_ids", "evidence_sealed", "evidence_integrity", "completed_claim"}:
@@ -263,8 +281,7 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         if parent is not None and parent not in attempt_ids:
             raise ValueError(f"{sid}: retry parent attempt missing")
 
-    if not set(client["known_commit_ids"]).issubset(commit_ids):
-        raise ValueError(f"{sid}: client ledger claims unknown target commits")
+    # Preserve client/target disagreements as evidence; evaluate() classifies them as violations.
     reconciliation = case["reconciliation"]
     if set(reconciliation) != {
         "status", "target_oracle_complete", "independent",
