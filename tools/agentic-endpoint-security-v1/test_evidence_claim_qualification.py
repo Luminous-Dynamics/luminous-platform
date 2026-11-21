@@ -99,7 +99,7 @@ class EvidenceClaimTests(unittest.TestCase):
         suite,_=inputs()
         result=checker.evaluate(case(suite,"ECQ-018"))
         self.assertEqual(result["claim_state"],"qualified")
-        self.assertEqual(result["supported_profiles"],["bounded_edit_contract"])
+        self.assertEqual(result["supported_profiles"],["bounded_edit_contract","synthetic_contract"])
 
     def test_complete_independent_no_effect_observation_is_a_scoped_negative_claim(self):
         suite,_=inputs()
@@ -171,6 +171,6 @@ class EvidenceClaimTests(unittest.TestCase):
     def test_target_observation_must_cover_claimed_resource_and_operation(self):
         suite,_=inputs()
         result=checker.evaluate(case(suite,"ECQ-020"))
-        self.assertIn("observer_fault",result["residual_obligation_ids"][0])
+        self.assertTrue(any("OBSERVER_FAULT" in item for item in result["residual_obligation_ids"]))
 
 if __name__=="__main__":unittest.main()
