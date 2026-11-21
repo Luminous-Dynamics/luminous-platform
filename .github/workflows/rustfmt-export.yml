@@ -8,6 +8,8 @@ on:
       - "tools/agentic-endpoint-security-v1/src/trace.rs"
       - "tools/agentic-endpoint-security-v1/src/trajectory.rs"
       - "tools/agentic-endpoint-security-v1/src/information_flow.rs"
+      - "tools/agentic-endpoint-security-v1/src/transactional_effect.rs"
+      - "tools/agentic-endpoint-security-v1/src/transactional_effect.rs"
 
 # Export canonical formatting after IFL revocation model changes.
 permissions:
@@ -55,6 +57,8 @@ jobs:
               "tools/agentic-endpoint-security-v1/src/trace.rs",
               "tools/agentic-endpoint-security-v1/src/trajectory.rs",
               "tools/agentic-endpoint-security-v1/src/information_flow.rs",
+              "tools/agentic-endpoint-security-v1/src/transactional_effect.rs",
+              "tools/agentic-endpoint-security-v1/src/transactional_effect.rs",
           ]
           for path in paths:
               encoded = base64.b64encode(Path(path).read_bytes()).decode("ascii")
