@@ -244,6 +244,7 @@ pub struct Evaluation {
     pub cross_tenant_flow_count: usize,
     pub cross_purpose_flow_count: usize,
     pub untrusted_parameter_count: usize,
+    pub source_rule_failures: usize,
     pub action_origin_violations: usize,
     pub declassification_receipt_failures: usize,
     pub independently_observed_effect: bool,
@@ -762,6 +763,7 @@ pub fn evaluate(input: &Input) -> Evaluation {
         cross_tenant_flow_count,
         cross_purpose_flow_count,
         untrusted_parameter_count,
+        source_rule_failures,
         action_origin_violations,
         declassification_receipt_failures: faults
             .declass_failure_nodes
