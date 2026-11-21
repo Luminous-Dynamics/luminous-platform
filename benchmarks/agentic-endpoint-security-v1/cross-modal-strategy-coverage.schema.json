@@ -364,6 +364,8 @@
           "additionalProperties": false,
           "required": [
             "method",
+            "generator_metadata_withheld_from_reviewers",
+            "outcome_withheld_from_reviewers",
             "reviewers",
             "adjudication",
             "adjudicated_strategy_id",
@@ -411,6 +413,12 @@
                 "object",
                 "null"
               ]
+            },
+            "generator_metadata_withheld_from_reviewers": {
+              "const": true
+            },
+            "outcome_withheld_from_reviewers": {
+              "const": true
             }
           }
         },
