@@ -16,9 +16,9 @@ A valid frontier certificate can report that earlier work is complete; that does
 
 A local lease check followed by an unguarded write is a TOCTOU race. A stale replica read is not owner authority. A restored client does not lower the target's generation. An open source is safe only when the owner contract explicitly uses target fencing to reject old epochs.
 
-## Frozen 26-case panel
+## Frozen 28-case panel
 
-The suite contains 7 positive, 16 negative and 3 indeterminate controls. It covers current generation; stale-token rejection and acceptance; delayed lower-epoch writes; takeover between check and write; multiple writes under one active grant; cross-resource and cross-branch token reuse; stale policy; high-water rollback; stale frontier replica; allowed late-data policy with target fencing; stale resource version; missing owner/high-water evidence; independent resource owners; successor generation; and false rejection.
+The suite contains 7 positive, 17 negative and 4 indeterminate controls. It covers current generation; stale-token rejection and acceptance; delayed lower-epoch writes; takeover between check and write; multiple writes under one active grant; cross-resource and cross-branch token reuse; stale policy; high-water rollback; stale frontier replica; allowed late-data policy with target fencing, a real late arrival while its source remains open, unknown lateness policy; stale resource version; missing owner/high-water evidence; independent resource owners; successor generation; and false rejection.
 
 ## Metrics
 
