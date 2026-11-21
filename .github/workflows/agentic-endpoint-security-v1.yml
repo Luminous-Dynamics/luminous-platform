@@ -83,6 +83,12 @@ jobs:
       - name: Run trajectory privilege mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_trajectory_privilege.py
 
+      - name: Validate transactional effect lifecycle contract
+        run: python3 tools/agentic-endpoint-security-v1/check_transactional_effect_lifecycle.py
+
+      - name: Run transactional effect lifecycle mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_transactional_effect_lifecycle.py
+
       - name: Validate counterfactual action attribution contract
         run: python3 tools/agentic-endpoint-security-v1/check_counterfactual_action_attribution.py
 
