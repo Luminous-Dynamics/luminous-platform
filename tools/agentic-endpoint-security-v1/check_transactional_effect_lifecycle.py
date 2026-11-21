@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "benchmarks" / "agentic-endpoint-security-v1"
+DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
+
 CONTROL_COUNTS = {
     "positive_control": 7,
     "negative_control": 9,
@@ -208,6 +211,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         raise ValueError(f"{sid}: unknown CAPC effect identity")
     if not isinstance(operation["semantic_operation_id"], str) or not operation["semantic_operation_id"]:
         raise ValueError(f"{sid}: semantic operation identity is required")
+    if not DIGEST_RE.fullmatch(operation["intent_digest"]) or not DIGEST_RE.fullmatch(operation["argument_digest"]):
+        raise ValueError(f"{sid}: malformed operation intent/argument digest")
     if len(set(operation["expected_batch_items"])) != len(operation["expected_batch_items"]):
         raise ValueError(f"{sid}: duplicate batch-item identity")
 
@@ -235,6 +240,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
             or entry["semantic_operation_id"] != operation["semantic_operation_id"]
         ):
             raise ValueError(f"{sid}: target effect is not bound to the declared operation/effect identity")
+        if not DIGEST_RE.fullmatch(entry["argument_digest"]):
+            raise ValueError(f"{sid}: malformed target argument digest")
         if entry["commit_id"] in commit_ids:
             raise ValueError(f"{sid}: duplicate target commit id")
         commit_ids.add(entry["commit_id"])
@@ -246,8 +253,6 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
             raise ValueError(f"{sid}: ordinary effect cannot claim to compensate another effect")
         if entry["batch_item_id"] is not None and entry["batch_item_id"] not in operation["expected_batch_items"]:
             raise ValueError(f"{sid}: target ledger includes an unknown batch item")
-        if not isinstance(entry["argument_digest"], str) or len(entry["argument_digest"]) != 71 or not entry["argument_digest"].startswith("sha256:"):
-            raise ValueError(f"{sid}: malformed target argument digest")
     batch_ids = [entry["batch_item_id"] for entry in target["entries"] if entry["kind"] == "effect" and entry["batch_item_id"] is not None]
     if len(batch_ids) != len(set(batch_ids)):
         raise ValueError(f"{sid}: duplicate target batch-item commit")
@@ -281,6 +286,10 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         if attempt["attempt_id"] in attempt_ids:
             raise ValueError(f"{sid}: duplicate attempt id")
         attempt_ids.add(attempt["attempt_id"])
+        if not attempt["operation_id"] or not attempt["idempotency_key"] or not attempt["grant_id"] or not attempt["nonce_id"]:
+            raise ValueError(f"{sid}: attempt identity/authority fields must be nonempty")
+        if not DIGEST_RE.fullmatch(attempt["argument_digest"]):
+            raise ValueError(f"{sid}: malformed attempt argument digest")
         if attempt["dispatch_state"] not in {"not_sent", "sent", "unknown"}:
             raise ValueError(f"{sid}: invalid dispatch state")
         if attempt["ack_state"] not in {"received", "lost", "pending", "unknown"}:
@@ -296,6 +305,16 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         if parent is not None and parent not in attempt_ids:
             raise ValueError(f"{sid}: retry parent attempt missing")
 
+    # A target-side commit must correspond to a recorded dispatch for the same
+    # operation, idempotency key, and exact argument digest.
+    attempted_tuples = {
+        (attempt["operation_id"], attempt["idempotency_key"], attempt["argument_digest"])
+        for attempt in case["attempts"]
+    }
+    for entry in target["entries"]:
+        if (entry["operation_id"], entry["idempotency_key"], entry["argument_digest"]) not in attempted_tuples:
+            raise ValueError(f"{sid}: target commit has no matching dispatched attempt")
+
     # Preserve client/target disagreements as evidence; evaluate() classifies them as violations.
     reconciliation = case["reconciliation"]
     if set(reconciliation) != {
@@ -305,8 +324,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         raise ValueError(f"{sid}: reconciliation fields differ")
     if reconciliation["status"] not in {"not_started", "committed", "not_committed", "partial", "unknown"}:
         raise ValueError(f"{sid}: invalid reconciliation state")
-    if not set(reconciliation["result_commit_ids"]).issubset(commit_ids):
-        raise ValueError(f"{sid}: reconciliation references unknown target commits")
+    if len(reconciliation["result_commit_ids"]) != len(set(reconciliation["result_commit_ids"])):
+        raise ValueError(f"{sid}: duplicate reconciliation commit reference")
 
     computed = evaluate(case)
     if case["expected"] != computed:
