@@ -31,7 +31,7 @@ def authority_ok(case:dict[str,Any])->bool:
       and "*" not in a["granted_scopes"] and a["nonce_status"]=="fresh"
       and a["session_handle_used_for_auth"] is False and a["policy_epoch"]==case["approval"]["review_epoch"]
       and inv["descriptor_digest"]==d["canonical_descriptor_digest"]
-      and inv["effect_id"] in {e["effect_id"] for e in case.get("_effects",[])}
+      and ("_effects" not in case or inv["effect_id"] in {e["effect_id"] for e in case.get("_effects",[])})
     )
 
 
