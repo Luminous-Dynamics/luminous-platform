@@ -514,8 +514,8 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
         if computed != case["expected"]:
             raise ValueError(f"{sid}: expected {case['expected']!r}, computed {computed!r}")
     wanted = {
-        "positive_control": 5,
-        "negative_control": 12,
+        "positive_control": 6,
+        "negative_control": 14,
         "indeterminate_control": 2,
     }
     if counts != wanted:
