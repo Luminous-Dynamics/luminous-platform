@@ -1065,7 +1065,7 @@
       "scenario_id": "TELR-012",
       "control_class": "indeterminate_control",
       "operation": {
-        "semantic_operation_id": "intent:TELR-012",
+        "semantic_operation_id": "intent-012",
         "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "effect_id": "effect:record-write",
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1594,7 +1594,7 @@
       "scenario_id": "TELR-018",
       "control_class": "negative_control",
       "operation": {
-        "semantic_operation_id": "intent:TELR-018",
+        "semantic_operation_id": "intent-018",
         "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "effect_id": "effect:record-write",
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1681,7 +1681,7 @@
       "scenario_id": "TELR-019",
       "control_class": "negative_control",
       "operation": {
-        "semantic_operation_id": "intent:TELR-019",
+        "semantic_operation_id": "intent-019",
         "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "effect_id": "effect:record-write",
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
