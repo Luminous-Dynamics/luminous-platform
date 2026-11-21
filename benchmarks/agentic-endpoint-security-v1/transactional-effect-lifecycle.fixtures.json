@@ -136,6 +136,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "not_committed",
         "disposition": "qualified_not_committed"
       },
@@ -226,6 +228,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       },
@@ -316,6 +320,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       },
@@ -388,6 +394,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
       },
@@ -460,6 +468,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
       },
@@ -564,6 +574,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       },
@@ -650,6 +662,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "unknown",
         "disposition": "violation"
       },
@@ -769,6 +783,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "violation"
       },
@@ -888,6 +904,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "violation"
       },
@@ -962,6 +980,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "not_committed",
         "disposition": "violation"
       },
@@ -1085,6 +1105,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "partial",
         "disposition": "qualified_partial"
       },
@@ -1173,6 +1195,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "indeterminate"
       },
@@ -1247,6 +1271,8 @@
         "target_client_ledger_conflict_count": 1,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 1,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "not_committed",
         "disposition": "violation"
       },
@@ -1366,6 +1392,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       },
@@ -1470,6 +1498,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 1,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "violation"
       },
@@ -1556,6 +1586,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "unknown",
         "disposition": "violation"
       },
@@ -1628,6 +1660,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
       },
@@ -1718,6 +1752,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "violation"
       },
@@ -1806,6 +1842,8 @@
         "target_client_ledger_conflict_count": 1,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 1,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "unknown",
         "disposition": "violation"
       },
@@ -1939,6 +1977,8 @@
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
         "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       },
@@ -2001,7 +2041,21 @@
         "in_flight_bound_known": true,
         "result_commit_ids": []
       },
-      "expected": {},
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "revocation_precedes_commit",
+        "reconciled_state": "not_committed",
+        "disposition": "qualified_not_committed"
+      },
       "authorization_timing": {
         "grant_interval": {
           "event_id": "grant-TELR-021",
@@ -2100,7 +2154,21 @@
         "in_flight_bound_known": true,
         "result_commit_ids": []
       },
-      "expected": {},
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "revocation_commit_overlap",
+        "reconciled_state": "unknown",
+        "disposition": "indeterminate"
+      },
       "authorization_timing": {
         "grant_interval": {
           "event_id": "grant-TELR-022",
@@ -2217,7 +2285,21 @@
           "c1"
         ]
       },
-      "expected": {},
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "commit_precedes_revocation",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
       "authorization_timing": {
         "grant_interval": {
           "event_id": "grant-TELR-023",
