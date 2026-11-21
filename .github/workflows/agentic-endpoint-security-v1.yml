@@ -83,6 +83,12 @@ jobs:
       - name: Run trajectory privilege mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_trajectory_privilege.py
 
+      - name: Validate MCP tool contract integrity
+        run: python3 tools/agentic-endpoint-security-v1/check_mcp_tool_contract_integrity.py
+
+      - name: Run MCP tool contract integrity mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_mcp_tool_contract_integrity.py
+
       - name: Validate tool capability realization contract
         run: python3 tools/agentic-endpoint-security-v1/check_tool_capability_realization.py
 
