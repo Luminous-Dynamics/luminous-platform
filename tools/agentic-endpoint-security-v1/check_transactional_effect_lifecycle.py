@@ -14,9 +14,9 @@ DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
 DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
 
 CONTROL_COUNTS = {
-    "positive_control": 7,
+    "positive_control": 9,
     "negative_control": 9,
-    "indeterminate_control": 4,
+    "indeterminate_control": 5,
 }
 
 
