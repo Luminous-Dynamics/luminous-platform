@@ -171,6 +171,24 @@ class TransactionalLifecycleTests(unittest.TestCase):
         self.assertEqual(outcome["reconciled_state"], "not_committed")
         self.assertEqual(outcome["disposition"], "qualified_not_committed")
 
+    def test_target_effect_after_proven_revocation_is_violation(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-021")
+        current["target_ledger"]["entries"].append({
+            "commit_id": "late-commit", "operation_id": "op-TELR-021",
+            "semantic_operation_id": "intent-TELR-021", "idempotency_key": "key-TELR-021",
+            "argument_digest": current["operation"]["argument_digest"],
+            "effect_id": current["operation"]["effect_id"], "kind": "effect",
+            "batch_item_id": None, "compensates_for": None,
+            "grant_id": "grant:write", "nonce_id": "nonce-TELR-021"
+        })
+        current["client_ledger"]["known_commit_ids"] = ["late-commit"]
+        current["reconciliation"]["status"] = "committed"
+        current["reconciliation"]["result_commit_ids"] = ["late-commit"]
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["authorization_linearization_violation_count"], 1)
+        self.assertEqual(outcome["disposition"], "violation")
+
     def test_commit_proven_before_revocation_is_valid_at_linearization_point(self):
         suite, _ = inputs()
         outcome = checker.evaluate(case(suite, "TELR-023"))
