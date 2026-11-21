@@ -9,7 +9,7 @@ from typing import Any
 ROOT=Path(__file__).resolve().parents[2]
 BASE=ROOT/"benchmarks"/"agentic-endpoint-security-v1"
 DIGEST=re.compile(r"^sha256:[a-f0-9]{64}$")
-DESCRIPTOR_FIELDS=("server_identity","server_origin","protocol_version","transport","tool_name","tool_id","description_digest","input_schema_digest","output_schema_digest","annotations_digest","canonical_descriptor_digest","server_artifact_digest","build_provenance_ref","canonicalization_version")
+DESCRIPTOR_FIELDS=("server_identity","server_origin","server_audience","protocol_version","transport","tool_name","tool_id","description_digest","input_schema_digest","output_schema_digest","annotations_digest","canonical_descriptor_digest","server_artifact_digest","build_provenance_ref","canonicalization_version")
 COMPONENT_FIELDS=("description_digest","input_schema_digest","output_schema_digest","annotations_digest","server_artifact_digest","server_identity","server_origin","protocol_version","transport","tool_name","tool_id","build_provenance_ref","canonicalization_version")
 
 
@@ -26,8 +26,8 @@ def descriptor_ok(case:dict[str,Any])->bool:
 def authority_ok(case:dict[str,Any])->bool:
     a=case["authority"];d=case["presented_descriptor"];inv=case["invocation"]
     return (
-      a["issuer"]==a["expected_issuer"] and a["token_audience"]==a["expected_audience"]
-      and bool(a["required_scopes"]) and set(a["required_scopes"]).issubset(a["granted_scopes"])
+      a["issuer"]==case["approval"]["approved_issuer"]==a["expected_issuer"] and a["expected_audience"]==d["server_audience"] and a["token_audience"]==d["server_audience"]
+      and a["required_scopes"]==case["approval"]["required_scopes"] and bool(a["required_scopes"]) and set(a["required_scopes"]).issubset(a["granted_scopes"])
       and "*" not in a["granted_scopes"] and a["nonce_status"]=="fresh"
       and a["session_handle_used_for_auth"] is False and a["policy_epoch"]==case["approval"]["review_epoch"]
       and inv["descriptor_digest"]==d["canonical_descriptor_digest"]
