@@ -129,7 +129,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-read",
+        "candidate_effect_id": "effect:document-read",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -245,7 +245,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-read",
+        "candidate_effect_id": "effect:document-read",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -361,7 +361,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -477,7 +477,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -593,7 +593,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -707,7 +707,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -821,7 +821,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read",
           "effect:document-write"
@@ -937,7 +937,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read",
           "effect:document-write"
@@ -1053,7 +1053,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:process-spawn",
+        "candidate_effect_id": "effect:process-spawn",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1169,7 +1169,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:process-spawn",
+        "candidate_effect_id": "effect:process-spawn",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1285,7 +1285,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1405,7 +1405,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:document-write",
+        "candidate_effect_id": "effect:document-write",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1525,7 +1525,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:network-egress",
+        "candidate_effect_id": "effect:network-egress",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1643,7 +1643,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:network-egress",
+        "candidate_effect_id": "effect:network-egress",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1761,7 +1761,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:payment-create",
+        "candidate_effect_id": "effect:payment-create",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
@@ -1862,7 +1862,7 @@
         "runtime_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
       },
       "target": {
-        "attempted_effect_id": "effect:payment-create",
+        "candidate_effect_id": "effect:payment-create",
         "authorized_effect_ids": [
           "effect:document-read"
         ]
