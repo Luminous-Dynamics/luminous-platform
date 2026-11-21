@@ -84,10 +84,10 @@
           "const": 7
         },
         "negative_control": {
-          "const": 17
+          "const": 18
         },
         "indeterminate_control": {
-          "const": 4
+          "const": 5
         }
       }
     },
@@ -117,8 +117,8 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 28,
-      "maxItems": 28,
+      "minItems": 30,
+      "maxItems": 30,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -470,7 +470,8 @@
         "fence",
         "target_events",
         "reconciliation",
-        "expected"
+        "expected",
+        "oic_binding"
       ],
       "properties": {
         "case_id": {
@@ -531,6 +532,9 @@
           "additionalProperties": false,
           "required": [
             "frontier_state",
+            "oic_unknown_domain_count",
+            "witness_domain_correlation_count",
+            "witness_correlation_acceptance_count",
             "stale_token_acceptance_count",
             "late_epoch_acceptance_count",
             "wrong_binding_acceptance_count",
@@ -616,8 +620,172 @@
                 "indeterminate",
                 "violation"
               ]
+            },
+            "oic_unknown_domain_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "witness_domain_correlation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "witness_correlation_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
             }
           }
+        },
+        "oic_binding": {
+          "$ref": "#/$defs/oic_binding"
+        }
+      }
+    },
+    "domains": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "process_runtime",
+        "event_stream",
+        "signing_root",
+        "credential_root",
+        "clock_authority",
+        "storage_backend",
+        "control_plane",
+        "operator",
+        "provider"
+      ],
+      "properties": {
+        "process_runtime": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_stream": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signing_root": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "credential_root": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "clock_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "storage_backend": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "control_plane": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "operator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "frontier_witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "witness_id",
+        "role",
+        "domains",
+        "evidence_ref",
+        "attestation_ref"
+      ],
+      "properties": {
+        "witness_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "resource_observer",
+            "host_observer",
+            "independent_oracle",
+            "supervisor",
+            "source_inventory"
+          ]
+        },
+        "domains": {
+          "$ref": "#/$defs/domains"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attestation_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "oic_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id",
+        "oic_case_id",
+        "required_disjoint_domains",
+        "subject_domains",
+        "resource_owner_domains",
+        "witness"
+      ],
+      "properties": {
+        "profile_id": {
+          "const": "critical_effect_truth_v0"
+        },
+        "oic_case_id": {
+          "type": "string",
+          "pattern": "^OIC-[0-9]{3}$"
+        },
+        "required_disjoint_domains": {
+          "const": [
+            "process_runtime",
+            "event_stream",
+            "signing_root",
+            "credential_root",
+            "clock_authority",
+            "storage_backend",
+            "control_plane"
+          ]
+        },
+        "subject_domains": {
+          "$ref": "#/$defs/domains"
+        },
+        "resource_owner_domains": {
+          "$ref": "#/$defs/domains"
+        },
+        "witness": {
+          "$ref": "#/$defs/frontier_witness"
         }
       }
     }
