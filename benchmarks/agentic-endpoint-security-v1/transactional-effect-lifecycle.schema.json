@@ -77,13 +77,13 @@
       ],
       "properties": {
         "positive_control": {
-          "const": 7
+          "const": 9
         },
         "negative_control": {
           "const": 9
         },
         "indeterminate_control": {
-          "const": 4
+          "const": 5
         }
       }
     },
@@ -96,8 +96,8 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 20,
-      "maxItems": 20,
+      "minItems": 23,
+      "maxItems": 23,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -246,7 +246,8 @@
         "client_ledger",
         "authority_ledger",
         "reconciliation",
-        "expected"
+        "expected",
+        "authorization_timing"
       ],
       "properties": {
         "scenario_id": {
@@ -535,7 +536,9 @@
             "compensation_link_violation_count",
             "reconciled_state",
             "disposition",
-            "false_completion_claim_count"
+            "false_completion_claim_count",
+            "authorization_linearization_violation_count",
+            "authorization_linearization_state"
           ],
           "properties": {
             "duplicate_effect_count": {
@@ -590,8 +593,124 @@
             "false_completion_claim_count": {
               "type": "integer",
               "minimum": 0
+            },
+            "authorization_linearization_violation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "authorization_linearization_state": {
+              "enum": [
+                "not_evaluated",
+                "timebase_unqualified",
+                "grant_order_unproven",
+                "grant_precedes_commit_no_revocation",
+                "revocation_precedes_commit",
+                "commit_precedes_revocation",
+                "revocation_commit_overlap"
+              ]
             }
           }
+        },
+        "authorization_timing": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "grant_interval",
+                "revocation_interval",
+                "commit_interval",
+                "linearization_point",
+                "owner_policy_ref"
+              ],
+              "properties": {
+                "grant_interval": {
+                  "$ref": "#/$defs/event_interval"
+                },
+                "revocation_interval": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/event_interval"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "commit_interval": {
+                  "$ref": "#/$defs/event_interval"
+                },
+                "linearization_point": {
+                  "const": "target_commit"
+                },
+                "owner_policy_ref": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "event_interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "lower_ns",
+        "upper_ns",
+        "time_scale",
+        "clock_domain",
+        "clock_epoch",
+        "timebase_ref",
+        "timebase_verified",
+        "sequence",
+        "capture_point"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lower_ns": {
+          "type": "integer"
+        },
+        "upper_ns": {
+          "type": "integer"
+        },
+        "time_scale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clock_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clock_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timebase_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timebase_verified": {
+          "type": "boolean"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "capture_point": {
+          "enum": [
+            "authority_grant_committed",
+            "authority_revocation_committed",
+            "target_commit_linearization"
+          ]
         }
       }
     }
