@@ -1258,6 +1258,96 @@
         "authority_integrity_ok": true,
         "disposition": "accepted"
       }
+    },
+    {
+      "scenario_id": "MTCI-015",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-014",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:shadow"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "response_server_identity_mismatch",
+        "evidence_ref": "admission:MTCI-015"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-015"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": true,
+        "disposition": "denied"
+      }
     }
   ],
   "effects": [
