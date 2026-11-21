@@ -328,7 +328,8 @@
                 "authority_substitution",
                 "source_to_action_route",
                 "target_effect_id",
-                "causal_chain"
+                "causal_chain",
+                "strategy_class"
               ],
               "properties": {
                 "id": {
@@ -354,6 +355,12 @@
                   "items": {
                     "type": "string"
                   }
+                },
+                "strategy_class": {
+                  "enum": [
+                    "attack",
+                    "control"
+                  ]
                 }
               }
             }
@@ -412,6 +419,56 @@
               "type": [
                 "object",
                 "null"
+              ],
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "strategy_class",
+                    "mechanism_class",
+                    "authority_substitution",
+                    "source_to_action_route",
+                    "target_effect_id",
+                    "causal_chain"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "strategy_class": {
+                      "enum": [
+                        "attack",
+                        "control"
+                      ]
+                    },
+                    "mechanism_class": {
+                      "type": "string"
+                    },
+                    "authority_substitution": {
+                      "type": "string"
+                    },
+                    "source_to_action_route": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "target_effect_id": {
+                      "type": "string"
+                    },
+                    "causal_chain": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
               ]
             },
             "generator_metadata_withheld_from_reviewers": {
