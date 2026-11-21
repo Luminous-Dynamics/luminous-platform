@@ -102,11 +102,7 @@ fn find_grant<'a>(id: &str, grants: &'a [Grant]) -> Option<&'a Grant> {
     grants.iter().find(|grant| grant.id == id)
 }
 
-fn delegation_valid(
-    grant_id: &str,
-    grants: &[Grant],
-    seen: &mut BTreeSet<String>,
-) -> bool {
+fn delegation_valid(grant_id: &str, grants: &[Grant], seen: &mut BTreeSet<String>) -> bool {
     if !seen.insert(grant_id.to_owned()) {
         return false;
     }
@@ -122,7 +118,10 @@ fn delegation_valid(
     };
 
     parent.delegation_allowed
-        && parent.delegates_to.iter().any(|actor| actor == &child.actor)
+        && parent
+            .delegates_to
+            .iter()
+            .any(|actor| actor == &child.actor)
         && parent.root_session == child.root_session
         && child
             .capabilities
@@ -134,12 +133,7 @@ fn delegation_valid(
         && delegation_valid(parent_id, grants, seen)
 }
 
-fn active_chain(
-    grant_id: &str,
-    step: u64,
-    grants: &[Grant],
-    seen: &mut BTreeSet<String>,
-) -> bool {
+fn active_chain(grant_id: &str, step: u64, grants: &[Grant], seen: &mut BTreeSet<String>) -> bool {
     if !seen.insert(grant_id.to_owned()) {
         return false;
     }
@@ -161,12 +155,7 @@ fn active_chain(
     }
 }
 
-fn chain_revoked(
-    grant_id: &str,
-    step: u64,
-    grants: &[Grant],
-    seen: &mut BTreeSet<String>,
-) -> bool {
+fn chain_revoked(grant_id: &str, step: u64, grants: &[Grant], seen: &mut BTreeSet<String>) -> bool {
     if !seen.insert(grant_id.to_owned()) {
         return false;
     }
@@ -203,9 +192,7 @@ fn event_has_valid_grant(event: &TraceEvent, grants: &[Grant]) -> bool {
     let mut active_path = BTreeSet::new();
     grant.actor == event.authority.actor
         && grant.root_session == event.root_session
-        && grant
-            .capabilities
-            .contains(&event.authority.capability)
+        && grant.capabilities.contains(&event.authority.capability)
         && active_chain(grant_id, event.step, grants, &mut active_path)
 }
 
@@ -350,9 +337,7 @@ pub fn evaluate_trajectory(trajectory: &Trajectory) -> Evaluation {
         cumulative_excess_exposure,
         peak_excess_available,
         exercised: exercised.into_iter().collect(),
-        independently_observed_effects: independently_observed_effects
-            .into_iter()
-            .collect(),
+        independently_observed_effects: independently_observed_effects.into_iter().collect(),
         unauthorized_attempts,
         unauthorized_admissions,
         unauthorized_effects,
@@ -435,7 +420,10 @@ mod tests {
 
     #[test]
     fn expected_authority_is_qualified() {
-        assert_eq!(evaluate_trajectory(&baseline()).disposition, Disposition::Qualified);
+        assert_eq!(
+            evaluate_trajectory(&baseline()).disposition,
+            Disposition::Qualified
+        );
     }
 
     #[test]
@@ -565,10 +553,7 @@ mod tests {
             effect: EffectObservation::Observed,
         }];
 
-        assert_eq!(
-            evaluate_trajectory(&trajectory).unauthorized_effects,
-            1
-        );
+        assert_eq!(evaluate_trajectory(&trajectory).unauthorized_effects, 1);
     }
 
     #[test]
