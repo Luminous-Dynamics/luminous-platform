@@ -371,6 +371,15 @@ fn derive_lineage(
             value.valid = false;
             faults.unknown_nodes.insert(node_id.to_owned());
         }
+        // A source revoked at or before the flow step cannot authorize this
+        // flow. Same-step ordering is ambiguous, so fail closed rather than
+        // assuming the use preceded revocation.
+        if source
+            .revoked_at_step
+            .is_some_and(|revoked_at| revoked_at <= input.flow.step)
+        {
+            value.valid = false;
+        }
         if node.declared_sources != value.sources
             || node.sensitivity != source.sensitivity
             || node.integrity != source.integrity
@@ -1107,6 +1116,18 @@ mod tests {
         input.sources[0].class = SourceClass::Memory;
         input.sources[0].revoked_at_step = Some(8);
         input.parameter_rules[0].allowed_source_ids = ["source:user".into()].into_iter().collect();
+        input.parameter_rules[0].allowed_source_classes =
+            [SourceClass::Memory].into_iter().collect();
+        let result = evaluate(&input);
+        assert_eq!(result.flow_decision, Decision::Denied);
+        assert_eq!(result.admission_decision, AdmissionDecision::Deny);
+    }
+
+    #[test]
+    fn same_step_source_revocation_is_not_assumed_to_follow_the_flow() {
+        let mut input = base_input();
+        input.sources[0].class = SourceClass::Memory;
+        input.sources[0].revoked_at_step = Some(input.flow.step);
         input.parameter_rules[0].allowed_source_classes =
             [SourceClass::Memory].into_iter().collect();
         let result = evaluate(&input);
