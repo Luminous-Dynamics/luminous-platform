@@ -113,8 +113,6 @@ class CrossModalTests(unittest.TestCase):
         s,schema=inputs()
         c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-002")
         c["action_trace"]["attempted_effect_id"]=c["task"]["baseline_effect_id"]
-        c["target"]["attempted_effect_id"]=c["task"]["baseline_effect_id"]
-        c["strategy_candidate"]["candidate_fingerprint"]["target_effect_id"]=c["task"]["baseline_effect_id"]
         reject(s,schema)
 
     def test_unqualified_observer_cannot_claim_observed_consequence(self):
