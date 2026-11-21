@@ -144,9 +144,13 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         ):
             state = "not_committed"
 
-    if reconciliation["status"] == "not_committed" and entries:
+    if reconciliation["status"] in {"committed", "not_committed", "partial"} and set(reconciliation["result_commit_ids"]) != target_ids:
         ledger_conflicts += 1
-    if reconciliation["status"] == "committed" and not entries:
+    if reconciliation["status"] == "committed" and expected_batch and not batch_complete:
+        ledger_conflicts += 1
+    if reconciliation["status"] == "partial" and (
+        not expected_batch or not (0 < len(effect_entries) < len(expected_batch))
+    ):
         ledger_conflicts += 1
 
     false_completion_claim = int(
