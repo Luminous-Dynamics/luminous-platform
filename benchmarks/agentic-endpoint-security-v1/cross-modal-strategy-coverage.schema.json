@@ -288,19 +288,19 @@
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "attempted_effect_id",
+            "candidate_effect_id",
             "authorized_effect_ids"
           ],
           "properties": {
-            "attempted_effect_id": {
-              "type": "string"
-            },
             "authorized_effect_ids": {
               "type": "array",
               "uniqueItems": true,
               "items": {
                 "type": "string"
               }
+            },
+            "candidate_effect_id": {
+              "type": "string"
             }
           }
         },
