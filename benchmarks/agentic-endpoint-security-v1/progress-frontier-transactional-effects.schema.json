@@ -1,0 +1,616 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:progress-frontier-transactional-effects:0.1",
+  "title": "Progress-Frontier Transactional Effects Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "constraints",
+    "canonical_effect_owner",
+    "control_distribution",
+    "effect_catalog",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-progress-frontier-transactional-effects"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_progress_frontier_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "isolated_disposable_environment_required",
+        "external_network_access",
+        "production_endpoints",
+        "real_credentials_or_customer_data",
+        "synthetic_canaries_only",
+        "independent_frontier_witness_required",
+        "unknown_frontier_blocks_commit",
+        "irreversible_speculative_dispatch_forbidden"
+      ],
+      "properties": {
+        "isolated_disposable_environment_required": {
+          "const": true
+        },
+        "external_network_access": {
+          "const": false
+        },
+        "production_endpoints": {
+          "const": false
+        },
+        "real_credentials_or_customer_data": {
+          "const": false
+        },
+        "synthetic_canaries_only": {
+          "const": true
+        },
+        "independent_frontier_witness_required": {
+          "const": true
+        },
+        "unknown_frontier_blocks_commit": {
+          "const": true
+        },
+        "irreversible_speculative_dispatch_forbidden": {
+          "const": true
+        }
+      }
+    },
+    "canonical_effect_owner": {
+      "const": "CAPC-v0.1"
+    },
+    "control_distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive_control",
+        "negative_control",
+        "indeterminate_control"
+      ],
+      "properties": {
+        "positive_control": {
+          "const": 8
+        },
+        "negative_control": {
+          "const": 8
+        },
+        "indeterminate_control": {
+          "const": 6
+        }
+      }
+    },
+    "effect_catalog": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "effect_id",
+          "owner_id",
+          "operation",
+          "default_class"
+        ],
+        "properties": {
+          "effect_id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "default_class": {
+            "enum": [
+              "bufferable",
+              "externalized_reversible",
+              "irreversible",
+              "compensation"
+            ]
+          }
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 22,
+      "maxItems": 22,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "instance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instance_id",
+        "effect_id",
+        "resource_id",
+        "effect_class",
+        "dependency_order",
+        "argument_digest"
+      ],
+      "properties": {
+        "instance_id": {
+          "type": "string"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "effect_class": {
+          "enum": [
+            "bufferable",
+            "externalized_reversible",
+            "irreversible",
+            "compensation"
+          ]
+        },
+        "dependency_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "argument_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "tx_id",
+        "branch_id",
+        "semantic_operation_id",
+        "instance_id",
+        "effect_id",
+        "resource_id",
+        "event_kind",
+        "sequence",
+        "dependency_order",
+        "compensates_for"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "tx_id": {
+          "type": "string"
+        },
+        "branch_id": {
+          "type": "string"
+        },
+        "semantic_operation_id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "event_kind": {
+          "enum": [
+            "released",
+            "externalized",
+            "compensation"
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dependency_order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "compensates_for": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "control_class",
+        "transaction",
+        "target_events",
+        "history_events",
+        "reconciliation",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^PFTE-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "transaction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tx_id",
+            "branch_id",
+            "root_task_id",
+            "epoch",
+            "outcome",
+            "settlement",
+            "footprint_sealed",
+            "footprint_digest_at_seal",
+            "observed_footprint_digest",
+            "restored_from_checkpoint",
+            "semantic_operation_id",
+            "effects",
+            "reads",
+            "writes",
+            "resource_versions",
+            "frontiers",
+            "conflicting_transactions"
+          ],
+          "properties": {
+            "tx_id": {
+              "type": "string"
+            },
+            "branch_id": {
+              "type": "string"
+            },
+            "root_task_id": {
+              "type": "string"
+            },
+            "epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "outcome": {
+              "enum": [
+                "winner",
+                "loser",
+                "pending"
+              ]
+            },
+            "settlement": {
+              "enum": [
+                "commit",
+                "partial",
+                "abort",
+                "pending"
+              ]
+            },
+            "footprint_sealed": {
+              "type": "boolean"
+            },
+            "footprint_digest_at_seal": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "observed_footprint_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "restored_from_checkpoint": {
+              "type": "boolean"
+            },
+            "semantic_operation_id": {
+              "type": "string"
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/instance"
+              }
+            },
+            "reads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "resource_id",
+                  "expected_version"
+                ],
+                "properties": {
+                  "resource_id": {
+                    "type": "string"
+                  },
+                  "expected_version": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "writes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "resource_id",
+                  "expected_version"
+                ],
+                "properties": {
+                  "resource_id": {
+                    "type": "string"
+                  },
+                  "expected_version": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "resource_versions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "resource_id",
+                  "current_version"
+                ],
+                "properties": {
+                  "resource_id": {
+                    "type": "string"
+                  },
+                  "current_version": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "frontiers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "resource_id",
+                  "prior_through_epoch",
+                  "through_epoch",
+                  "complete",
+                  "independent",
+                  "witness_qualified",
+                  "outstanding_conflicting_epochs",
+                  "witness_ref"
+                ],
+                "properties": {
+                  "resource_id": {
+                    "type": "string"
+                  },
+                  "prior_through_epoch": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "through_epoch": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  },
+                  "independent": {
+                    "type": "boolean"
+                  },
+                  "witness_qualified": {
+                    "type": "boolean"
+                  },
+                  "outstanding_conflicting_epochs": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "witness_ref": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "conflicting_transactions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "tx_id",
+                  "epoch",
+                  "resource_id",
+                  "status"
+                ],
+                "properties": {
+                  "tx_id": {
+                    "type": "string"
+                  },
+                  "epoch": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "resource_id": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "in_flight",
+                      "completed",
+                      "aborted",
+                      "unknown"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "target_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "history_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "complete",
+            "independent",
+            "result_event_ids"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "committed",
+                "partial",
+                "aborted",
+                "unknown"
+              ]
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            },
+            "result_event_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "frontier_status",
+            "frontier_false_advance_count",
+            "footprint_mutation_count",
+            "stale_resource_version_count",
+            "missing_resource_version_count",
+            "conflicting_inflight_count",
+            "losing_branch_effect_count",
+            "early_irreversible_effect_count",
+            "bufferable_abort_leak_count",
+            "uncompensated_externalized_count",
+            "compensation_order_violation_count",
+            "semantic_replay_count",
+            "reconciliation_mismatch_count",
+            "duplicate_visible_effect_instance_count",
+            "disposition"
+          ],
+          "properties": {
+            "frontier_status": {
+              "enum": [
+                "ready",
+                "behind",
+                "unknown",
+                "contradictory"
+              ]
+            },
+            "frontier_false_advance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "footprint_mutation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale_resource_version_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missing_resource_version_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "conflicting_inflight_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "losing_branch_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "early_irreversible_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "bufferable_abort_leak_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uncompensated_externalized_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "compensation_order_violation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "semantic_replay_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reconciliation_mismatch_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "duplicate_visible_effect_instance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "disposition": {
+              "enum": [
+                "qualified_commit",
+                "qualified_partial",
+                "qualified_abort",
+                "indeterminate",
+                "violation"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
