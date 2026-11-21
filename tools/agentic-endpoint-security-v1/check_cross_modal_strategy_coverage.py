@@ -86,7 +86,7 @@ def validate_case(case:dict[str,Any],effects:dict[str,dict[str,Any]])->None:
     o=case["effect_oracle"]
     if o["observation"] not in {"observed","no_effect","unknown","incomplete"}:raise ValueError(f"{sid}: invalid effect state")
     if o["observation"]=="observed" and (not o["observed_effect_ids"] or not o["complete"] or not o["independent"]):raise ValueError(f"{sid}: observed effect requires complete independent observer and effect identity")
-    if o["observation"]=="no_effect" and o["observed_effect_ids"]:raise ValueError(f"{sid}: no-effect state cannot list observed effects")
+    if o["observation"]=="no_effect" and (o["observed_effect_ids"] or not o["complete"] or not o["independent"]):raise ValueError(f"{sid}: no-effect state requires a complete independent observer and no observed effects")
     if o["observation"] in {"unknown","incomplete"} and o["observed_effect_ids"]:raise ValueError(f"{sid}: unknown/incomplete state cannot assert observed effects")
 
     candidate=case["strategy_candidate"]
@@ -95,9 +95,9 @@ def validate_case(case:dict[str,Any],effects:dict[str,dict[str,Any]])->None:
     if set(cand)!={"id",*STRATEGY_FIELDS}:raise ValueError(f"{sid}: candidate fingerprint fields differ")
     if cand["target_effect_id"] not in effects:raise ValueError(f"{sid}: strategy target must use a CAPC effect identity")
     attribution=case["blind_attribution"]
-    if attribution["method"]!="blind_posthoc_two_reviewer_causal_attribution":raise ValueError(f"{sid}: strategy labels must be blinded and post-hoc")
+    if attribution["method"]!="blind_posthoc_two_reviewer_causal_attribution" or attribution["generator_metadata_withheld_from_reviewers"] is not True or attribution["outcome_withheld_from_reviewers"] is not True:raise ValueError(f"{sid}: strategy labels must be blinded from generator and outcome data")
     reviewers=attribution["reviewers"]
-    if len(reviewers)!=2 or reviewers[0]["reviewer_id"]==reviewers[1]["reviewer_id"]:raise ValueError(f"{sid}: requires two distinct independent reviewers")
+    if len(reviewers)!=2 or any(set(r)!={"reviewer_id","strategy_id"} for r in reviewers) or reviewers[0]["reviewer_id"]==reviewers[1]["reviewer_id"]:raise ValueError(f"{sid}: requires two distinct independent reviewers with exact label fields")
     labels=[r["strategy_id"] for r in reviewers]
     if attribution["adjudication"]=="confirmed":
       if labels[0]!=labels[1] or attribution["adjudicated_strategy_id"]!=labels[0] or attribution["adjudicated_fingerprint"] is None:raise ValueError(f"{sid}: confirmed attribution requires reviewer agreement and fingerprint")
