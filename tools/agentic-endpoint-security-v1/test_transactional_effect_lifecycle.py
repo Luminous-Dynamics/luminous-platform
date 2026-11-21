@@ -33,7 +33,7 @@ class TransactionalLifecycleTests(unittest.TestCase):
     def test_frozen_lifecycle_panel(self):
         suite, schema = inputs()
         self.assertEqual(checker.validate_suite(suite, schema), {
-            "cases": 20, "positive_control": 7, "negative_control": 9, "indeterminate_control": 4
+            "cases": 23, "positive_control": 9, "negative_control": 9, "indeterminate_control": 5
         })
 
     def test_lost_ack_reconciles_to_committed_target_effect(self):
