@@ -38,6 +38,19 @@ jobs:
     steps:
       - name: Check out exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Assert exact source revision
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$EXPECTED_HEAD_SHA" ]; then
+            printf 'Expected exact source %s, checked out %s\\n' "$EXPECTED_HEAD_SHA" "$actual" >&2
+            exit 1
+          fi
+          printf 'CHECKED_OUT_EXACT_HEAD=%s\\n' "$actual"
+
 
       - name: Install pinned Rust toolchain and components
         uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
