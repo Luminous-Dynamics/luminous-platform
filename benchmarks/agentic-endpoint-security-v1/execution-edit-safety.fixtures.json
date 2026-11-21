@@ -59,16 +59,16 @@
       "selected_continuation_id": "safe-preserve",
       "no_safe_continuation_witness": null,
       "expected": {
-        "safe_continuation_ids": [
-          "safe-preserve"
-        ],
+        "safe_continuation_ids": [],
         "exclusion_reasons": {
-          "safe-preserve": []
+          "safe-preserve": [
+            "unverified_result_claim"
+          ]
         },
-        "expected_edit_decision": "accept",
-        "selected_continuation_safe": true,
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
         "no_safe_witness_valid": false,
-        "disposition": "safe_edit_accepted"
+        "disposition": "decision_mismatch"
       }
     },
     {
@@ -159,7 +159,8 @@
         "exclusion_reasons": {
           "wait-and-reconcile": [],
           "retry-with-new-call": [
-            "external_operation_replay_or_unresolved_retry"
+            "external_operation_replay_or_unresolved_retry",
+            "unverified_result_claim"
           ]
         },
         "expected_edit_decision": "accept",
@@ -748,7 +749,8 @@
         "safe_continuation_ids": [],
         "exclusion_reasons": {
           "continue-from-untrusted-summary": [
-            "authoritative_history_or_target_ledger_incomplete"
+            "authoritative_history_or_target_ledger_incomplete",
+            "unverified_result_claim"
           ]
         },
         "expected_edit_decision": "reject_no_safe_continuation",
@@ -919,7 +921,8 @@
         ],
         "exclusion_reasons": {
           "replay-while-flight": [
-            "external_operation_replay_or_unresolved_retry"
+            "external_operation_replay_or_unresolved_retry",
+            "unverified_result_claim"
           ],
           "preserve-pending-and-wait": []
         },
