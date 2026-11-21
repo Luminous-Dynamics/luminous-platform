@@ -83,6 +83,12 @@ jobs:
       - name: Run trajectory privilege mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_trajectory_privilege.py
 
+      - name: Validate cross-modal strategy coverage contract
+        run: python3 tools/agentic-endpoint-security-v1/check_cross_modal_strategy_coverage.py
+
+      - name: Run cross-modal strategy coverage mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_cross_modal_strategy_coverage.py
+
       - name: Validate tool capability realization contract
         run: python3 tools/agentic-endpoint-security-v1/check_tool_capability_realization.py
 

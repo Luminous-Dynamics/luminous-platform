@@ -1,0 +1,660 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:cross-modal-strategy-coverage:0.1",
+  "title": "Cross-Modal Strategy Coverage Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "constraints",
+    "canonical_effect_owner",
+    "effects",
+    "causal_strategy_fields",
+    "modalities",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-cross-modal-strategy-coverage"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_matched_pair_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "disposable_isolated_lab_required",
+        "external_network_access",
+        "production_endpoints",
+        "real_credentials_or_customer_data",
+        "synthetic_canaries_only",
+        "independent_effect_oracle_required"
+      ],
+      "properties": {
+        "disposable_isolated_lab_required": {
+          "const": true
+        },
+        "external_network_access": {
+          "const": false
+        },
+        "production_endpoints": {
+          "const": false
+        },
+        "real_credentials_or_customer_data": {
+          "const": false
+        },
+        "synthetic_canaries_only": {
+          "const": true
+        },
+        "independent_effect_oracle_required": {
+          "const": true
+        }
+      }
+    },
+    "canonical_effect_owner": {
+      "const": "CAPC-v0.1"
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    },
+    "causal_strategy_fields": {
+      "const": [
+        "mechanism_class",
+        "authority_substitution",
+        "source_to_action_route",
+        "target_effect_id",
+        "causal_chain"
+      ]
+    },
+    "modalities": {
+      "const": [
+        "text_document",
+        "page_image"
+      ]
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect_id",
+        "owner_id",
+        "tenant_id",
+        "resource_id",
+        "operation",
+        "effect_class",
+        "principal_id",
+        "workload_id",
+        "session_id",
+        "argument_constraint_digest",
+        "resource_version_precondition",
+        "policy_epoch",
+        "service_id",
+        "credential_lineage"
+      ],
+      "properties": {
+        "effect_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workload_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "argument_constraint_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "resource_version_precondition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "credential_lineage": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "pair_id",
+        "split",
+        "modality",
+        "task",
+        "document",
+        "environment",
+        "target",
+        "strategy_candidate",
+        "blind_attribution",
+        "model_trace",
+        "action_trace",
+        "admission",
+        "effect_oracle",
+        "expected"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "pattern": "^PAIR-[0-9]{3}-(T|I)$"
+        },
+        "pair_id": {
+          "type": "string",
+          "pattern": "^PAIR-[0-9]{3}$"
+        },
+        "split": {
+          "enum": [
+            "development",
+            "held_out"
+          ]
+        },
+        "modality": {
+          "enum": [
+            "text_document",
+            "page_image"
+          ]
+        },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "trusted_task_digest",
+            "baseline_effect_id"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "trusted_task_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "baseline_effect_id": {
+              "type": "string"
+            }
+          }
+        },
+        "document": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "semantic_payload_id",
+            "artifact_digest",
+            "model_input_capture_ref",
+            "render_config_id"
+          ],
+          "properties": {
+            "semantic_payload_id": {
+              "type": "string"
+            },
+            "artifact_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "model_input_capture_ref": {
+              "type": "string"
+            },
+            "render_config_id": {
+              "type": "string"
+            }
+          }
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_id",
+            "model_version",
+            "tool_contract_digest",
+            "runtime_digest"
+          ],
+          "properties": {
+            "model_id": {
+              "type": "string"
+            },
+            "model_version": {
+              "type": "string"
+            },
+            "tool_contract_digest": {
+              "type": "string"
+            },
+            "runtime_digest": {
+              "type": "string"
+            }
+          }
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_effect_id",
+            "authorized_effect_ids"
+          ],
+          "properties": {
+            "authorized_effect_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "candidate_effect_id": {
+              "type": "string"
+            }
+          }
+        },
+        "strategy_candidate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "generator_claim_id",
+            "generator_claimed_technique",
+            "candidate_fingerprint"
+          ],
+          "properties": {
+            "generator_claim_id": {
+              "type": "string"
+            },
+            "generator_claimed_technique": {
+              "type": "string"
+            },
+            "candidate_fingerprint": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "mechanism_class",
+                "authority_substitution",
+                "source_to_action_route",
+                "target_effect_id",
+                "causal_chain",
+                "strategy_class"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "mechanism_class": {
+                  "type": "string"
+                },
+                "authority_substitution": {
+                  "type": "string"
+                },
+                "source_to_action_route": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "target_effect_id": {
+                  "type": "string"
+                },
+                "causal_chain": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "strategy_class": {
+                  "enum": [
+                    "attack",
+                    "control"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "blind_attribution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method",
+            "generator_metadata_withheld_from_reviewers",
+            "outcome_withheld_from_reviewers",
+            "reviewers",
+            "adjudication",
+            "adjudicated_strategy_id",
+            "adjudicated_fingerprint"
+          ],
+          "properties": {
+            "method": {
+              "const": "blind_posthoc_two_reviewer_causal_attribution"
+            },
+            "reviewers": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reviewer_id",
+                  "strategy_id"
+                ],
+                "properties": {
+                  "reviewer_id": {
+                    "type": "string"
+                  },
+                  "strategy_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "adjudication": {
+              "enum": [
+                "confirmed",
+                "ambiguous"
+              ]
+            },
+            "adjudicated_strategy_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "adjudicated_fingerprint": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "strategy_class",
+                    "mechanism_class",
+                    "authority_substitution",
+                    "source_to_action_route",
+                    "target_effect_id",
+                    "causal_chain"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "strategy_class": {
+                      "enum": [
+                        "attack",
+                        "control"
+                      ]
+                    },
+                    "mechanism_class": {
+                      "type": "string"
+                    },
+                    "authority_substitution": {
+                      "type": "string"
+                    },
+                    "source_to_action_route": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "target_effect_id": {
+                      "type": "string"
+                    },
+                    "causal_chain": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "generator_metadata_withheld_from_reviewers": {
+              "const": true
+            },
+            "outcome_withheld_from_reviewers": {
+              "const": true
+            }
+          }
+        },
+        "model_trace": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model_visible",
+            "instruction_recognition",
+            "evidence_ref"
+          ],
+          "properties": {
+            "model_visible": {
+              "const": true
+            },
+            "instruction_recognition": {
+              "enum": [
+                "recognized",
+                "not_recognized",
+                "unknown"
+              ]
+            },
+            "evidence_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "action_trace": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "redirected_from_trusted_baseline",
+            "attempted_effect_id",
+            "evidence_ref"
+          ],
+          "properties": {
+            "redirected_from_trusted_baseline": {
+              "type": [
+                "boolean",
+                "string"
+              ],
+              "enum": [
+                true,
+                false,
+                "unknown"
+              ]
+            },
+            "attempted_effect_id": {
+              "type": "string"
+            },
+            "evidence_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "admission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decision",
+            "authorized_effect_ids",
+            "evidence_ref"
+          ],
+          "properties": {
+            "decision": {
+              "enum": [
+                "allow",
+                "deny",
+                "hold",
+                "unknown"
+              ]
+            },
+            "authorized_effect_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "effect_oracle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observation",
+            "observed_effect_ids",
+            "complete",
+            "independent",
+            "evidence_ref"
+          ],
+          "properties": {
+            "observation": {
+              "enum": [
+                "observed",
+                "no_effect",
+                "unknown",
+                "incomplete"
+              ]
+            },
+            "observed_effect_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            },
+            "evidence_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instruction_recognition",
+            "action_redirected",
+            "admission_decision",
+            "effect_observation",
+            "unauthorized_effect_observed",
+            "disposition"
+          ],
+          "properties": {
+            "instruction_recognition": {
+              "enum": [
+                "recognized",
+                "not_recognized",
+                "unknown"
+              ]
+            },
+            "action_redirected": {
+              "enum": [
+                true,
+                false,
+                "unknown"
+              ]
+            },
+            "admission_decision": {
+              "enum": [
+                "allow",
+                "deny",
+                "hold",
+                "unknown"
+              ]
+            },
+            "effect_observation": {
+              "enum": [
+                "observed",
+                "no_effect",
+                "unknown",
+                "incomplete"
+              ]
+            },
+            "unauthorized_effect_observed": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "disposition": {
+              "enum": [
+                "unauthorized_effect_observed",
+                "blocked_no_effect",
+                "authorized_effect_observed",
+                "no_redirect_no_effect",
+                "indeterminate"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

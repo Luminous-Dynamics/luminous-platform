@@ -41,6 +41,24 @@ class AdaptiveProtocolContractTests(unittest.TestCase):
         self.assertEqual(coverage["taxonomy"]["sweep_units"], 132)
         self.assertTrue(coverage["separation"]["existing_query_turn_budgets_remain_distinct"])
 
+    def test_cross_modal_protocol_requires_matched_semantic_identity(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["cross_modal_coverage"]["semantic_payload_identity_held_constant"] = False
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_cross_modal_protocol_splits_by_causal_strategy_not_modality(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["cross_modal_coverage"]["split_unit"] = "modality"
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_cross_modal_strategy_reviewers_must_be_blinded(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["cross_modal_coverage"]["independent_review"]["blinded_from_attack_outcome"] = False
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
     def test_generation_label_cannot_be_promoted_to_success_label(self):
         mutated = copy.deepcopy(self.document)
         mutated["technique_coverage"]["separation"]["generation_subtechnique_is_provenance_only"] = False
