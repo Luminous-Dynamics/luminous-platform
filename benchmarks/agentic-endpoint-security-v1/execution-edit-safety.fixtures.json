@@ -139,7 +139,8 @@
               "semantic_operation_id": "intent:pending",
               "effect_id": "effect:write",
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "nonce_id": "nonce:pending"
+              "nonce_id": "nonce:pending",
+              "result_id": "result:from:intent:pending"
             }
           ],
           "nonce_ids_to_use": [],
@@ -224,7 +225,8 @@
               "semantic_operation_id": "intent:payment",
               "effect_id": "effect:write",
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "nonce_id": "nonce:new"
+              "nonce_id": "nonce:new",
+              "result_id": "result:from:intent:payment"
             }
           ],
           "nonce_ids_to_use": [],
@@ -374,7 +376,8 @@
               "semantic_operation_id": "intent:charge",
               "effect_id": "effect:write",
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "nonce_id": "nonce:new"
+              "nonce_id": "nonce:new",
+              "result_id": "result:from:intent:charge"
             }
           ],
           "nonce_ids_to_use": [],
@@ -456,7 +459,8 @@
               "semantic_operation_id": "intent:shared",
               "effect_id": "effect:write",
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "nonce_id": "nonce:branch-b"
+              "nonce_id": "nonce:branch-b",
+              "result_id": "result:from:intent:shared"
             }
           ],
           "nonce_ids_to_use": [],
@@ -882,7 +886,8 @@
               "semantic_operation_id": "intent:late",
               "effect_id": "effect:write",
               "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "nonce_id": "nonce:new"
+              "nonce_id": "nonce:new",
+              "result_id": "result:from:intent:late"
             }
           ],
           "nonce_ids_to_use": [],
