@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:observer-common-cause-fault-injection:0.1",
+  "title": "Observer Common-Cause Fault-Injection Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "oic_profile_id",
+    "required_disjoint_domains",
+    "minimum_independent_witnesses",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-observer-common-cause-fault-injection"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fault_plan_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "oic_profile_id": {
+      "const": "critical_effect_truth_v0"
+    },
+    "required_disjoint_domains": {
+      "const": [
+        "process_runtime",
+        "event_stream",
+        "signing_root",
+        "credential_root",
+        "clock_authority",
+        "storage_backend",
+        "control_plane"
+      ]
+    },
+    "minimum_independent_witnesses": {
+      "const": 2
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 16,
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "fault": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "dependency_ref"
+      ],
+      "properties": {
+        "domain": {
+          "enum": [
+            "process_runtime",
+            "event_stream",
+            "signing_root",
+            "credential_root",
+            "clock_authority",
+            "storage_backend",
+            "control_plane"
+          ]
+        },
+        "dependency_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "witness_id",
+        "role",
+        "domains",
+        "observation",
+        "evidence_ref",
+        "attestation_ref"
+      ],
+      "properties": {
+        "witness_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domains": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "process_runtime",
+            "event_stream",
+            "signing_root",
+            "credential_root",
+            "clock_authority",
+            "storage_backend",
+            "control_plane",
+            "operator",
+            "provider"
+          ],
+          "properties": {
+            "process_runtime": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "event_stream": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "signing_root": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "credential_root": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "clock_authority": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "storage_backend": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "control_plane": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "operator": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "provider": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "observation": {
+          "enum": [
+            "effect",
+            "no_effect",
+            "conflict",
+            "unknown",
+            "none"
+          ]
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attestation_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "recovered_witness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "witness_id",
+        "from_attestation_ref",
+        "from_evidence_epoch",
+        "to_evidence_epoch",
+        "replacement_witness"
+      ],
+      "properties": {
+        "witness_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from_attestation_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from_evidence_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "to_evidence_epoch": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "replacement_witness": {
+          "$ref": "#/$defs/witness"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "control_class",
+        "oic_scenario_id",
+        "fault_plan_committed_before_episode",
+        "fault_plan_visibility",
+        "evaluation_input",
+        "posthoc_ground_truth",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^CFI-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "oic_scenario_id": {
+          "type": "string",
+          "pattern": "^OIC-[0-9]{3}$"
+        },
+        "fault_plan_committed_before_episode": {
+          "const": true
+        },
+        "fault_plan_visibility": {
+          "const": "withheld_until_disposition_commit"
+        },
+        "evaluation_input": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available_witness_ids",
+            "recovered_witnesses"
+          ],
+          "properties": {
+            "available_witness_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "recovered_witnesses": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/recovered_witness"
+              }
+            }
+          }
+        },
+        "posthoc_ground_truth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fault_plan",
+            "fault_actually_injected",
+            "resource_effect_truth"
+          ],
+          "properties": {
+            "fault_plan": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/fault"
+              }
+            },
+            "fault_actually_injected": {
+              "enum": [
+                "confirmed",
+                "not_injected",
+                "unknown"
+              ]
+            },
+            "resource_effect_truth": {
+              "enum": [
+                "effect",
+                "no_effect",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "impacted_witness_ids",
+            "surviving_witness_ids",
+            "maximum_independent_witnesses",
+            "observation_agreement",
+            "final_disposition"
+          ],
+          "properties": {
+            "impacted_witness_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "surviving_witness_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "maximum_independent_witnesses": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observation_agreement": {
+              "enum": [
+                "effect",
+                "no_effect",
+                "conflict",
+                "unknown",
+                "none"
+              ]
+            },
+            "final_disposition": {
+              "enum": [
+                "qualified_effect",
+                "qualified_no_effect",
+                "unqualified",
+                "indeterminate"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
