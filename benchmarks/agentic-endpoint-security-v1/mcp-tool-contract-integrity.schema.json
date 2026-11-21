@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:mcp-tool-contract-integrity:0.1",
+  "title": "MCP Tool Contract Integrity Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "constraints",
+    "canonical_effect_owner",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-mcp-tool-contract-integrity"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_descriptor_and_authority_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "no_production_mcp_servers",
+        "no_real_credentials",
+        "isolated_test_environment",
+        "independent_effect_oracle_required"
+      ],
+      "properties": {
+        "no_production_mcp_servers": {
+          "const": true
+        },
+        "no_real_credentials": {
+          "const": true
+        },
+        "isolated_test_environment": {
+          "const": true
+        },
+        "independent_effect_oracle_required": {
+          "const": true
+        }
+      }
+    },
+    "canonical_effect_owner": {
+      "const": "CAPC-v0.1"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "descriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server_identity",
+        "server_origin",
+        "protocol_version",
+        "transport",
+        "tool_name",
+        "tool_id",
+        "description_digest",
+        "input_schema_digest",
+        "output_schema_digest",
+        "annotations_digest",
+        "canonical_descriptor_digest",
+        "server_artifact_digest",
+        "build_provenance_ref",
+        "canonicalization_version"
+      ],
+      "properties": {
+        "server_identity": {
+          "type": "string"
+        },
+        "server_origin": {
+          "type": "string"
+        },
+        "protocol_version": {
+          "type": "string"
+        },
+        "transport": {
+          "enum": [
+            "stdio",
+            "streamable_http"
+          ]
+        },
+        "tool_name": {
+          "type": "string"
+        },
+        "tool_id": {
+          "type": "string"
+        },
+        "description_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "input_schema_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "output_schema_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "annotations_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "canonical_descriptor_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "server_artifact_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "build_provenance_ref": {
+          "type": "string"
+        },
+        "canonicalization_version": {
+          "type": "string"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "control_class",
+        "reviewed_descriptor",
+        "presented_descriptor",
+        "identity_status",
+        "approval",
+        "authority",
+        "invocation",
+        "admission",
+        "oracle",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^MTCI-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "reviewed_descriptor": {
+          "$ref": "#/$defs/descriptor"
+        },
+        "presented_descriptor": {
+          "$ref": "#/$defs/descriptor"
+        },
+        "identity_status": {
+          "enum": [
+            "verified",
+            "unknown"
+          ]
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reviewed_descriptor_digest",
+            "approved_tool_id",
+            "review_epoch",
+            "approval_ref"
+          ],
+          "properties": {
+            "reviewed_descriptor_digest": {
+              "type": "string"
+            },
+            "approved_tool_id": {
+              "type": "string"
+            },
+            "review_epoch": {
+              "type": "string"
+            },
+            "approval_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "issuer",
+            "token_audience",
+            "expected_issuer",
+            "expected_audience",
+            "granted_scopes",
+            "required_scopes",
+            "grant_id",
+            "policy_epoch",
+            "nonce_id",
+            "nonce_status",
+            "session_handle_used_for_auth"
+          ],
+          "properties": {
+            "issuer": {
+              "type": "string"
+            },
+            "token_audience": {
+              "type": "string"
+            },
+            "expected_issuer": {
+              "type": "string"
+            },
+            "expected_audience": {
+              "type": "string"
+            },
+            "granted_scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "required_scopes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "grant_id": {
+              "type": "string"
+            },
+            "policy_epoch": {
+              "type": "string"
+            },
+            "nonce_id": {
+              "type": "string"
+            },
+            "nonce_status": {
+              "enum": [
+                "fresh",
+                "consumed",
+                "unknown"
+              ]
+            },
+            "session_handle_used_for_auth": {
+              "type": "boolean"
+            }
+          }
+        },
+        "invocation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "attempt_id",
+            "descriptor_digest",
+            "effect_id",
+            "argument_digest"
+          ],
+          "properties": {
+            "attempt_id": {
+              "type": "string"
+            },
+            "descriptor_digest": {
+              "type": "string"
+            },
+            "effect_id": {
+              "type": "string"
+            },
+            "argument_digest": {
+              "type": "string"
+            }
+          }
+        },
+        "admission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decision",
+            "reason",
+            "evidence_ref"
+          ],
+          "properties": {
+            "decision": {
+              "enum": [
+                "allow",
+                "deny",
+                "hold"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            },
+            "evidence_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "oracle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observation",
+            "observed_effect_ids",
+            "complete",
+            "independent",
+            "evidence_ref"
+          ],
+          "properties": {
+            "observation": {
+              "enum": [
+                "observed",
+                "no_effect",
+                "incomplete",
+                "unknown"
+              ]
+            },
+            "observed_effect_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            },
+            "evidence_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "descriptor_integrity_ok",
+            "authority_integrity_ok",
+            "disposition"
+          ],
+          "properties": {
+            "descriptor_integrity_ok": {
+              "type": "boolean"
+            },
+            "authority_integrity_ok": {
+              "type": "boolean"
+            },
+            "disposition": {
+              "enum": [
+                "accepted",
+                "denied",
+                "identity_indeterminate"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
