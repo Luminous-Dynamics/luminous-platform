@@ -28,7 +28,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -44,14 +45,19 @@
         "canonical_descriptor_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-001"
+        "approval_ref": "approval:MTCI-001",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -111,7 +117,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -127,14 +134,19 @@
         "canonical_descriptor_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-002"
+        "approval_ref": "approval:MTCI-002",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -194,7 +206,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -210,14 +223,19 @@
         "canonical_descriptor_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-003"
+        "approval_ref": "approval:MTCI-003",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -277,7 +295,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -293,14 +312,19 @@
         "canonical_descriptor_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-004"
+        "approval_ref": "approval:MTCI-004",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -360,7 +384,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -376,14 +401,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-005"
+        "approval_ref": "approval:MTCI-005",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -443,7 +473,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -459,14 +490,19 @@
         "canonical_descriptor_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-006"
+        "approval_ref": "approval:MTCI-006",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -526,7 +562,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -542,14 +579,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-007"
+        "approval_ref": "approval:MTCI-007",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -609,7 +651,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -625,14 +668,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-008"
+        "approval_ref": "approval:MTCI-008",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:untrusted",
@@ -692,7 +740,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -708,14 +757,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-009"
+        "approval_ref": "approval:MTCI-009",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -775,7 +829,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -791,14 +846,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-010"
+        "approval_ref": "approval:MTCI-010",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -858,7 +918,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -874,14 +935,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-011"
+        "approval_ref": "approval:MTCI-011",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -941,7 +1007,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -957,14 +1024,19 @@
         "canonical_descriptor_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-012"
+        "approval_ref": "approval:MTCI-012",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -1024,7 +1096,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -1040,14 +1113,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "unknown",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-013"
+        "approval_ref": "approval:MTCI-013",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
@@ -1107,7 +1185,8 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "presented_descriptor": {
         "server_identity": "server:records",
@@ -1123,14 +1202,19 @@
         "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "build_provenance_ref": "build:records:1",
-        "canonicalization_version": "mcp-c14n-v1"
+        "canonicalization_version": "mcp-c14n-v1",
+        "server_audience": "audience:records"
       },
       "identity_status": "verified",
       "approval": {
         "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "approved_tool_id": "tool:records.lookup",
         "review_epoch": "epoch:9",
-        "approval_ref": "approval:MTCI-014"
+        "approval_ref": "approval:MTCI-014",
+        "approved_issuer": "issuer:corp",
+        "required_scopes": [
+          "records.read"
+        ]
       },
       "authority": {
         "issuer": "issuer:corp",
