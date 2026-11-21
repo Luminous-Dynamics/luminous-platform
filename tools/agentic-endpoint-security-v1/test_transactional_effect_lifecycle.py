@@ -111,6 +111,20 @@ class TransactionalLifecycleTests(unittest.TestCase):
         case(suite, "TELR-016")["client_ledger"]["completed_claim"] = True
         reject(suite, schema)
 
+    def test_false_completion_claim_is_not_qualified_without_reconciliation(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-016")
+        current["client_ledger"]["completed_claim"] = True
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["false_completion_claim_count"], 1)
+        self.assertEqual(outcome["disposition"], "violation")
+
+    def test_committed_batch_requires_every_preregistered_item(self):
+        suite, schema = inputs()
+        current = case(suite, "TELR-011")
+        current["reconciliation"]["status"] = "committed"
+        reject(suite, schema)
+
     def test_idempotency_contract_cannot_be_silently_disabled(self):
         suite, schema = inputs()
         case(suite, "TELR-006")["target_contract"]["idempotency_keys_supported"] = False
