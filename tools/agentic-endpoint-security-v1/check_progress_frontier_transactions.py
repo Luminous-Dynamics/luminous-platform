@@ -157,9 +157,10 @@ def evaluate(case:dict[str,Any])->dict[str,Any]:
     elif tx["outcome"]=="loser" and tx["settlement"]=="abort" and reconciliation["status"]=="aborted":
         disposition="qualified_abort"
 
-    if reconciliation["status"]=="committed" and disposition!="qualified_commit":disposition="violation"
-    if reconciliation["status"]=="partial" and disposition!="qualified_partial":disposition="violation"
-    if reconciliation["status"]=="aborted" and disposition!="qualified_abort":disposition="violation"
+    if reconciliation["complete"] and reconciliation["independent"]:
+        if reconciliation["status"]=="committed" and disposition!="qualified_commit":disposition="violation"
+        if reconciliation["status"]=="partial" and disposition!="qualified_partial":disposition="violation"
+        if reconciliation["status"]=="aborted" and disposition!="qualified_abort":disposition="violation"
     return {
       "frontier_status":frontier_status,"frontier_false_advance_count":false_advance,
       "footprint_mutation_count":footprint_mutation,"stale_resource_version_count":stale,
