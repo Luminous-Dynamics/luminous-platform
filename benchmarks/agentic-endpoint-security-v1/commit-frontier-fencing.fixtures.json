@@ -16,8 +16,8 @@
   "canonical_effect_owner": "CAPC-v0.1",
   "control_distribution": {
     "positive_control": 7,
-    "negative_control": 16,
-    "indeterminate_control": 3
+    "negative_control": 17,
+    "indeterminate_control": 4
   },
   "effect_catalog": [
     {
@@ -2699,6 +2699,191 @@
         "observed_event_ids": [
           "CFF-026-e1"
         ]
+      },
+      "expected": {
+        "frontier_state": "ready",
+        "stale_token_acceptance_count": 0,
+        "late_epoch_acceptance_count": 0,
+        "wrong_binding_acceptance_count": 0,
+        "policy_epoch_acceptance_count": 0,
+        "stale_resource_version_acceptance_count": 0,
+        "stale_frontier_acceptance_count": 0,
+        "toctou_race_count": 0,
+        "high_water_regression_count": 0,
+        "atomic_fence_failure_count": 0,
+        "target_owner_revision_mismatch_count": 0,
+        "target_high_water_mismatch_count": 0,
+        "false_reject_count": 0,
+        "target_effect_count": 1,
+        "disposition": "qualified_allow"
+      }
+    },
+    {
+      "case_id": "CFF-027",
+      "control_class": "negative_control",
+      "resource_state": {
+        "resource_id": "resource:doc-1",
+        "current_generation": 9,
+        "high_water_generation": 9,
+        "sealed_through_epoch": 5,
+        "owner_revision": 100,
+        "resource_version_at_grant": "v1",
+        "current_resource_version": "v1",
+        "policy_epoch": "epoch-9",
+        "owner_available": true,
+        "high_water_persisted": true,
+        "external_witness_generation": 9,
+        "external_witness_independent": true
+      },
+      "frontier_certificate": {
+        "certificate_id": "frontier:resource:doc-1:5",
+        "resource_id": "resource:doc-1",
+        "committed_through_epoch": 5,
+        "observed_owner_revision": 100,
+        "read_consistency": "linearizable",
+        "complete": true,
+        "independent": true,
+        "witness_qualified": true,
+        "allowed_lateness_epochs": 2,
+        "source_closed": false,
+        "late_data_policy": "target_fence",
+        "witness_ref": "frontier-witness:CFF-016"
+      },
+      "operation": {
+        "tx_id": "CFF-027",
+        "branch_id": "branch:CFF-027",
+        "semantic_operation_id": "intent:CFF-027",
+        "effect_id": "effect:resource-write",
+        "resource_id": "resource:doc-1",
+        "epoch": 4,
+        "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "idempotency_key": "idem:CFF-027",
+        "grant_id": "grant:CFF-016",
+        "policy_epoch": "epoch-9",
+        "resource_version_precondition": "v1"
+      },
+      "fence": {
+        "token_id": "fence:CFF-016",
+        "resource_id": "resource:doc-1",
+        "generation": 9,
+        "tx_id": "CFF-027",
+        "branch_id": "branch:CFF-027",
+        "grant_id": "grant:CFF-027",
+        "policy_epoch": "epoch-9",
+        "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "frontier_certificate_id": "frontier:resource:doc-1:5",
+        "owner_revision_at_issue": 100,
+        "authenticated": true
+      },
+      "target_events": [
+        {
+          "event_id": "CFF-027-e1",
+          "decision": "rejected",
+          "decision_reason": "late_arrival_after_frontier_seal",
+          "resource_id": "resource:doc-1",
+          "tx_id": "CFF-027",
+          "branch_id": "branch:CFF-027",
+          "effect_id": "effect:resource-write",
+          "token_id": "fence:CFF-016",
+          "token_generation": 9,
+          "grant_id": "grant:CFF-016",
+          "policy_epoch": "epoch-9",
+          "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "idempotency_key": "idem:CFF-027",
+          "observed_highwater_at_commit": 9,
+          "observed_owner_revision_at_commit": 100,
+          "observed_generation_at_check": 9,
+          "resource_version_before": "v1",
+          "resource_version_after": "v1",
+          "atomic_compare_and_write": true,
+          "effect_observed": false
+        }
+      ],
+      "reconciliation": {
+        "complete": true,
+        "independent": true,
+        "observed_event_ids": []
+      },
+      "expected": {
+        "frontier_state": "ready",
+        "stale_token_acceptance_count": 0,
+        "late_epoch_acceptance_count": 0,
+        "wrong_binding_acceptance_count": 0,
+        "policy_epoch_acceptance_count": 0,
+        "stale_resource_version_acceptance_count": 0,
+        "stale_frontier_acceptance_count": 0,
+        "toctou_race_count": 0,
+        "high_water_regression_count": 0,
+        "atomic_fence_failure_count": 0,
+        "target_owner_revision_mismatch_count": 0,
+        "target_high_water_mismatch_count": 0,
+        "false_reject_count": 0,
+        "target_effect_count": 1,
+        "disposition": "qualified_allow"
+      }
+    },
+    {
+      "case_id": "CFF-028",
+      "control_class": "indeterminate_control",
+      "resource_state": {
+        "resource_id": "resource:doc-1",
+        "current_generation": 9,
+        "high_water_generation": 9,
+        "sealed_through_epoch": 5,
+        "owner_revision": 100,
+        "resource_version_at_grant": "v1",
+        "current_resource_version": "v1",
+        "policy_epoch": "epoch-9",
+        "owner_available": true,
+        "high_water_persisted": true,
+        "external_witness_generation": 9,
+        "external_witness_independent": true
+      },
+      "frontier_certificate": {
+        "certificate_id": "frontier:resource:doc-1:5",
+        "resource_id": "resource:doc-1",
+        "committed_through_epoch": 5,
+        "observed_owner_revision": 100,
+        "read_consistency": "linearizable",
+        "complete": true,
+        "independent": true,
+        "witness_qualified": true,
+        "allowed_lateness_epochs": 2,
+        "source_closed": false,
+        "late_data_policy": "unknown",
+        "witness_ref": "frontier-witness:CFF-016"
+      },
+      "operation": {
+        "tx_id": "CFF-028",
+        "branch_id": "branch:CFF-028",
+        "semantic_operation_id": "intent:CFF-028",
+        "effect_id": "effect:resource-write",
+        "resource_id": "resource:doc-1",
+        "epoch": 4,
+        "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "idempotency_key": "idem:CFF-028",
+        "grant_id": "grant:CFF-016",
+        "policy_epoch": "epoch-9",
+        "resource_version_precondition": "v1"
+      },
+      "fence": {
+        "token_id": "fence:CFF-016",
+        "resource_id": "resource:doc-1",
+        "generation": 9,
+        "tx_id": "CFF-028",
+        "branch_id": "branch:CFF-028",
+        "grant_id": "grant:CFF-028",
+        "policy_epoch": "epoch-9",
+        "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "frontier_certificate_id": "frontier:resource:doc-1:5",
+        "owner_revision_at_issue": 100,
+        "authenticated": true
+      },
+      "target_events": [],
+      "reconciliation": {
+        "complete": true,
+        "independent": true,
+        "observed_event_ids": []
       },
       "expected": {
         "frontier_state": "ready",
