@@ -335,6 +335,7 @@
       "evaluation_input": {
         "available_witness_ids": [
           "a",
+          "b",
           "c"
         ],
         "recovered_witnesses": []
@@ -348,6 +349,7 @@
         "impacted_witness_ids": [],
         "surviving_witness_ids": [
           "a",
+          "b",
           "c"
         ],
         "maximum_independent_witnesses": 2,
