@@ -1,0 +1,1998 @@
+{
+  "profile": "luminous-progress-frontier-transactional-effects",
+  "version": "0.1",
+  "status": "synthetic_progress_frontier_contract_not_executed",
+  "no_aggregate_score": true,
+  "constraints": {
+    "isolated_disposable_environment_required": true,
+    "external_network_access": false,
+    "production_endpoints": false,
+    "real_credentials_or_customer_data": false,
+    "synthetic_canaries_only": true,
+    "independent_frontier_witness_required": true,
+    "unknown_frontier_blocks_commit": true,
+    "irreversible_speculative_dispatch_forbidden": true
+  },
+  "canonical_effect_owner": "CAPC-v0.1",
+  "control_distribution": {
+    "positive_control": 8,
+    "indeterminate_control": 6,
+    "negative_control": 8
+  },
+  "effect_catalog": [
+    {
+      "effect_id": "effect:file-write",
+      "owner_id": "owner:workspace",
+      "operation": "file.write",
+      "default_class": "bufferable"
+    },
+    {
+      "effect_id": "effect:api-update",
+      "owner_id": "owner:crm",
+      "operation": "customer.update",
+      "default_class": "externalized_reversible"
+    },
+    {
+      "effect_id": "effect:send-email",
+      "owner_id": "owner:mail",
+      "operation": "email.send",
+      "default_class": "irreversible"
+    },
+    {
+      "effect_id": "effect:payment",
+      "owner_id": "owner:finance",
+      "operation": "payment.create",
+      "default_class": "irreversible"
+    },
+    {
+      "effect_id": "effect:compensate",
+      "owner_id": "owner:crm",
+      "operation": "customer.restore",
+      "default_class": "compensation"
+    },
+    {
+      "effect_id": "effect:file-write-b",
+      "owner_id": "owner:workspace",
+      "operation": "file.write",
+      "default_class": "bufferable"
+    }
+  ],
+  "cases": [
+    {
+      "scenario_id": "PFTE-001",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-001",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-001",
+        "effects": [
+          {
+            "instance_id": "i-file-a",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-001",
+          "tx_id": "tx-001",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-001",
+          "instance_id": "i-file-a",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-001"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_commit"
+      }
+    },
+    {
+      "scenario_id": "PFTE-002",
+      "control_class": "indeterminate_control",
+      "transaction": {
+        "tx_id": "tx-002",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "pending",
+        "footprint_sealed": false,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-002",
+        "effects": [
+          {
+            "instance_id": "i2",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": []
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "PFTE-003",
+      "control_class": "indeterminate_control",
+      "transaction": {
+        "tx_id": "tx-003",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "pending",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-003",
+        "effects": [
+          {
+            "instance_id": "i3",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": false,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": false,
+        "independent": false,
+        "result_event_ids": []
+      },
+      "expected": {
+        "frontier_status": "unknown",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "PFTE-004",
+      "control_class": "indeterminate_control",
+      "transaction": {
+        "tx_id": "tx-004",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "pending",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-004",
+        "effects": [
+          {
+            "instance_id": "i4",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 4,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:4"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": []
+      },
+      "expected": {
+        "frontier_status": "behind",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "PFTE-005",
+      "control_class": "indeterminate_control",
+      "transaction": {
+        "tx_id": "tx-005",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "pending",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-005",
+        "effects": [
+          {
+            "instance_id": "i5",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [
+              3
+            ],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": []
+      },
+      "expected": {
+        "frontier_status": "contradictory",
+        "frontier_false_advance_count": 1,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-006",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-006",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-006",
+        "effects": [
+          {
+            "instance_id": "i6",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          },
+          {
+            "resource_id": "resource:file-b",
+            "prior_through_epoch": 0,
+            "through_epoch": 1,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-b:1"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-006",
+          "tx_id": "tx-006",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-006",
+          "instance_id": "i6",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-006"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_commit"
+      }
+    },
+    {
+      "scenario_id": "PFTE-007",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-007",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-007",
+        "effects": [
+          {
+            "instance_id": "i7",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [
+              2
+            ],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-007",
+          "tx_id": "tx-007",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-007",
+          "instance_id": "i7",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-007"
+        ]
+      },
+      "expected": {
+        "frontier_status": "contradictory",
+        "frontier_false_advance_count": 1,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 1,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-008",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-008",
+        "branch_id": "branch-disjoint",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-008",
+        "effects": [
+          {
+            "instance_id": "i8",
+            "effect_id": "effect:file-write-b",
+            "resource_id": "resource:file-b",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-b",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-b:5"
+          }
+        ],
+        "conflicting_transactions": [
+          {
+            "tx_id": "tx-other",
+            "epoch": 4,
+            "resource_id": "resource:file-a",
+            "status": "in_flight"
+          }
+        ]
+      },
+      "target_events": [
+        {
+          "event_id": "ev-008",
+          "tx_id": "tx-008",
+          "branch_id": "branch-disjoint",
+          "semantic_operation_id": "intent:tx-008",
+          "instance_id": "i8",
+          "effect_id": "effect:file-write-b",
+          "resource_id": "resource:file-b",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-008"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_commit"
+      }
+    },
+    {
+      "scenario_id": "PFTE-009",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-009",
+        "branch_id": "branch-loser",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "loser",
+        "settlement": "abort",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-009",
+        "effects": [
+          {
+            "instance_id": "i9",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [],
+      "history_events": [],
+      "reconciliation": {
+        "status": "aborted",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": []
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_abort"
+      }
+    },
+    {
+      "scenario_id": "PFTE-010",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-010",
+        "branch_id": "branch-loser",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "loser",
+        "settlement": "abort",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-010",
+        "effects": [
+          {
+            "instance_id": "i10",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-010",
+          "tx_id": "tx-010",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-010",
+          "instance_id": "i10",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "aborted",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-010"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 1,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 1,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-011",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-011",
+        "branch_id": "branch-loser",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "loser",
+        "settlement": "abort",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-011",
+        "effects": [
+          {
+            "instance_id": "i11a",
+            "effect_id": "effect:api-update",
+            "resource_id": "resource:customer-a",
+            "effect_class": "externalized_reversible",
+            "dependency_order": 1,
+            "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          {
+            "instance_id": "i11b",
+            "effect_id": "effect:api-update",
+            "resource_id": "resource:customer-a",
+            "effect_class": "externalized_reversible",
+            "dependency_order": 2,
+            "argument_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          },
+          {
+            "instance_id": "i11c",
+            "effect_id": "effect:compensate",
+            "resource_id": "resource:customer-a",
+            "effect_class": "compensation",
+            "dependency_order": 2,
+            "argument_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          },
+          {
+            "instance_id": "i11d",
+            "effect_id": "effect:compensate",
+            "resource_id": "resource:customer-a",
+            "effect_class": "compensation",
+            "dependency_order": 1,
+            "argument_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:customer-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:customer-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-11a",
+          "tx_id": "tx-011",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-011",
+          "instance_id": "i11a",
+          "effect_id": "effect:api-update",
+          "resource_id": "resource:customer-a",
+          "event_kind": "externalized",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        },
+        {
+          "event_id": "ev-11b",
+          "tx_id": "tx-011",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-011",
+          "instance_id": "i11b",
+          "effect_id": "effect:api-update",
+          "resource_id": "resource:customer-a",
+          "event_kind": "externalized",
+          "sequence": 2,
+          "dependency_order": 2,
+          "compensates_for": null
+        },
+        {
+          "event_id": "ev-11c",
+          "tx_id": "tx-011",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-011",
+          "instance_id": "i11c",
+          "effect_id": "effect:compensate",
+          "resource_id": "resource:customer-a",
+          "event_kind": "compensation",
+          "sequence": 3,
+          "dependency_order": 2,
+          "compensates_for": "ev-11b"
+        },
+        {
+          "event_id": "ev-11d",
+          "tx_id": "tx-011",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-011",
+          "instance_id": "i11d",
+          "effect_id": "effect:compensate",
+          "resource_id": "resource:customer-a",
+          "event_kind": "compensation",
+          "sequence": 4,
+          "dependency_order": 1,
+          "compensates_for": "ev-11a"
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "aborted",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-11a",
+          "ev-11b",
+          "ev-11c",
+          "ev-11d"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_abort"
+      }
+    },
+    {
+      "scenario_id": "PFTE-012",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-012",
+        "branch_id": "branch-loser",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "loser",
+        "settlement": "abort",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-012",
+        "effects": [
+          {
+            "instance_id": "i12",
+            "effect_id": "effect:api-update",
+            "resource_id": "resource:customer-a",
+            "effect_class": "externalized_reversible",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:customer-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:customer-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-012",
+          "tx_id": "tx-012",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-012",
+          "instance_id": "i12",
+          "effect_id": "effect:api-update",
+          "resource_id": "resource:customer-a",
+          "event_kind": "externalized",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "aborted",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-012"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 1,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-013",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-013",
+        "branch_id": "branch-pending",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "pending",
+        "settlement": "pending",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-013",
+        "effects": [
+          {
+            "instance_id": "i13",
+            "effect_id": "effect:send-email",
+            "resource_id": "resource:recipient-a",
+            "effect_class": "irreversible",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:recipient-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:recipient-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-013",
+          "tx_id": "tx-013",
+          "branch_id": "branch-pending",
+          "semantic_operation_id": "intent:tx-013",
+          "instance_id": "i13",
+          "effect_id": "effect:send-email",
+          "resource_id": "resource:recipient-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-013"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 1,
+        "early_irreversible_effect_count": 1,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-014",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-014",
+        "branch_id": "branch-winner",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-014",
+        "effects": [
+          {
+            "instance_id": "i14",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-014",
+          "tx_id": "tx-014",
+          "branch_id": "branch-winner",
+          "semantic_operation_id": "intent:tx-014",
+          "instance_id": "i14",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-014"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_commit"
+      }
+    },
+    {
+      "scenario_id": "PFTE-015",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-015",
+        "branch_id": "branch-restored",
+        "root_task_id": "task:demo",
+        "epoch": 6,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": true,
+        "semantic_operation_id": "intent:payment-500",
+        "effects": [
+          {
+            "instance_id": "i15",
+            "effect_id": "effect:payment",
+            "resource_id": "resource:account-a",
+            "effect_class": "irreversible",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:account-a",
+            "prior_through_epoch": 5,
+            "through_epoch": 6,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:account-a:6"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-015b",
+          "tx_id": "tx-015",
+          "branch_id": "branch-restored",
+          "semantic_operation_id": "intent:payment-500",
+          "instance_id": "i15",
+          "effect_id": "effect:payment",
+          "resource_id": "resource:account-a",
+          "event_kind": "released",
+          "sequence": 2,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [
+        {
+          "event_id": "ev-015a",
+          "tx_id": "tx-prior",
+          "branch_id": "branch-old",
+          "semantic_operation_id": "intent:payment-500",
+          "instance_id": "i-prior",
+          "effect_id": "effect:payment",
+          "resource_id": "resource:account-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-015b"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 1,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-016",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-016",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-016",
+        "effects": [
+          {
+            "instance_id": "i16",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-016",
+          "tx_id": "tx-016",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-016",
+          "instance_id": "i16",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-016"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 1,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 1,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-017",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-017",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-017",
+        "effects": [
+          {
+            "instance_id": "i17",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [
+          {
+            "resource_id": "resource:file-a",
+            "expected_version": "v1"
+          }
+        ],
+        "writes": [
+          {
+            "resource_id": "resource:file-a",
+            "expected_version": "v1"
+          }
+        ],
+        "resource_versions": [
+          {
+            "resource_id": "resource:file-a",
+            "current_version": "v2"
+          }
+        ],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-017",
+          "tx_id": "tx-017",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-017",
+          "instance_id": "i17",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-017"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 2,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 1,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-018",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-018",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "partial",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-018",
+        "effects": [
+          {
+            "instance_id": "i18a",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "instance_id": "i18b",
+            "effect_id": "effect:file-write-b",
+            "resource_id": "resource:file-b",
+            "effect_class": "bufferable",
+            "dependency_order": 2,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          },
+          {
+            "resource_id": "resource:file-b",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-b:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-018",
+          "tx_id": "tx-018",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-018",
+          "instance_id": "i18a",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "partial",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-018"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_partial"
+      }
+    },
+    {
+      "scenario_id": "PFTE-019",
+      "control_class": "indeterminate_control",
+      "transaction": {
+        "tx_id": "tx-019",
+        "branch_id": "branch-loser",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "loser",
+        "settlement": "abort",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-019",
+        "effects": [
+          {
+            "instance_id": "i19",
+            "effect_id": "effect:api-update",
+            "resource_id": "resource:customer-a",
+            "effect_class": "externalized_reversible",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:customer-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:customer-a:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-019",
+          "tx_id": "tx-019",
+          "branch_id": "branch-loser",
+          "semantic_operation_id": "intent:tx-019",
+          "instance_id": "i19",
+          "effect_id": "effect:api-update",
+          "resource_id": "resource:customer-a",
+          "event_kind": "externalized",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": false,
+        "independent": true,
+        "result_event_ids": [
+          "ev-019"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "PFTE-020",
+      "control_class": "negative_control",
+      "transaction": {
+        "tx_id": "tx-020",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-020",
+        "effects": [
+          {
+            "instance_id": "i20",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 5,
+            "through_epoch": 4,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:4"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-020",
+          "tx_id": "tx-020",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-020",
+          "instance_id": "i20",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-020"
+        ]
+      },
+      "expected": {
+        "frontier_status": "contradictory",
+        "frontier_false_advance_count": 1,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 1,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "violation"
+      }
+    },
+    {
+      "scenario_id": "PFTE-021",
+      "control_class": "positive_control",
+      "transaction": {
+        "tx_id": "tx-021",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "commit",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-021",
+        "effects": [
+          {
+            "instance_id": "i21a",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "instance_id": "i21b",
+            "effect_id": "effect:file-write-b",
+            "resource_id": "resource:file-b",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          },
+          {
+            "resource_id": "resource:file-b",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-b:5"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [
+        {
+          "event_id": "ev-021a",
+          "tx_id": "tx-021",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-021",
+          "instance_id": "i21a",
+          "effect_id": "effect:file-write",
+          "resource_id": "resource:file-a",
+          "event_kind": "released",
+          "sequence": 1,
+          "dependency_order": 1,
+          "compensates_for": null
+        },
+        {
+          "event_id": "ev-021b",
+          "tx_id": "tx-021",
+          "branch_id": "branch-1",
+          "semantic_operation_id": "intent:tx-021",
+          "instance_id": "i21b",
+          "effect_id": "effect:file-write-b",
+          "resource_id": "resource:file-b",
+          "event_kind": "released",
+          "sequence": 2,
+          "dependency_order": 1,
+          "compensates_for": null
+        }
+      ],
+      "history_events": [],
+      "reconciliation": {
+        "status": "committed",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": [
+          "ev-021a",
+          "ev-021b"
+        ]
+      },
+      "expected": {
+        "frontier_status": "ready",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "qualified_commit"
+      }
+    },
+    {
+      "scenario_id": "PFTE-022",
+      "control_class": "indeterminate_control",
+      "transaction": {
+        "tx_id": "tx-022",
+        "branch_id": "branch-1",
+        "root_task_id": "task:demo",
+        "epoch": 5,
+        "outcome": "winner",
+        "settlement": "pending",
+        "footprint_sealed": true,
+        "footprint_digest_at_seal": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observed_footprint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "restored_from_checkpoint": false,
+        "semantic_operation_id": "intent:tx-022",
+        "effects": [
+          {
+            "instance_id": "i22a",
+            "effect_id": "effect:file-write",
+            "resource_id": "resource:file-a",
+            "effect_class": "bufferable",
+            "dependency_order": 1,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          {
+            "instance_id": "i22b",
+            "effect_id": "effect:file-write-b",
+            "resource_id": "resource:file-b",
+            "effect_class": "bufferable",
+            "dependency_order": 2,
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        ],
+        "reads": [],
+        "writes": [],
+        "resource_versions": [],
+        "frontiers": [
+          {
+            "resource_id": "resource:file-a",
+            "prior_through_epoch": 0,
+            "through_epoch": 5,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-a:5"
+          },
+          {
+            "resource_id": "resource:file-b",
+            "prior_through_epoch": 0,
+            "through_epoch": 4,
+            "complete": true,
+            "independent": true,
+            "witness_qualified": true,
+            "outstanding_conflicting_epochs": [],
+            "witness_ref": "frontier:resource:file-b:4"
+          }
+        ],
+        "conflicting_transactions": []
+      },
+      "target_events": [],
+      "history_events": [],
+      "reconciliation": {
+        "status": "unknown",
+        "complete": true,
+        "independent": true,
+        "result_event_ids": []
+      },
+      "expected": {
+        "frontier_status": "behind",
+        "frontier_false_advance_count": 0,
+        "footprint_mutation_count": 0,
+        "stale_resource_version_count": 0,
+        "missing_resource_version_count": 0,
+        "conflicting_inflight_count": 0,
+        "losing_branch_effect_count": 0,
+        "early_irreversible_effect_count": 0,
+        "bufferable_abort_leak_count": 0,
+        "uncompensated_externalized_count": 0,
+        "compensation_order_violation_count": 0,
+        "semantic_replay_count": 0,
+        "reconciliation_mismatch_count": 0,
+        "duplicate_visible_effect_instance_count": 0,
+        "disposition": "indeterminate"
+      }
+    }
+  ]
+}
