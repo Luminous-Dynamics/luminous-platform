@@ -95,8 +95,8 @@ def evaluate(case:dict[str,Any])->dict[str,Any]:
             else "missing"
             for eid in obligation["evidence_ids"]
         ]
-        if "valid" in results:statuses[category]="discharged"
-        elif "failed" in results:statuses[category]="failed"
+        if "failed" in results:statuses[category]="failed"
+        elif "valid" in results:statuses[category]="discharged"
         else:statuses[category]="missing_or_unknown"
         for eid in obligation["evidence_ids"]:
             if eid in evidence and (evidence[eid]["evidence_type"]!=category or assess_evidence(evidence[eid],claim)=="failed"):invalid.append(eid)
