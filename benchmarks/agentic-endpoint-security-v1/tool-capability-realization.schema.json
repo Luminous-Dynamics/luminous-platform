@@ -1,0 +1,423 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:tool-capability-realization:0.1",
+  "title": "Tool Capability Realization Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "canonical_effect_owner",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-tool-capability-realization"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "canonical_effect_owner": {
+      "const": "CAPC-v0.1"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect_id",
+        "owner_id",
+        "tenant_id",
+        "resource_id",
+        "operation",
+        "effect_class",
+        "principal_id",
+        "workload_id",
+        "session_id",
+        "argument_constraint_digest",
+        "resource_version_precondition",
+        "policy_epoch",
+        "service_id",
+        "credential_lineage"
+      ],
+      "properties": {
+        "effect_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workload_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "argument_constraint_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "resource_version_precondition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "credential_lineage": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "artifact_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool_name",
+        "human_version_label",
+        "comparison_group_id",
+        "variant_id",
+        "source_commit",
+        "source_tree_digest",
+        "dependency_lock_digest",
+        "build_provenance_ref",
+        "binary_digest",
+        "runtime_config_digest",
+        "tool_manifest_digest"
+      ],
+      "properties": {
+        "tool_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "human_version_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "comparison_group_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "source_tree_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "dependency_lock_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "build_provenance_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "binary_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "runtime_config_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "tool_manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "implementation_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect",
+        "reachability",
+        "path_ref",
+        "evidence_ref"
+      ],
+      "properties": {
+        "effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/effect"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reachability": {
+          "enum": [
+            "reachable",
+            "conditional",
+            "unresolved"
+          ]
+        },
+        "path_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "observed_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect",
+        "evidence_ref"
+      ],
+      "properties": {
+        "effect": {
+          "$ref": "#/$defs/effect"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "control_class",
+        "artifact_binding",
+        "declared_effects",
+        "implementation_effects",
+        "static_analysis",
+        "observed_effects",
+        "observer",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^CARI-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "artifact_binding": {
+          "$ref": "#/$defs/artifact_binding"
+        },
+        "declared_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        },
+        "implementation_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/implementation_effect"
+          }
+        },
+        "static_analysis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "analyser_id",
+            "analyser_version",
+            "analysis_manifest_digest",
+            "complete",
+            "unresolved_constructs"
+          ],
+          "properties": {
+            "analyser_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "analyser_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "analysis_manifest_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "unresolved_constructs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "observed_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observed_effect"
+          }
+        },
+        "observer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "complete",
+            "independent"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "declared_effect_count",
+            "implementation_effect_count",
+            "observed_effect_count",
+            "potential_undeclared_effect_count",
+            "observed_undeclared_effect_count",
+            "observed_unmodeled_effect_count",
+            "declaration_overstatement_count",
+            "unresolved_implementation_path_count",
+            "artifact_binding_complete",
+            "observer_qualified",
+            "disposition"
+          ],
+          "properties": {
+            "declared_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "implementation_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observed_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "potential_undeclared_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observed_undeclared_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observed_unmodeled_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "declaration_overstatement_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unresolved_implementation_path_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "artifact_binding_complete": {
+              "type": "boolean"
+            },
+            "observer_qualified": {
+              "type": "boolean"
+            },
+            "disposition": {
+              "enum": [
+                "matched",
+                "implementation_expands_declaration",
+                "observed_undeclared_effect",
+                "observed_unmodeled_effect",
+                "declaration_overstates_implementation",
+                "indeterminate"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
