@@ -136,6 +136,27 @@ class EvidenceClaimTests(unittest.TestCase):
         c["evidence"].append(copy.deepcopy(c["evidence"][0]))
         reject(suite,schema)
 
+    def test_evidence_mapped_to_wrong_obligation_category_is_rejected(self):
+        suite, _ = inputs()
+        current = case(suite, "ECQ-001")
+        current["obligations"][0]["evidence_ids"] = [current["evidence"][1]["evidence_id"]]
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["claim_state"], "failed")
+        self.assertTrue(outcome["invalid_evidence_ids"])
+
+    def test_unsealed_bundle_cannot_advertise_any_supported_profile(self):
+        suite, _ = inputs()
+        current = case(suite, "ECQ-015")
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["supported_profiles"], [])
+
+    def test_workflow_receipt_requires_run_identity(self):
+        suite, _ = inputs()
+        current = case(suite, "ECQ-002")
+        workflow = next(x for x in current["evidence"] if x["evidence_type"] == "workflow")
+        workflow["run_id"] = None
+        self.assertEqual(checker.evaluate(current)["claim_state"], "failed")
+
     def test_claim_support_is_not_collapsed_to_scalar_score(self):
         suite,schema=inputs()
         suite["no_aggregate_score"]=False
