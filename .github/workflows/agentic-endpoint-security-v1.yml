@@ -83,6 +83,12 @@ jobs:
       - name: Run trajectory privilege mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_trajectory_privilege.py
 
+      - name: Validate progress-frontier transaction contract
+        run: python3 tools/agentic-endpoint-security-v1/check_progress_frontier_transactions.py
+
+      - name: Run progress-frontier transaction mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_progress_frontier_transactions.py
+
       - name: Validate transactional effect lifecycle contract
         run: python3 tools/agentic-endpoint-security-v1/check_transactional_effect_lifecycle.py
 
