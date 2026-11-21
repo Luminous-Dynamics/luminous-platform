@@ -83,6 +83,12 @@ jobs:
       - name: Run trajectory privilege mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_trajectory_privilege.py
 
+      - name: Validate commit-frontier fencing contract
+        run: python3 tools/agentic-endpoint-security-v1/check_commit_frontier_fencing.py
+
+      - name: Run commit-frontier fencing mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_commit_frontier_fencing.py
+
       - name: Validate progress-frontier transaction contract
         run: python3 tools/agentic-endpoint-security-v1/check_progress_frontier_transactions.py
 
