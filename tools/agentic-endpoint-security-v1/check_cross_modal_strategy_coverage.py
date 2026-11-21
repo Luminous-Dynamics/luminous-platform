@@ -75,6 +75,14 @@ def validate_case(case:dict[str,Any],effects:dict[str,dict[str,Any]])->None:
     if not set(case["admission"]["authorized_effect_ids"]).issubset(effects):raise ValueError(f"{sid}: unknown authorized effect")
     if not set(case["effect_oracle"]["observed_effect_ids"]).issubset(effects):raise ValueError(f"{sid}: unknown observed effect")
     if case["target"]["attempted_effect_id"]!=case["action_trace"]["attempted_effect_id"]:raise ValueError(f"{sid}: target/action trace effect mismatch")
+    if case["admission"]["authorized_effect_ids"]!=case["target"]["authorized_effect_ids"]:raise ValueError(f"{sid}: admission and preregistered authorization set differ")
+    redirected=case["action_trace"]["redirected_from_trusted_baseline"]
+    baseline=case["task"]["baseline_effect_id"]
+    attempted=case["action_trace"]["attempted_effect_id"]
+    if redirected is False and attempted!=baseline:raise ValueError(f"{sid}: non-redirected action differs from trusted task baseline")
+    if redirected is True and attempted==baseline:raise ValueError(f"{sid}: redirected action does not differ from trusted task baseline")
+    if case["strategy_candidate"]["candidate_fingerprint"]["target_effect_id"]!=attempted:raise ValueError(f"{sid}: candidate target differs from attempted effect")
+    if not set(case["admission"]["authorized_effect_ids"]).issubset(effects):raise ValueError(f"{sid}: unknown authorized effect")
     if case["admission"]["decision"] not in {"allow","deny","hold","unknown"}:raise ValueError(f"{sid}: invalid admission decision")
     o=case["effect_oracle"]
     if o["observation"] not in {"observed","no_effect","unknown","incomplete"}:raise ValueError(f"{sid}: invalid effect state")
@@ -112,8 +120,17 @@ def validate_suite(suite:dict[str,Any],schema:dict[str,Any])->dict[str,int]:
     if constraints!=required:raise ValueError("unsafe or weakened cross-modal lab constraint")
     if suite.get("canonical_effect_owner")!="CAPC-v0.1":raise ValueError("CAPC must own effect identities")
     if schema.get("$id")!="urn:luminous:cross-modal-strategy-coverage:0.1":raise ValueError("schema identity changed")
-    effects={e["effect_id"]:e for e in suite.get("effects",[])}
-    if len(effects)!=len(suite.get("effects",[])) or not effects:raise ValueError("duplicate or empty CAPC effect inventory")
+    effect_rows=suite.get("effects",[])
+    effects={e["effect_id"]:e for e in effect_rows}
+    effect_fields={"effect_id","owner_id","tenant_id","resource_id","operation","effect_class","principal_id","workload_id","session_id","argument_constraint_digest","resource_version_precondition","policy_epoch","service_id","credential_lineage"}
+    if len(effects)!=len(effect_rows) or not effects:raise ValueError("duplicate or empty CAPC effect inventory")
+    semantic_effects=set()
+    for effect in effect_rows:
+      if set(effect)!=effect_fields:raise ValueError("CAPC effect tuple fields differ from canonical contract")
+      if not isinstance(effect["argument_constraint_digest"],str) or len(effect["argument_constraint_digest"])!=71 or not effect["argument_constraint_digest"].startswith("sha256:") or any(ch not in "0123456789abcdef" for ch in effect["argument_constraint_digest"][7:]):raise ValueError("malformed CAPC argument-constraint digest")
+      semantic=tuple(effect[k] for k in sorted(effect_fields-{"effect_id"}))
+      if semantic in semantic_effects:raise ValueError("duplicate CAPC effect semantics fragmented across identities")
+      semantic_effects.add(semantic)
     cases=suite.get("cases")
     if not isinstance(cases,list) or len(cases)!=16:raise ValueError("expected 16 cross-modal episodes")
     seen=set();by_pair:dict[str,list[dict[str,Any]]]=defaultdict(list);splits:dict[str,set[str]]=defaultdict(set)
@@ -138,6 +155,8 @@ def validate_suite(suite:dict[str,Any],schema:dict[str,Any])->dict[str,int]:
         if a[field]!=b[field]:raise ValueError(f"{pair_id}: paired {field} differs")
       if a["document"]["semantic_payload_id"]!=b["document"]["semantic_payload_id"]:raise ValueError(f"{pair_id}: semantic payload differs across modalities")
       if a["document"]["artifact_digest"]==b["document"]["artifact_digest"]:raise ValueError(f"{pair_id}: modality artifacts must have distinct digests")
+      if a["document"]["render_config_id"]==b["document"]["render_config_id"]:raise ValueError(f"{pair_id}: text and image rendering configurations must be distinguished")
+      if a["strategy_candidate"]["candidate_fingerprint"]!=b["strategy_candidate"]["candidate_fingerprint"]:raise ValueError(f"{pair_id}: same semantic attack pair must share candidate causal fingerprint")
       aa=a["blind_attribution"];bb=b["blind_attribution"]
       if aa!=bb:raise ValueError(f"{pair_id}: paired strategy attribution differs")
     if any(len(v)>1 for v in splits.values()):raise ValueError("strategy cluster leaked across development/held-out split")
