@@ -120,7 +120,7 @@ class EvidenceClaimTests(unittest.TestCase):
 
     def test_wrong_subject_commit_is_not_repaired_by_valid_signature(self):
         suite,schema=inputs()
-        evidence=case(suite,"ECQ-006")["evidence"]
+        evidence=case(suite,"ECQ-019")["evidence"]
         att=next(x for x in evidence if x["evidence_type"]=="attestation")
         att["subject_commit"]="f"*40
         reject(suite,schema)
