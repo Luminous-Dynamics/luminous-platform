@@ -135,6 +135,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "not_committed",
         "disposition": "qualified_not_committed"
       }
@@ -221,6 +222,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       }
@@ -307,6 +309,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       }
@@ -377,6 +380,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
       }
@@ -447,6 +451,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
       }
@@ -547,6 +552,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       }
@@ -631,6 +637,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "violation"
       }
@@ -744,6 +751,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
       }
@@ -857,6 +865,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
       }
@@ -929,6 +938,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "not_committed",
         "disposition": "violation"
       }
@@ -1046,6 +1056,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "partial",
         "disposition": "qualified_partial"
       }
@@ -1130,6 +1141,7 @@
         "orphaned_target_effect_count": 1,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "indeterminate"
       }
@@ -1202,6 +1214,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 1,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 1,
         "reconciled_state": "not_committed",
         "disposition": "violation"
       }
@@ -1315,6 +1328,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       }
@@ -1401,6 +1415,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 1,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
       }
@@ -1485,6 +1500,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "violation"
       }
@@ -1555,6 +1571,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
       }
@@ -1641,6 +1658,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
       }
@@ -1725,6 +1743,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 1,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 1,
         "reconciled_state": "unknown",
         "disposition": "violation"
       }
@@ -1852,6 +1871,7 @@
         "orphaned_target_effect_count": 0,
         "target_client_ledger_conflict_count": 0,
         "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
       }
