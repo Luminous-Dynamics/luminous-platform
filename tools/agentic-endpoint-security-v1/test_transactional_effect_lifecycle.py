@@ -164,6 +164,37 @@ class TransactionalLifecycleTests(unittest.TestCase):
         self.assertEqual(outcome["target_client_ledger_conflict_count"], 1)
         self.assertEqual(outcome["disposition"], "violation")
 
+    def test_revocation_proven_before_commit_blocks_effect(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "TELR-021"))
+        self.assertEqual(outcome["authorization_linearization_state"], "revocation_precedes_commit")
+        self.assertEqual(outcome["reconciled_state"], "not_committed")
+        self.assertEqual(outcome["disposition"], "qualified_not_committed")
+
+    def test_commit_proven_before_revocation_is_valid_at_linearization_point(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "TELR-023"))
+        self.assertEqual(outcome["authorization_linearization_state"], "commit_precedes_revocation")
+        self.assertEqual(outcome["disposition"], "qualified_committed")
+
+    def test_overlapping_revocation_commit_intervals_remain_indeterminate(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "TELR-022"))
+        self.assertEqual(outcome["authorization_linearization_state"], "revocation_commit_overlap")
+        self.assertEqual(outcome["disposition"], "indeterminate")
+
+    def test_unverified_timebase_does_not_prove_authorization_order(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-023")
+        current["authorization_timing"]["commit_interval"]["timebase_verified"] = False
+        self.assertEqual(checker.evaluate(current)["authorization_linearization_state"], "timebase_unqualified")
+
+    def test_touching_uncertainty_intervals_do_not_prove_strict_order(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-023")
+        current["authorization_timing"]["grant_interval"]["upper_ns"] = current["authorization_timing"]["commit_interval"]["lower_ns"]
+        self.assertEqual(checker.evaluate(current)["authorization_linearization_state"], "grant_order_unproven")
+
     def test_partial_batch_cannot_be_claimed_complete(self):
         suite, schema = inputs()
         case(suite, "TELR-011")["client_ledger"]["completed_claim"] = True
