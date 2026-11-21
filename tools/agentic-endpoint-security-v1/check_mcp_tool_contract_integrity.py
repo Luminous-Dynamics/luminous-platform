@@ -20,7 +20,7 @@ def load(path:Path)->Any:
 
 def descriptor_ok(case:dict[str,Any])->bool:
     reviewed=case["reviewed_descriptor"];presented=case["presented_descriptor"]
-    return all(reviewed[k]==presented[k] for k in COMPONENT_FIELDS) and reviewed["canonical_descriptor_digest"]==presented["canonical_descriptor_digest"]==case["approval"]["reviewed_descriptor_digest"] and case["approval"]["approved_tool_id"]==reviewed["tool_id"]==presented["tool_id"]
+    return all(reviewed[k]==presented[k] for k in COMPONENT_FIELDS) and reviewed["canonical_descriptor_digest"]==presented["canonical_descriptor_digest"]==case["approval"]["reviewed_descriptor_digest"] and case["approval"]["approved_tool_id"]==reviewed["tool_id"]==presented["tool_id"] and case["invocation"]["response_server_identity"]==reviewed["server_identity"]
 
 
 def authority_ok(case:dict[str,Any])->bool:
@@ -62,7 +62,7 @@ def validate_case(case:dict[str,Any],effect_ids:set[str])->None:
     if set(a)!={"issuer","token_audience","expected_issuer","expected_audience","granted_scopes","required_scopes","grant_id","policy_epoch","nonce_id","nonce_status","session_handle_used_for_auth"}:raise ValueError(f"{sid}: authority fields differ")
     if a["nonce_status"] not in {"fresh","consumed","unknown"}:raise ValueError(f"{sid}: invalid nonce state")
     inv=case["invocation"]
-    if set(inv)!={"attempt_id","descriptor_digest","effect_id","argument_digest"}:raise ValueError(f"{sid}: invocation fields differ")
+    if set(inv)!={"attempt_id","descriptor_digest","effect_id","argument_digest","response_server_identity"}:raise ValueError(f"{sid}: invocation fields differ")
     if inv["effect_id"] not in effect_ids or not DIGEST.fullmatch(inv["argument_digest"]):raise ValueError(f"{sid}: invalid CAPC effect/argument digest")
     if case["admission"]["decision"] not in {"allow","deny","hold"}:raise ValueError(f"{sid}: invalid admission decision")
     oracle=case["oracle"]
@@ -91,7 +91,7 @@ def validate_suite(suite:dict[str,Any],schema:dict[str,Any])->dict[str,int]:
     effect_ids={e["effect_id"] for e in suite.get("effects",[])}
     if len(effect_ids)!=len(suite.get("effects",[])) or not effect_ids:raise ValueError("invalid CAPC effect inventory")
     cases=suite.get("cases",[])
-    if len(cases)!=14:raise ValueError("expected 14 MTCI controls")
+    if len(cases)!=15:raise ValueError("expected 15 MTCI controls")
     counts={"positive_control":0,"negative_control":0,"indeterminate_control":0}
     ids=set()
     for c in cases:
@@ -102,7 +102,7 @@ def validate_suite(suite:dict[str,Any],schema:dict[str,Any])->dict[str,int]:
         actual=evaluate({**c,"_effects":[{"effect_id":x} for x in effect_ids]})
         if expected!={k:actual[k] for k in ("descriptor_integrity_ok","authority_integrity_ok","disposition")}:
             raise ValueError(f'{c["scenario_id"]}: descriptor/authority result mismatch')
-    if counts!={"positive_control":1,"negative_control":12,"indeterminate_control":1}:raise ValueError(f"control distribution changed: {counts}")
+    if counts!={"positive_control":1,"negative_control":13,"indeterminate_control":1}:raise ValueError(f"control distribution changed: {counts}")
     return {"cases":len(cases),**counts}
 
 
