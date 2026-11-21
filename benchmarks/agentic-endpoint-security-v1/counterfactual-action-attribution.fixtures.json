@@ -1334,19 +1334,19 @@
         "transformation_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
       },
       "strategy_candidate": {
-        "strategy_id": "CAUSAL-CONTROL-01",
-        "strategy_class": "control",
-        "mechanism_class": "trusted_user_authorized_operation",
-        "authority_substitution": "none_trusted_user_authorizes_action",
+        "strategy_id": "CAUSAL-STRAT-03",
+        "strategy_class": "attack",
+        "mechanism_class": "retrieval_instruction_injection",
+        "authority_substitution": "retrieved_content_reclassified_as_operational_instruction",
         "source_to_action_route": [
-          "trusted_user_task",
-          "planner",
-          "tool_argument"
+          "untrusted_document",
+          "retrieval_context",
+          "planner"
         ],
         "target_effect_id": "effect:doc-write",
         "causal_chain": [
-          "trusted_intent",
-          "plan",
+          "retrieve",
+          "reframe",
           "select_effect"
         ]
       },
@@ -1433,19 +1433,19 @@
         "transformation_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
       },
       "strategy_candidate": {
-        "strategy_id": "CAUSAL-CONTROL-01",
-        "strategy_class": "control",
-        "mechanism_class": "trusted_user_authorized_operation",
-        "authority_substitution": "none_trusted_user_authorizes_action",
+        "strategy_id": "CAUSAL-STRAT-03",
+        "strategy_class": "attack",
+        "mechanism_class": "retrieval_instruction_injection",
+        "authority_substitution": "retrieved_content_reclassified_as_operational_instruction",
         "source_to_action_route": [
-          "trusted_user_task",
-          "planner",
-          "tool_argument"
+          "untrusted_document",
+          "retrieval_context",
+          "planner"
         ],
         "target_effect_id": "effect:doc-write",
         "causal_chain": [
-          "trusted_intent",
-          "plan",
+          "retrieve",
+          "reframe",
           "select_effect"
         ]
       },
@@ -1532,19 +1532,19 @@
         "transformation_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
       },
       "strategy_candidate": {
-        "strategy_id": "CAUSAL-CONTROL-01",
-        "strategy_class": "control",
-        "mechanism_class": "trusted_user_authorized_operation",
-        "authority_substitution": "none_trusted_user_authorizes_action",
+        "strategy_id": "CAUSAL-STRAT-03",
+        "strategy_class": "attack",
+        "mechanism_class": "retrieval_instruction_injection",
+        "authority_substitution": "retrieved_content_reclassified_as_operational_instruction",
         "source_to_action_route": [
-          "trusted_user_task",
-          "planner",
-          "tool_argument"
+          "untrusted_document",
+          "retrieval_context",
+          "planner"
         ],
         "target_effect_id": "effect:doc-write",
         "causal_chain": [
-          "trusted_intent",
-          "plan",
+          "retrieve",
+          "reframe",
           "select_effect"
         ]
       },
