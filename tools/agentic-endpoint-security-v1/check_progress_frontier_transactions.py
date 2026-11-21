@@ -102,16 +102,22 @@ def evaluate(case:dict[str,Any])->dict[str,Any]:
     for event in externalized:
         effect=effect_by_id.get(event["instance_id"])
         if effect and effect["effect_class"]=="externalized_reversible":
-            compensation=next((item for item in compensations if item["compensates_for"]==event["event_id"]),None)
-            if compensation is None:
+            matching=[item for item in compensations if item["compensates_for"]==event["event_id"]]
+            if not matching:
                 if case["reconciliation"]["complete"] and case["reconciliation"]["independent"] and case["reconciliation"]["status"]=="aborted":
                     uncompensated+=1
-            else:
-                original=event_by_id.get(compensation["compensates_for"])
-                comp_effect=effect_by_id.get(compensation["instance_id"])
-                if (original is None or original["event_kind"]!="externalized" or comp_effect is None
-                    or comp_effect["effect_class"]!="compensation" or compensation["dependency_order"]!=event["dependency_order"]):
-                    compensation_order+=1
+            elif len(matching)>1:
+                compensation_order+=len(matching)-1
+    for compensation in compensations:
+        original=event_by_id.get(compensation["compensates_for"])
+        comp_effect=effect_by_id.get(compensation["instance_id"])
+        if (original is None or original["event_kind"]!="externalized"
+            or original["tx_id"]!=tx["tx_id"] or original["branch_id"]!=tx["branch_id"]
+            or comp_effect is None or comp_effect["effect_class"]!="compensation"
+            or original["resource_id"]!=compensation["resource_id"]
+            or original["effect_id"]==compensation["effect_id"]
+            or original["dependency_order"]!=compensation["dependency_order"]):
+            compensation_order+=1
     compensation_sequence=sorted(compensations,key=lambda item:item["sequence"])
     for previous,current in zip(compensation_sequence,compensation_sequence[1:]):
         if current["dependency_order"]>previous["dependency_order"]:compensation_order+=1
@@ -210,10 +216,20 @@ def validate_case(case:dict[str,Any],effect_catalog:set[str])->None:
         ids.add(event["event_id"])
         if event["event_kind"] not in {"released","externalized","compensation"}:raise ValueError(f"{sid}: invalid event kind")
         if event["sequence"]<0 or event["dependency_order"]<0:raise ValueError(f"{sid}: invalid event sequence")
+        if event["event_kind"]=="compensation" and event["compensates_for"] is None:
+            raise ValueError(f"{sid}: compensation event requires an original event reference")
+        if event["event_kind"]!="compensation" and event["compensates_for"] is not None:
+            raise ValueError(f"{sid}: only compensation events may reference an original event")
+    target_sequences=[event["sequence"] for event in case["target_events"]]
+    if len(target_sequences)!=len(set(target_sequences)):
+        raise ValueError(f"{sid}: duplicate target event sequence")
     for event in case["target_events"]:
         if event["tx_id"]!=tx["tx_id"] or event["branch_id"]!=tx["branch_id"]:
             raise ValueError(f"{sid}: target event is not bound to active transaction/branch")
         if event["instance_id"] not in instances:raise ValueError(f"{sid}: unknown effect instance in target event")
+    for event in case["target_events"]:
+        if event["event_kind"]=="compensation" and event["compensates_for"] not in ids:
+            raise ValueError(f"{sid}: compensation references an unknown event")
     rec=case["reconciliation"]
     if set(rec)!={"status","complete","independent","result_event_ids"} or rec["status"] not in {"committed","partial","aborted","unknown"}:
         raise ValueError(f"{sid}: reconciliation fields/state differ")
