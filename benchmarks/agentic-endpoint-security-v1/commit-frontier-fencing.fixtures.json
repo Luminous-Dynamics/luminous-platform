@@ -122,6 +122,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -272,6 +275,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -424,6 +430,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 1,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -574,6 +583,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -726,6 +738,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 1,
         "wrong_binding_acceptance_count": 0,
@@ -876,6 +891,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -1028,6 +1046,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 1,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -1203,6 +1224,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -1353,6 +1377,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -1503,6 +1530,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -1655,6 +1685,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 1,
@@ -1807,6 +1840,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -1957,6 +1993,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2109,6 +2148,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 1,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2259,6 +2301,9 @@
       },
       "expected": {
         "frontier_state": "stale",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2411,6 +2456,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2563,6 +2611,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2690,6 +2741,9 @@
       },
       "expected": {
         "frontier_state": "unknown",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2842,6 +2896,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -2994,6 +3051,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -3121,6 +3181,9 @@
       },
       "expected": {
         "frontier_state": "unknown",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -3271,6 +3334,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -3398,6 +3464,9 @@
       },
       "expected": {
         "frontier_state": "unknown",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -3548,6 +3617,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -3700,6 +3772,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -3852,6 +3927,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -4002,6 +4080,9 @@
       },
       "expected": {
         "frontier_state": "ready",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -4014,8 +4095,8 @@
         "target_owner_revision_mismatch_count": 0,
         "target_high_water_mismatch_count": 0,
         "false_reject_count": 0,
-        "target_effect_count": 1,
-        "disposition": "qualified_allow"
+        "target_effect_count": 0,
+        "disposition": "qualified_deny"
       },
       "oic_binding": {
         "profile_id": "critical_effect_truth_v0",
@@ -4128,7 +4209,10 @@
         "observed_event_ids": []
       },
       "expected": {
-        "frontier_state": "ready",
+        "frontier_state": "late_data_open",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
@@ -4141,8 +4225,8 @@
         "target_owner_revision_mismatch_count": 0,
         "target_high_water_mismatch_count": 0,
         "false_reject_count": 0,
-        "target_effect_count": 1,
-        "disposition": "qualified_allow"
+        "target_effect_count": 0,
+        "disposition": "indeterminate"
       },
       "oic_binding": {
         "profile_id": "critical_effect_truth_v0",
@@ -4280,13 +4364,16 @@
         ]
       },
       "expected": {
-        "frontier_state": "ready",
+        "frontier_state": "unknown",
+        "oic_unknown_domain_count": 0,
+        "witness_domain_correlation_count": 1,
+        "witness_correlation_acceptance_count": 1,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
-        "wrong_binding_acceptance_count": 0,
+        "wrong_binding_acceptance_count": 2,
         "policy_epoch_acceptance_count": 0,
         "stale_resource_version_acceptance_count": 0,
-        "stale_frontier_acceptance_count": 0,
+        "stale_frontier_acceptance_count": 1,
         "toctou_race_count": 0,
         "high_water_regression_count": 0,
         "atomic_fence_failure_count": 0,
@@ -4294,7 +4381,7 @@
         "target_high_water_mismatch_count": 0,
         "false_reject_count": 0,
         "target_effect_count": 1,
-        "disposition": "qualified_allow"
+        "disposition": "violation"
       },
       "oic_binding": {
         "profile_id": "critical_effect_truth_v0",
@@ -4408,6 +4495,9 @@
       },
       "expected": {
         "frontier_state": "unknown",
+        "oic_unknown_domain_count": 1,
+        "witness_domain_correlation_count": 0,
+        "witness_correlation_acceptance_count": 0,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
         "wrong_binding_acceptance_count": 0,
