@@ -38,12 +38,20 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         key_args[attempt["idempotency_key"]].add(attempt["argument_digest"])
     key_conflicts = sum(1 for values in key_args.values() if len(values) > 1)
 
-    commit_by_key: dict[tuple[str, str], int] = defaultdict(int)
+    semantic_effect_units: dict[tuple[str, str | None, str], int] = defaultdict(int)
     semantic_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for entry in effect_entries:
-        commit_by_key[(entry["idempotency_key"], entry["argument_digest"])] += 1
+        # A new idempotency key cannot turn the same semantic operation/item
+        # into a second legitimate target effect. Distinct batch item ids are
+        # distinct intended effects within a batch.
+        unit = (
+            entry["semantic_operation_id"],
+            entry["batch_item_id"],
+            entry["effect_id"],
+        )
+        semantic_effect_units[unit] += 1
         semantic_groups[entry["semantic_operation_id"]].append(entry)
-    duplicates = sum(max(0, count - 1) for count in commit_by_key.values())
+    duplicates = sum(max(0, count - 1) for count in semantic_effect_units.values())
 
     semantic_replays = 0
     for group in semantic_groups.values():
