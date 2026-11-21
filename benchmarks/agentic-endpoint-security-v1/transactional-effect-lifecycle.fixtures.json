@@ -1030,7 +1030,7 @@
         ],
         "evidence_sealed": true,
         "evidence_integrity": true,
-        "completed_claim": true
+        "completed_claim": false
       },
       "authority_ledger": {
         "consumed_nonce_ids": [],
