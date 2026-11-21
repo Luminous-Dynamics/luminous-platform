@@ -1364,6 +1364,20 @@
           "authority_generation": 1,
           "grant_id": "grant:write",
           "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-015c",
+          "idempotency_key": "key-015c",
+          "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce-comp"
         }
       ],
       "target_ledger": {
