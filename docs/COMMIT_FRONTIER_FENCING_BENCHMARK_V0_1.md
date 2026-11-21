@@ -6,7 +6,7 @@
 
 CFF is the executable supplement for [issue #529](https://github.com/Luminous-Dynamics/luminous-platform/issues/529). It separates a frontier observation from the resource owner's enforcement decision.
 
-A valid frontier certificate can report that earlier work is complete; its witness must also be qualified against OIC's critical seven failure domains (process/runtime, event stream, signing root, credential root, clock authority, storage backend and control plane), with explicit subject, resource-owner and witness identities. that does not by itself prevent an old worker from resuming later. The resource owner must atomically compare the presented generation, branch/transaction binding, policy epoch, resource version and frontier identity while applying the effect.
+A valid frontier certificate can report that earlier work is complete; its witness must also be qualified against OIC's critical seven failure domains (process/runtime, event stream, signing root, credential root, clock authority, storage backend and control plane), with explicit subject, resource-owner and witness identities. that does not by itself prevent an old worker from resuming later. The witness's failure-domain identities are checked against the existing OIC `critical_effect_truth_v0` profile for process/runtime, event stream, signing root, credential root, clock authority, storage backend and control plane. A shared domain cannot be declared independent by setting a boolean. The resource owner must atomically compare the presented generation, branch/transaction binding, policy epoch, resource version and frontier identity while applying the effect.
 
 ## Three-layer contract
 
@@ -16,7 +16,7 @@ A valid frontier certificate can report that earlier work is complete; its witne
 
 A local lease check followed by an unguarded write is a TOCTOU race. A stale replica read is not owner authority. A restored client does not lower the target's generation. An open source is safe only when the owner contract explicitly uses target fencing to reject old epochs.
 
-## Frozen 28-case panel
+## Frozen 30-case panel
 
 The suite contains 7 positive, 18 negative and 5 indeterminate controls. It covers current generation; stale-token rejection and acceptance; delayed lower-epoch writes; takeover between check and write; multiple writes under one active grant; cross-resource and cross-branch token reuse; stale policy; high-water rollback; stale frontier replica; allowed late-data policy with target fencing, a real late arrival while its source remains open, unknown lateness policy; stale resource version; missing owner/high-water evidence; independent resource owners; successor generation; false rejection; a frontier witness sharing the resource owner's control-plane domain; and an unknown witness domain.
 
