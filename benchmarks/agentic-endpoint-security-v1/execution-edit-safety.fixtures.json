@@ -29,7 +29,9 @@
         "required_result_ids": [
           "result:primary"
         ],
-        "completed_result_ids": [],
+        "completed_result_ids": [
+          "result:primary"
+        ],
         "pending_operations": [],
         "consumed_nonce_ids": [],
         "resource_versions": {
