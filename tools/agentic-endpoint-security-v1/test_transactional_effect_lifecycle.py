@@ -184,6 +184,20 @@ class TransactionalLifecycleTests(unittest.TestCase):
         case(suite, "TELR-002")["target_ledger"]["entries"][0]["effect_id"] = "effect:payment-create"
         reject(suite, schema)
 
+    def test_compensation_requires_distinct_authority_and_operation(self):
+        suite, schema = inputs()
+        current = case(suite, "TELR-014")
+        compensation = next(entry for entry in current["target_ledger"]["entries"] if entry["kind"] == "compensation")
+        original = next(entry for entry in current["target_ledger"]["entries"] if entry["kind"] == "effect")
+        compensation["grant_id"] = original["grant_id"]
+        reject(suite, schema)
+
+    def test_target_commit_must_bind_to_dispatch_authority_receipt(self):
+        suite, schema = inputs()
+        current = case(suite, "TELR-002")
+        current["target_ledger"]["entries"][0]["grant_id"] = "grant:other"
+        reject(suite, schema)
+
     def test_compensation_requires_original_target_commit(self):
         suite, schema = inputs()
         current = case(suite, "TELR-014")
