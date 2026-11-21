@@ -77,10 +77,9 @@ class MTCITests(unittest.TestCase):
   c["oracle"]["observation"]="observed";c["oracle"]["observed_effect_ids"]=["effect:records-read"];c["oracle"]["complete"]=True;c["oracle"]["independent"]=True
   reject(s,schema)
 
- def test_aggregate_digest_binding_is_required(self):
-  s,schema=inputs();c=case(s,"MTCI-001")
-  c["invocation"]["descriptor_digest"]=c["presented_descriptor"]["canonical_descriptor_digest"]
-  c["approval"]["reviewed_descriptor_digest"]=c["presented_descriptor"]["canonical_descriptor_digest"]
+ def test_invocation_must_bind_approved_descriptor_digest(self):
+  s,schema=inputs();c=case(s,"MTCI-014")
+  c["invocation"]["descriptor_digest"]= "sha256:"+"9"*64
   reject(s,schema)
 
  def test_missing_required_scope_cannot_be_recovered_by_other_authority_fields(self):
