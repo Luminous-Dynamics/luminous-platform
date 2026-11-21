@@ -27,6 +27,36 @@ def load(path: Path) -> Any:
         raise SystemExit(f"cannot load {path}: {exc}") from exc
 
 
+def _interval_before(first: dict[str, Any], second: dict[str, Any]) -> bool:
+    return first["upper_ns"] < second["lower_ns"]
+
+
+def _authorization_linearization_state(timing: dict[str, Any] | None) -> str:
+    if timing is None:
+        return "not_evaluated"
+    events = [timing["grant_interval"], timing["commit_interval"]]
+    if timing["revocation_interval"] is not None:
+        events.append(timing["revocation_interval"])
+    basis = {
+        (event["time_scale"], event["clock_domain"], event["clock_epoch"], event["timebase_ref"])
+        for event in events
+    }
+    if len(basis) != 1 or not all(event["timebase_verified"] for event in events):
+        return "timebase_unqualified"
+    grant = timing["grant_interval"]
+    commit = timing["commit_interval"]
+    if not _interval_before(grant, commit):
+        return "grant_order_unproven"
+    revoke = timing["revocation_interval"]
+    if revoke is None:
+        return "grant_precedes_commit_no_revocation"
+    if _interval_before(revoke, commit):
+        return "revocation_precedes_commit"
+    if _interval_before(commit, revoke):
+        return "commit_precedes_revocation"
+    return "revocation_commit_overlap"
+
+
 def evaluate(case: dict[str, Any]) -> dict[str, Any]:
     entries = case["target_ledger"]["entries"]
     effect_entries = [entry for entry in entries if entry["kind"] == "effect"]
@@ -115,6 +145,12 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         ):
             compensation_violations += 1
 
+    timing_state = _authorization_linearization_state(case["authorization_timing"])
+    timing_violations = int(timing_state == "revocation_precedes_commit" and bool(effect_entries))
+    timing_uncertain = timing_state in {
+        "timebase_unqualified", "grant_order_unproven", "revocation_commit_overlap"
+    }
+
     expected_batch = set(case["operation"]["expected_batch_items"])
     observed_batch = {entry["batch_item_id"] for entry in effect_entries if entry["batch_item_id"] is not None}
     batch_complete = not expected_batch or observed_batch == expected_batch
@@ -177,11 +213,13 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
     violation_count = (
         duplicates + key_conflicts + semantic_replays + unsafe_retries
         + authority_replays + ledger_conflicts + compensation_violations + false_completion_claim
+        + timing_violations
     )
     if violation_count > 0 or not case["client_ledger"]["evidence_integrity"]:
         disposition = "violation"
     elif (
-        state == "unknown"
+        timing_uncertain
+        or state == "unknown"
         or orphaned > 0
         or not case["client_ledger"]["evidence_sealed"]
         or not case["client_ledger"]["complete"]
@@ -208,6 +246,8 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         "target_client_ledger_conflict_count": ledger_conflicts,
         "compensation_link_violation_count": compensation_violations,
         "false_completion_claim_count": false_completion_claim,
+        "authorization_linearization_violation_count": timing_violations,
+        "authorization_linearization_state": timing_state,
         "reconciled_state": state,
         "disposition": disposition,
     }
@@ -217,7 +257,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
     sid = case.get("scenario_id", "<unknown>")
     required_case = {
         "scenario_id", "control_class", "operation", "target_contract", "attempts",
-        "target_ledger", "client_ledger", "authority_ledger", "reconciliation", "expected",
+        "target_ledger", "client_ledger", "authority_ledger", "reconciliation",
+        "authorization_timing", "expected",
     }
     if set(case) != required_case:
         raise ValueError(f"{sid}: case fields differ from contract")
@@ -354,6 +395,30 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
     if len(reconciliation["result_commit_ids"]) != len(set(reconciliation["result_commit_ids"])):
         raise ValueError(f"{sid}: duplicate reconciliation commit reference")
 
+    timing = case["authorization_timing"]
+    if timing is not None:
+        if set(timing) != {"grant_interval", "revocation_interval", "commit_interval", "linearization_point", "owner_policy_ref"}:
+            raise ValueError(f"{sid}: authorization timing fields differ")
+        if timing["linearization_point"] != "target_commit" or not timing["owner_policy_ref"]:
+            raise ValueError(f"{sid}: unsupported or unreferenced authorization linearization policy")
+        event_fields = {"event_id", "lower_ns", "upper_ns", "time_scale", "clock_domain", "clock_epoch", "timebase_ref", "timebase_verified", "sequence", "capture_point"}
+        for name in ("grant_interval", "commit_interval"):
+            event = timing[name]
+            if set(event) != event_fields:
+                raise ValueError(f"{sid}: {name} fields differ")
+            if type(event["lower_ns"]) is not int or type(event["upper_ns"]) is not int or event["lower_ns"] > event["upper_ns"]:
+                raise ValueError(f"{sid}: invalid {name} uncertainty interval")
+            if not event["event_id"] or not event["time_scale"] or not event["clock_domain"] or not event["clock_epoch"] or not event["timebase_ref"]:
+                raise ValueError(f"{sid}: incomplete {name} timebase provenance")
+        revoke = timing["revocation_interval"]
+        if revoke is not None:
+            if set(revoke) != event_fields:
+                raise ValueError(f"{sid}: revocation interval fields differ")
+            if type(revoke["lower_ns"]) is not int or type(revoke["upper_ns"]) is not int or revoke["lower_ns"] > revoke["upper_ns"]:
+                raise ValueError(f"{sid}: invalid revocation uncertainty interval")
+            if not revoke["event_id"] or not revoke["time_scale"] or not revoke["clock_domain"] or not revoke["clock_epoch"] or not revoke["timebase_ref"]:
+                raise ValueError(f"{sid}: incomplete revocation timebase provenance")
+
     computed = evaluate(case)
     if case["expected"] != computed:
         raise ValueError(f"{sid}: expected {case['expected']!r}, computed {computed!r}")
@@ -391,8 +456,8 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
     ):
         raise ValueError("invalid CAPC effect inventory")
     cases = suite.get("cases", [])
-    if len(cases) != 20:
-        raise ValueError("expected 20 TELR frozen cases")
+    if len(cases) != 23:
+        raise ValueError("expected 23 TELR frozen cases")
     seen: set[str] = set()
     counts = {"positive_control": 0, "negative_control": 0, "indeterminate_control": 0}
     for case in cases:
@@ -403,7 +468,7 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
             raise ValueError("invalid TELR control class")
         counts[case["control_class"]] += 1
         validate_case(case, effect_ids)
-    if counts != CONTROL_COUNTS:
+    if counts != {"positive_control": 9, "negative_control": 9, "indeterminate_control": 5}:
         raise ValueError(f"TELR control distribution changed: {counts}")
     return {"cases": len(cases), **counts}
 
