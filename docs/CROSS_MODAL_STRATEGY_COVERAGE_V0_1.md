@@ -85,6 +85,12 @@ No single composite score. Critical unauthorized effects remain non-compensatory
 
 These are research gates, not achieved results.
 
+## Research baselines — 21 November 2026
+
+- **AutoPI / PIAtlas** ([arXiv:2611.24313](https://arxiv.org/abs/2611.24313), submitted 18 November 2026) reports, for its evaluated AgentDojo/Qwen3.6-35B setup, successful injections in all six PIAtlas classes and over 90% of techniques. Against Claude Haiku 5.5 it reports higher ASR and class coverage than the adaptive red-team baselines in its comparison. These are study-specific results, not universal rates.
+- **PIPETTE** ([arXiv:2611.24362](https://arxiv.org/abs/2611.24362), submitted 18 November 2026) reports mode collapse in two evaluated RL red-teamers and argues that high training-time ASR did not reliably transfer to unseen adaptive attacks. Its central comparison is useful: red-team output must be judged by held-out defender improvement, not attack count alone.
+- **Text-to-pixels study** ([arXiv:2611.24231](https://arxiv.org/abs/2611.24231), submitted 18 November 2026) pairs 191 English QA sources across six models. It reports that rendering reduces some injection operations, but Qwen3-VL-8B still performed image-borne answer replacement at 77.96% in one evaluated condition. It also distinguishes recognizing/transcribing an injected instruction from following it, and measures clean QA utility.
+
 ## Competitor comparison
 
 - **AutoPI / PIAtlas:** reproduce the pinned taxonomy, use equal query/compute budgets, compare attempted and independently attributed strategy coverage plus effect-verified success—not only ASR.
