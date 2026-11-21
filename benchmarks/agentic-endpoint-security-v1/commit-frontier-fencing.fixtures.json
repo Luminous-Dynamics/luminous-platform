@@ -4553,7 +4553,7 @@
       },
       "oic_binding": {
         "profile_id": "critical_effect_truth_v0",
-        "oic_case_id": "OIC-003",
+        "oic_case_id": "OIC-007",
         "required_disjoint_domains": [
           "process_runtime",
           "event_stream",
