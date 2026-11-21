@@ -95,6 +95,10 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         if original is None or original["kind"] != "effect":
             compensation_violations += 1
 
+    expected_batch = set(case["operation"]["expected_batch_items"])
+    observed_batch = {entry["batch_item_id"] for entry in effect_entries if entry["batch_item_id"] is not None}
+    batch_complete = not expected_batch or observed_batch == expected_batch
+
     reconciliation = case["reconciliation"]
     state = "unknown"
     oracle_qualified = (
@@ -107,6 +111,7 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         result_ids = reconciliation["result_commit_ids"]
         if (
             reconciliation["status"] == "committed"
+            and batch_complete
             and len(result_ids) == len(entries)
             and set(result_ids) == target_ids
         ):
@@ -141,9 +146,13 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
     if reconciliation["status"] == "committed" and not entries:
         ledger_conflicts += 1
 
+    false_completion_claim = int(
+        case["client_ledger"]["completed_claim"]
+        and (state not in {"committed", "partial"} or orphaned > 0 or ledger_conflicts > 0)
+    )
     violation_count = (
         duplicates + key_conflicts + semantic_replays + unsafe_retries
-        + authority_replays + ledger_conflicts + compensation_violations
+        + authority_replays + ledger_conflicts + compensation_violations + false_completion_claim
     )
     if violation_count > 0 or not case["client_ledger"]["evidence_integrity"]:
         disposition = "violation"
@@ -174,6 +183,7 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         "orphaned_target_effect_count": orphaned,
         "target_client_ledger_conflict_count": ledger_conflicts,
         "compensation_link_violation_count": compensation_violations,
+        "false_completion_claim_count": false_completion_claim,
         "reconciled_state": state,
         "disposition": disposition,
     }
