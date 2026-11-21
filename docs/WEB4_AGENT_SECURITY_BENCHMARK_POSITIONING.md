@@ -73,7 +73,7 @@ All published figures are specific to their evaluated models, agents, versions, 
 | CAA #522 | 18 synthetic episodes / six clean-raw-neutralized triplets. | Randomized execution with state-equivalent resets, preregistered estimands and confidence intervals. |
 | MTCI #524 | 15 MCP descriptor/authority controls, including per-response identity. | Named clients/servers/protocol, descriptor canonicalization and live per-call authorization. |
 | TELR #526 | 23 synthetic lifecycle/recovery cases, target/client ledger reconciliation, duplicate/replay/compensation and time-interval linearization. | Disposable target service, injected response loss/late commits/restore faults and independent target ledger. |
-| CFF #529 / PR pending | 26 synthetic stale-writer/fencing controls: high-water monotonicity, target-side atomicity, branch/resource/policy binding and false rejection. | Instrumented disposable resource owner with owner-side generation enforcement and stale-worker/failover/rollback injection. |
+| CFF #529 / PR #530 | 30 synthetic stale-writer/fencing controls: high-water monotonicity, target-side atomicity, branch/resource/policy binding, OIC-qualified witness domains and false rejection. | Instrumented disposable resource owner with owner-side generation enforcement and stale-worker/failover/rollback injection. |
 
 ## Competitive target ladder
 
