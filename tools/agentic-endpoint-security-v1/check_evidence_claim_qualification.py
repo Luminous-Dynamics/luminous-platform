@@ -126,12 +126,19 @@ def evaluate(case:dict[str,Any])->dict[str,Any]:
 
 def validate_case(case:dict[str,Any])->None:
     sid=case.get("scenario_id","<unknown>")
+    if set(case)!={"scenario_id","control_class","claim","obligations","evidence","expected"}:
+        raise ValueError(f"{sid}: case fields differ from ECQ contract")
     claim=case["claim"]
+    claim_fields={"claim_id","requested_profile","assertion","subject_repository","subject_commit","subject_digest","subject_domain_id","current_policy_revision","current_descriptor_digest","trusted_attesters","required_checks","scope","effect_expectation","expected_effect_id","bundle_sealed","bundle_digest"}
+    if set(claim)!=claim_fields:
+        raise ValueError(f"{sid}: claim fields differ from ECQ contract")
+    if claim["effect_expectation"] not in {"observed","no_effect",None}:
+        raise ValueError(f"{sid}: invalid effect expectation")
     if claim["requested_profile"] not in PROFILES:raise ValueError(f"{sid}: unknown claim profile")
     if not SHA40.fullmatch(claim["subject_commit"]) or not DIGEST.fullmatch(claim["subject_digest"]):
         raise ValueError(f"{sid}: malformed immutable subject identity")
     if not DIGEST.fullmatch(claim["current_descriptor_digest"]):raise ValueError(f"{sid}: malformed current descriptor digest")
-    if not DIGEST.fullmatch(claim["bundle_digest"]) if claim["bundle_digest"] is not None else False:
+    if claim["bundle_digest"] is not None and not DIGEST.fullmatch(claim["bundle_digest"]):
         raise ValueError(f"{sid}: malformed claim bundle digest")
     if not claim["trusted_attesters"] or len(set(claim["trusted_attesters"]))!=len(claim["trusted_attesters"]):
         raise ValueError(f"{sid}: trusted attester policy must be explicit and unique")
@@ -149,10 +156,14 @@ def validate_case(case:dict[str,Any])->None:
     if len(categories)!=len(set(categories)):raise ValueError(f"{sid}: duplicate obligation category")
     ids=set()
     for obligation in case["obligations"]:
+        if set(obligation)!={"obligation_id","category","mandatory","evidence_ids"}:
+            raise ValueError(f"{sid}: obligation fields differ from ECQ contract")
         if obligation["category"] not in CATEGORIES or obligation["mandatory"] is not True:raise ValueError(f"{sid}: invalid/optional obligation")
         if not obligation["evidence_ids"] or len(obligation["evidence_ids"])!=len(set(obligation["evidence_ids"])):
             raise ValueError(f"{sid}: obligation evidence mapping must be nonempty and unique")
+    evidence_fields={"evidence_id","evidence_type","status","source_kind","subject_commit","subject_digest","run_id","run_status","run_conclusion","run_head_sha","passed_checks","attester_id","signature_verified","attestation_subject_digest","runtime_id","model_id","environment_id","tool_descriptor_digest","disposable","currentness_state","policy_revision","descriptor_digest","superseded_by","observer_identity","observer_domain_id","observer_independent","observer_fault_qualified","fault_campaign_executed","observer_fault_domain_id","target_observation_state","target_observation_complete","effect_id","resource_ids","operations","timebase_state","timebase_id","proof_complete","witness_complete","replay_free","continuation_outcome"}
     for item in case["evidence"]:
+        if set(item)!=evidence_fields:raise ValueError(f"{sid}: evidence fields differ from ECQ contract")
         if item["evidence_id"] in ids:raise ValueError(f"{sid}: duplicate evidence id")
         ids.add(item["evidence_id"])
         if item["evidence_type"] not in CATEGORIES or item["status"] not in {"pass","failed","unknown"}:
