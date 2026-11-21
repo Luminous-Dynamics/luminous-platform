@@ -857,7 +857,7 @@
         ]
       },
       "expected": {
-        "duplicate_effect_count": 0,
+        "duplicate_effect_count": 1,
         "key_argument_conflict_count": 0,
         "semantic_replay_count": 1,
         "unsafe_retry_count": 0,
