@@ -138,12 +138,12 @@ class CommitFrontierFencingTests(unittest.TestCase):
         self.assertEqual(checker.evaluate(case(suite, "CFF-014"))["disposition"], "violation")
 
     def test_version_chain_must_match_each_atomic_write(self):
-        suite, schema = inputs()
+        suite, _ = inputs()
         current = case(suite, "CFF-008")
         current["target_events"][1]["resource_version_before"] = "v1"
-        current["expected"] = checker.evaluate(current)
-        self.assertGreater(current["expected"]["stale_resource_version_acceptance_count"], 0)
-        reject(suite, schema)
+        outcome = checker.evaluate(current)
+        self.assertGreater(outcome["stale_resource_version_acceptance_count"], 0)
+        self.assertEqual(outcome["disposition"], "violation")
 
 
 if __name__ == "__main__":
