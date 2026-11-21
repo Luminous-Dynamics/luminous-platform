@@ -10,12 +10,12 @@
 //! guarantee dimension. It does not compress authorization, freshness, scope,
 //! completeness, observation trust, and rollback into one proof-like Boolean.
 
+pub mod information_flow;
 mod trace;
 pub mod trajectory;
-pub mod information_flow;
 
 pub use trace::{
-    evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord,
+    evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvent, TraceEvidence, TraceRecord,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -49,9 +49,8 @@ pub struct BindingTuple<'a> {
 impl<'a> BindingTuple<'a> {
     fn is_well_formed(self) -> bool {
         let nonempty = |value: &str| !value.trim().is_empty();
-        let sha256 = |value: &str| {
-            value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
-        };
+        let sha256 =
+            |value: &str| value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit());
 
         nonempty(self.target_id)
             && nonempty(self.task_id)
@@ -172,9 +171,9 @@ impl<'a> EvidenceBundle<'a> {
         match self.rollback {
             RollbackState::Current => true,
             RollbackState::NotRequired => !self.external_witness_required,
-            RollbackState::Stale
-            | RollbackState::WitnessUnavailable
-            | RollbackState::Unknown => false,
+            RollbackState::Stale | RollbackState::WitnessUnavailable | RollbackState::Unknown => {
+                false
+            }
         }
     }
 
@@ -216,15 +215,14 @@ impl<'a> EvidenceBundle<'a> {
 /// 4. all ambiguous cases remain incomplete or unqualified.
 #[must_use]
 pub fn evaluate<'a>(evidence: EvidenceBundle<'a>) -> Evaluation<'a> {
-    let independently_observed_effect =
-        evidence.observation_is_complete_and_independent()
-            && matches!(
-                evidence.effect,
-                Effect::ExpectedEffectObserved | Effect::ForbiddenEffectObserved
-            );
+    let independently_observed_effect = evidence.observation_is_complete_and_independent()
+        && matches!(
+            evidence.effect,
+            Effect::ExpectedEffectObserved | Effect::ForbiddenEffectObserved
+        );
 
-    let effect_violates_contract = evidence.effect == Effect::ForbiddenEffectObserved
-        || evidence.has_blocking_condition();
+    let effect_violates_contract =
+        evidence.effect == Effect::ForbiddenEffectObserved || evidence.has_blocking_condition();
 
     let disposition = if independently_observed_effect && effect_violates_contract {
         Disposition::SecurityViolationObserved
@@ -305,7 +303,10 @@ mod tests {
         let mut facts = compliant_evidence();
         facts.authorization = Authorization::Denied;
         facts.effect = Effect::NoEffectObserved;
-        assert_eq!(evaluate(facts).disposition, Disposition::BlockedBeforeEffect);
+        assert_eq!(
+            evaluate(facts).disposition,
+            Disposition::BlockedBeforeEffect
+        );
     }
 
     #[test]
@@ -356,7 +357,10 @@ mod tests {
         );
 
         facts.effect = Effect::NoEffectObserved;
-        assert_eq!(evaluate(facts).disposition, Disposition::BlockedBeforeEffect);
+        assert_eq!(
+            evaluate(facts).disposition,
+            Disposition::BlockedBeforeEffect
+        );
     }
 
     #[test]
@@ -417,7 +421,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn every_binding_field_is_compared_not_self_asserted() {
         let baseline = compliant_evidence();
@@ -461,10 +464,7 @@ mod tests {
             };
             let result = evaluate(evidence);
             assert_eq!(result.computed_binding, Binding::Mismatch);
-            assert_eq!(
-                result.disposition,
-                Disposition::SecurityViolationObserved
-            );
+            assert_eq!(result.disposition, Disposition::SecurityViolationObserved);
         }
     }
 
@@ -475,7 +475,10 @@ mod tests {
             ..compliant_evidence()
         };
         assert_eq!(evaluate(missing).computed_binding, Binding::Unknown);
-        assert_eq!(evaluate(missing).disposition, Disposition::IncompleteEvidence);
+        assert_eq!(
+            evaluate(missing).disposition,
+            Disposition::IncompleteEvidence
+        );
 
         let malformed = EvidenceBundle {
             expected_binding: BindingTuple {
@@ -610,18 +613,15 @@ mod tests {
                                             let actual_allowed = result.disposition
                                                 == Disposition::AuthorizedEffectVerified;
                                             assert_eq!(
-                                                actual_violation,
-                                                expected_violation,
+                                                actual_violation, expected_violation,
                                                 "security-violation invariant failed"
                                             );
                                             assert_eq!(
-                                                actual_blocked,
-                                                expected_block,
+                                                actual_blocked, expected_block,
                                                 "blocked-before-effect invariant failed"
                                             );
                                             assert_eq!(
-                                                actual_allowed,
-                                                expected_allowed,
+                                                actual_allowed, expected_allowed,
                                                 "qualified-allow invariant failed"
                                             );
                                         }
@@ -650,7 +650,9 @@ mod tests {
         let mut facts = compliant_evidence();
         facts.rollback = RollbackState::NotRequired;
         facts.effect = Effect::NoEffectObserved;
-        assert_eq!(evaluate(facts).disposition, Disposition::BlockedBeforeEffect);
+        assert_eq!(
+            evaluate(facts).disposition,
+            Disposition::BlockedBeforeEffect
+        );
     }
 }
-
