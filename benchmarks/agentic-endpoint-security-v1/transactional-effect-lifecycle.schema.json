@@ -1,0 +1,718 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:transactional-effect-lifecycle:0.1",
+  "title": "Transactional Effect Lifecycle and Recovery Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "constraints",
+    "canonical_effect_owner",
+    "control_distribution",
+    "effects",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-transactional-effect-lifecycle"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_lifecycle_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "isolated_disposable_service_required",
+        "external_network_access",
+        "production_endpoints",
+        "real_credentials_or_customer_data",
+        "synthetic_canaries_only",
+        "independent_target_ledger_required",
+        "unknown_outcome_blocks_new_mutation"
+      ],
+      "properties": {
+        "isolated_disposable_service_required": {
+          "const": true
+        },
+        "external_network_access": {
+          "const": false
+        },
+        "production_endpoints": {
+          "const": false
+        },
+        "real_credentials_or_customer_data": {
+          "const": false
+        },
+        "synthetic_canaries_only": {
+          "const": true
+        },
+        "independent_target_ledger_required": {
+          "const": true
+        },
+        "unknown_outcome_blocks_new_mutation": {
+          "const": true
+        }
+      }
+    },
+    "canonical_effect_owner": {
+      "const": "CAPC-v0.1"
+    },
+    "control_distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive_control",
+        "negative_control",
+        "indeterminate_control"
+      ],
+      "properties": {
+        "positive_control": {
+          "const": 9
+        },
+        "negative_control": {
+          "const": 9
+        },
+        "indeterminate_control": {
+          "const": 5
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/effect"
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 23,
+      "maxItems": 23,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect_id",
+        "owner_id",
+        "tenant_id",
+        "resource_id",
+        "operation",
+        "effect_class",
+        "principal_id",
+        "workload_id",
+        "session_id",
+        "argument_constraint_digest",
+        "resource_version_precondition",
+        "policy_epoch",
+        "service_id",
+        "credential_lineage"
+      ],
+      "properties": {
+        "effect_id": {
+          "type": "string"
+        },
+        "owner_id": {
+          "type": "string"
+        },
+        "tenant_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "effect_class": {
+          "type": "string"
+        },
+        "principal_id": {
+          "type": "string"
+        },
+        "workload_id": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "argument_constraint_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "resource_version_precondition": {
+          "type": "string"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "service_id": {
+          "type": "string"
+        },
+        "credential_lineage": {
+          "type": "string"
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit_id",
+        "operation_id",
+        "semantic_operation_id",
+        "idempotency_key",
+        "argument_digest",
+        "effect_id",
+        "kind",
+        "batch_item_id",
+        "compensates_for",
+        "grant_id",
+        "nonce_id"
+      ],
+      "properties": {
+        "commit_id": {
+          "type": "string"
+        },
+        "operation_id": {
+          "type": "string"
+        },
+        "semantic_operation_id": {
+          "type": "string"
+        },
+        "idempotency_key": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "effect",
+            "compensation"
+          ]
+        },
+        "batch_item_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "compensates_for": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "grant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nonce_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "control_class",
+        "operation",
+        "target_contract",
+        "attempts",
+        "target_ledger",
+        "client_ledger",
+        "authority_ledger",
+        "reconciliation",
+        "expected",
+        "authorization_timing"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^TELR-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "operation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "semantic_operation_id",
+            "intent_digest",
+            "effect_id",
+            "argument_digest",
+            "expected_batch_items",
+            "checkpoint_restore_seen"
+          ],
+          "properties": {
+            "semantic_operation_id": {
+              "type": "string"
+            },
+            "intent_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "effect_id": {
+              "type": "string"
+            },
+            "argument_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "expected_batch_items": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "checkpoint_restore_seen": {
+              "type": "boolean"
+            }
+          }
+        },
+        "target_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "idempotency_keys_supported",
+            "read_back_supported",
+            "maximum_in_flight_bound_known",
+            "visibility_bound_steps"
+          ],
+          "properties": {
+            "idempotency_keys_supported": {
+              "type": "boolean"
+            },
+            "read_back_supported": {
+              "type": "boolean"
+            },
+            "maximum_in_flight_bound_known": {
+              "type": "boolean"
+            },
+            "visibility_bound_steps": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "attempts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "attempt_id",
+              "operation_id",
+              "idempotency_key",
+              "argument_digest",
+              "dispatch_state",
+              "ack_state",
+              "retry_parent_attempt_id",
+              "reconciliation_before_attempt",
+              "restored_from_checkpoint",
+              "authority_generation",
+              "grant_id",
+              "nonce_id"
+            ],
+            "properties": {
+              "attempt_id": {
+                "type": "string"
+              },
+              "operation_id": {
+                "type": "string"
+              },
+              "idempotency_key": {
+                "type": "string"
+              },
+              "argument_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "dispatch_state": {
+                "enum": [
+                  "not_sent",
+                  "sent",
+                  "unknown"
+                ]
+              },
+              "ack_state": {
+                "enum": [
+                  "received",
+                  "lost",
+                  "pending",
+                  "unknown"
+                ]
+              },
+              "retry_parent_attempt_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reconciliation_before_attempt": {
+                "enum": [
+                  "not_applicable",
+                  "committed",
+                  "not_committed",
+                  "partial",
+                  "unknown"
+                ]
+              },
+              "restored_from_checkpoint": {
+                "type": "boolean"
+              },
+              "authority_generation": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "grant_id": {
+                "type": "string"
+              },
+              "nonce_id": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "target_ledger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "complete",
+            "independent",
+            "entries"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/entry"
+              }
+            }
+          }
+        },
+        "client_ledger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "complete",
+            "known_commit_ids",
+            "evidence_sealed",
+            "evidence_integrity",
+            "completed_claim"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "known_commit_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "evidence_sealed": {
+              "type": "boolean"
+            },
+            "evidence_integrity": {
+              "type": "boolean"
+            },
+            "completed_claim": {
+              "type": "boolean"
+            }
+          }
+        },
+        "authority_ledger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "consumed_nonce_ids",
+            "maximum_consumed_generation"
+          ],
+          "properties": {
+            "consumed_nonce_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "maximum_consumed_generation": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "target_oracle_complete",
+            "independent",
+            "consistency_bound_elapsed",
+            "in_flight_bound_known",
+            "result_commit_ids"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "not_started",
+                "committed",
+                "not_committed",
+                "partial",
+                "unknown"
+              ]
+            },
+            "target_oracle_complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            },
+            "consistency_bound_elapsed": {
+              "type": "boolean"
+            },
+            "in_flight_bound_known": {
+              "type": "boolean"
+            },
+            "result_commit_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "duplicate_effect_count",
+            "key_argument_conflict_count",
+            "semantic_replay_count",
+            "unsafe_retry_count",
+            "authority_resurrection_count",
+            "orphaned_target_effect_count",
+            "target_client_ledger_conflict_count",
+            "compensation_link_violation_count",
+            "reconciled_state",
+            "disposition",
+            "false_completion_claim_count",
+            "authorization_linearization_violation_count",
+            "authorization_linearization_state"
+          ],
+          "properties": {
+            "duplicate_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "key_argument_conflict_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "semantic_replay_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unsafe_retry_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "authority_resurrection_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "orphaned_target_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "target_client_ledger_conflict_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "compensation_link_violation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reconciled_state": {
+              "enum": [
+                "committed",
+                "not_committed",
+                "partial",
+                "unknown"
+              ]
+            },
+            "disposition": {
+              "enum": [
+                "qualified_committed",
+                "qualified_not_committed",
+                "qualified_partial",
+                "indeterminate",
+                "violation"
+              ]
+            },
+            "false_completion_claim_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "authorization_linearization_violation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "authorization_linearization_state": {
+              "enum": [
+                "not_evaluated",
+                "timebase_unqualified",
+                "grant_order_unproven",
+                "grant_precedes_commit_no_revocation",
+                "revocation_precedes_commit",
+                "commit_precedes_revocation",
+                "revocation_commit_overlap"
+              ]
+            }
+          }
+        },
+        "authorization_timing": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "grant_interval",
+                "revocation_interval",
+                "commit_interval",
+                "linearization_point",
+                "owner_policy_ref"
+              ],
+              "properties": {
+                "grant_interval": {
+                  "$ref": "#/$defs/event_interval"
+                },
+                "revocation_interval": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/event_interval"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "commit_interval": {
+                  "$ref": "#/$defs/event_interval"
+                },
+                "linearization_point": {
+                  "const": "target_commit"
+                },
+                "owner_policy_ref": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "event_interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "lower_ns",
+        "upper_ns",
+        "time_scale",
+        "clock_domain",
+        "clock_epoch",
+        "timebase_ref",
+        "timebase_verified",
+        "sequence",
+        "capture_point"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lower_ns": {
+          "type": "integer"
+        },
+        "upper_ns": {
+          "type": "integer"
+        },
+        "time_scale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clock_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clock_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timebase_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timebase_verified": {
+          "type": "boolean"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "capture_point": {
+          "enum": [
+            "authority_grant_committed",
+            "authority_revocation_committed",
+            "target_commit_linearization"
+          ]
+        }
+      }
+    }
+  }
+}

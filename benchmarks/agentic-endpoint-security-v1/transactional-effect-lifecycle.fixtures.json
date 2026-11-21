@@ -1,0 +1,2345 @@
+{
+  "profile": "luminous-transactional-effect-lifecycle",
+  "version": "0.1",
+  "status": "synthetic_lifecycle_contract_not_executed",
+  "no_aggregate_score": true,
+  "constraints": {
+    "isolated_disposable_service_required": true,
+    "external_network_access": false,
+    "production_endpoints": false,
+    "real_credentials_or_customer_data": false,
+    "synthetic_canaries_only": true,
+    "independent_target_ledger_required": true,
+    "unknown_outcome_blocks_new_mutation": true
+  },
+  "canonical_effect_owner": "CAPC-v0.1",
+  "control_distribution": {
+    "positive_control": 9,
+    "negative_control": 9,
+    "indeterminate_control": 5
+  },
+  "effects": [
+    {
+      "effect_id": "effect:record-write",
+      "owner_id": "owner:records",
+      "tenant_id": "tenant-a",
+      "resource_id": "resource:record-17",
+      "operation": "record.write",
+      "effect_class": "write",
+      "principal_id": "principal:agent",
+      "workload_id": "workload:assistant",
+      "session_id": "session:telr",
+      "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "resource_version_precondition": "version:7",
+      "policy_epoch": "epoch:9",
+      "service_id": "service:records",
+      "credential_lineage": "credential:records-write"
+    },
+    {
+      "effect_id": "effect:payment-create",
+      "owner_id": "owner:finance",
+      "tenant_id": "tenant-a",
+      "resource_id": "resource:payment-test",
+      "operation": "payment.create",
+      "effect_class": "financial",
+      "principal_id": "principal:agent",
+      "workload_id": "workload:assistant",
+      "session_id": "session:telr",
+      "argument_constraint_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "resource_version_precondition": "version:2",
+      "policy_epoch": "epoch:9",
+      "service_id": "service:payments",
+      "credential_lineage": "credential:payments"
+    },
+    {
+      "effect_id": "effect:payment-compensate",
+      "owner_id": "owner:finance",
+      "tenant_id": "tenant-a",
+      "resource_id": "resource:payment-test",
+      "operation": "payment.compensate",
+      "effect_class": "compensation",
+      "principal_id": "principal:agent",
+      "workload_id": "workload:assistant",
+      "session_id": "session:telr",
+      "argument_constraint_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "resource_version_precondition": "version:3",
+      "policy_epoch": "epoch:9",
+      "service_id": "service:payments",
+      "credential_lineage": "credential:payments"
+    }
+  ],
+  "cases": [
+    {
+      "scenario_id": "TELR-001",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-001",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-001",
+          "idempotency_key": "key-001",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "not_sent",
+          "ack_state": "pending",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "not_started",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "not_committed",
+        "disposition": "qualified_not_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-002",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-002",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-002",
+          "idempotency_key": "key-002",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-002",
+            "semantic_operation_id": "intent-002",
+            "idempotency_key": "key-002",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-003",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-003",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-003",
+          "idempotency_key": "key-003",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-003",
+            "semantic_operation_id": "intent-003",
+            "idempotency_key": "key-003",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-004",
+      "control_class": "indeterminate_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-004",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": false,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-004",
+          "idempotency_key": "key-004",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "unknown",
+          "ack_state": "pending",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": false,
+        "in_flight_bound_known": false,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "unknown",
+        "disposition": "indeterminate"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-005",
+      "control_class": "indeterminate_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-005",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": false,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-005",
+          "idempotency_key": "key-005",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "unknown",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": false,
+        "in_flight_bound_known": false,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "unknown",
+        "disposition": "indeterminate"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-006",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-006",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-006",
+          "idempotency_key": "key-006",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-006",
+          "idempotency_key": "key-006",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": "a1",
+          "reconciliation_before_attempt": "unknown",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-006",
+            "semantic_operation_id": "intent-006",
+            "idempotency_key": "key-006",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-007",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-007",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-007",
+          "idempotency_key": "key-007",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-007",
+          "idempotency_key": "key-007",
+          "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": "a1",
+          "reconciliation_before_attempt": "unknown",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 1,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 1,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "unknown",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-008",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent-008",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-008",
+          "idempotency_key": "key-008",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-008",
+          "idempotency_key": "key-008",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-008",
+            "semantic_operation_id": "intent-008",
+            "idempotency_key": "key-008",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          },
+          {
+            "commit_id": "c2",
+            "operation_id": "op-008",
+            "semantic_operation_id": "intent-008",
+            "idempotency_key": "key-008",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1",
+          "c2"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 1,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-009",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent-009",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:payment-create",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": true
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-009",
+          "idempotency_key": "key-009",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-009b",
+          "idempotency_key": "key-009b",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": "a1",
+          "reconciliation_before_attempt": "unknown",
+          "restored_from_checkpoint": true,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-009",
+            "semantic_operation_id": "intent-009",
+            "idempotency_key": "key-009",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:payment-create",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          },
+          {
+            "commit_id": "c2",
+            "operation_id": "op-009b",
+            "semantic_operation_id": "intent-009",
+            "idempotency_key": "key-009b",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:payment-create",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1",
+          "c2"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 1,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 1,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-010",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-010",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-010",
+          "idempotency_key": "key-010",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": true,
+          "authority_generation": 2,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-consumed"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [
+          "nonce-consumed"
+        ],
+        "maximum_consumed_generation": 3
+      },
+      "reconciliation": {
+        "status": "not_committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 1,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "not_committed",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-011",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-011",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [
+          "item-1",
+          "item-2",
+          "item-3"
+        ],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-011",
+          "idempotency_key": "key-011-1",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-011",
+          "idempotency_key": "key-011-2",
+          "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-011",
+            "semantic_operation_id": "intent-011",
+            "idempotency_key": "key-011-1",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": "item-1",
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          },
+          {
+            "commit_id": "c2",
+            "operation_id": "op-011",
+            "semantic_operation_id": "intent-011",
+            "idempotency_key": "key-011-2",
+            "argument_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": "item-2",
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1",
+          "c2"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "partial",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "partial",
+        "disposition": "qualified_partial"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-012",
+      "control_class": "indeterminate_control",
+      "operation": {
+        "semantic_operation_id": "intent-012",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-012",
+          "idempotency_key": "key-012",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-012",
+            "semantic_operation_id": "intent-012",
+            "idempotency_key": "key-012",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 1,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "indeterminate"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-013",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-013",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-013",
+          "idempotency_key": "key-013",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "not_committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 1,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 1,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "not_committed",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-014",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-014",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:payment-create",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-014",
+          "idempotency_key": "key-014",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-014c",
+          "idempotency_key": "key-014c",
+          "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-014",
+            "semantic_operation_id": "intent-014",
+            "idempotency_key": "key-014",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:payment-create",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          },
+          {
+            "commit_id": "c2",
+            "operation_id": "op-014c",
+            "semantic_operation_id": "intent-014c",
+            "idempotency_key": "key-014c",
+            "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "effect_id": "effect:payment-compensate",
+            "kind": "compensation",
+            "batch_item_id": null,
+            "compensates_for": "c1",
+            "grant_id": "grant:compensation",
+            "nonce_id": "nonce:compensation"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1",
+          "c2"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-015",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-015",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-015",
+          "idempotency_key": "key-015",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-015c",
+          "idempotency_key": "key-015c",
+          "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce-comp"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c2",
+            "operation_id": "op-015c",
+            "semantic_operation_id": "intent-015c",
+            "idempotency_key": "key-015c",
+            "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "effect_id": "effect:payment-compensate",
+            "kind": "compensation",
+            "batch_item_id": null,
+            "compensates_for": "missing-original",
+            "grant_id": "grant:compensation",
+            "nonce_id": "nonce-comp"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c2"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c2"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 1,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-016",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-016",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-016",
+          "idempotency_key": "key-016",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "unknown",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-016b",
+          "idempotency_key": "key-016-new",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": "a1",
+          "reconciliation_before_attempt": "unknown",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 1,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "unknown",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-017",
+      "control_class": "indeterminate_control",
+      "operation": {
+        "semantic_operation_id": "intent:TELR-017",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": false,
+        "maximum_in_flight_bound_known": false,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-017",
+          "idempotency_key": "key-017",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "pending",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": false,
+        "in_flight_bound_known": false,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "unknown",
+        "disposition": "indeterminate"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-018",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent-018",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-018",
+          "idempotency_key": "key-018",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-018",
+            "semantic_operation_id": "intent-018",
+            "idempotency_key": "key-018",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": false,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-019",
+      "control_class": "negative_control",
+      "operation": {
+        "semantic_operation_id": "intent-019",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-019",
+          "idempotency_key": "key-019",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-019",
+            "semantic_operation_id": "intent-019",
+            "idempotency_key": "key-019",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "not_committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 1,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 1,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "unknown",
+        "disposition": "violation"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-020",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-020",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:payment-create",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-020",
+          "idempotency_key": "key-020",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-1"
+        },
+        {
+          "attempt_id": "a2",
+          "operation_id": "op-020c",
+          "idempotency_key": "key-020-comp",
+          "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dispatch_state": "sent",
+          "ack_state": "lost",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation"
+        },
+        {
+          "attempt_id": "a3",
+          "operation_id": "op-020c",
+          "idempotency_key": "key-020-comp",
+          "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": "a2",
+          "reconciliation_before_attempt": "unknown",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation-retry"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-020",
+            "semantic_operation_id": "intent-020",
+            "idempotency_key": "key-020",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:payment-create",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
+          },
+          {
+            "commit_id": "c2",
+            "operation_id": "op-020c",
+            "semantic_operation_id": "intent-020c",
+            "idempotency_key": "key-020-comp",
+            "argument_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "effect_id": "effect:payment-compensate",
+            "kind": "compensation",
+            "batch_item_id": null,
+            "compensates_for": "c1",
+            "grant_id": "grant:compensation",
+            "nonce_id": "nonce:compensation"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1",
+          "c2"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "not_evaluated",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-021",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-TELR-021",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-TELR-021",
+          "idempotency_key": "key-TELR-021",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-TELR-021"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "not_committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "revocation_precedes_commit",
+        "reconciled_state": "not_committed",
+        "disposition": "qualified_not_committed"
+      },
+      "authorization_timing": {
+        "grant_interval": {
+          "event_id": "grant-TELR-021",
+          "lower_ns": 0,
+          "upper_ns": 1,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 1,
+          "capture_point": "authority_grant_committed"
+        },
+        "revocation_interval": {
+          "event_id": "revoke-TELR-021",
+          "lower_ns": 7,
+          "upper_ns": 8,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 3,
+          "capture_point": "authority_revocation_committed"
+        },
+        "commit_interval": {
+          "event_id": "commit-TELR-021",
+          "lower_ns": 10,
+          "upper_ns": 11,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 2,
+          "capture_point": "target_commit_linearization"
+        },
+        "linearization_point": "target_commit",
+        "owner_policy_ref": "authority-policy:TELR-021"
+      }
+    },
+    {
+      "scenario_id": "TELR-022",
+      "control_class": "indeterminate_control",
+      "operation": {
+        "semantic_operation_id": "intent-TELR-022",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-TELR-022",
+          "idempotency_key": "key-TELR-022",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-TELR-022"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": false,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "revocation_commit_overlap",
+        "reconciled_state": "unknown",
+        "disposition": "indeterminate"
+      },
+      "authorization_timing": {
+        "grant_interval": {
+          "event_id": "grant-TELR-022",
+          "lower_ns": 0,
+          "upper_ns": 1,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 1,
+          "capture_point": "authority_grant_committed"
+        },
+        "revocation_interval": {
+          "event_id": "revoke-TELR-022",
+          "lower_ns": 9,
+          "upper_ns": 12,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 3,
+          "capture_point": "authority_revocation_committed"
+        },
+        "commit_interval": {
+          "event_id": "commit-TELR-022",
+          "lower_ns": 10,
+          "upper_ns": 11,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 2,
+          "capture_point": "target_commit_linearization"
+        },
+        "linearization_point": "target_commit",
+        "owner_policy_ref": "authority-policy:TELR-022"
+      }
+    },
+    {
+      "scenario_id": "TELR-023",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-TELR-023",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-TELR-023",
+          "idempotency_key": "key-TELR-023",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-TELR-023"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-TELR-023",
+            "semantic_operation_id": "intent-TELR-023",
+            "idempotency_key": "key-TELR-023",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-TELR-023"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {
+        "duplicate_effect_count": 0,
+        "key_argument_conflict_count": 0,
+        "semantic_replay_count": 0,
+        "unsafe_retry_count": 0,
+        "authority_resurrection_count": 0,
+        "orphaned_target_effect_count": 0,
+        "target_client_ledger_conflict_count": 0,
+        "compensation_link_violation_count": 0,
+        "false_completion_claim_count": 0,
+        "authorization_linearization_violation_count": 0,
+        "authorization_linearization_state": "commit_precedes_revocation",
+        "reconciled_state": "committed",
+        "disposition": "qualified_committed"
+      },
+      "authorization_timing": {
+        "grant_interval": {
+          "event_id": "grant-TELR-023",
+          "lower_ns": 0,
+          "upper_ns": 1,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 1,
+          "capture_point": "authority_grant_committed"
+        },
+        "revocation_interval": {
+          "event_id": "revoke-TELR-023",
+          "lower_ns": 20,
+          "upper_ns": 21,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 3,
+          "capture_point": "authority_revocation_committed"
+        },
+        "commit_interval": {
+          "event_id": "commit-TELR-023",
+          "lower_ns": 10,
+          "upper_ns": 11,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 2,
+          "capture_point": "target_commit_linearization"
+        },
+        "linearization_point": "target_commit",
+        "owner_policy_ref": "authority-policy:TELR-023"
+      }
+    }
+  ]
+}
