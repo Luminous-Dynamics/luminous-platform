@@ -32,10 +32,7 @@ impl TimeInterval {
     }
 
     pub fn relation_to(&self, other: &Self) -> TemporalRelation {
-        if !self.timebase.verified
-            || !other.timebase.verified
-            || self.timebase != other.timebase
-        {
+        if !self.timebase.verified || !other.timebase.verified || self.timebase != other.timebase {
             return TemporalRelation::Unqualified;
         }
         if self.upper_ns < other.lower_ns {
@@ -279,7 +276,11 @@ pub struct Evaluation {
 }
 
 fn target_id_set(ledger: &TargetLedger) -> BTreeSet<String> {
-    ledger.entries.iter().map(|entry| entry.commit_id.clone()).collect()
+    ledger
+        .entries
+        .iter()
+        .map(|entry| entry.commit_id.clone())
+        .collect()
 }
 
 fn attempt_matches_entry(attempt: &DispatchAttempt, entry: &TargetLedgerEntry) -> bool {
@@ -352,8 +353,10 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
         semantic_operations
             .values()
             .map(|group| {
-                let operation_ids: BTreeSet<&str> =
-                    group.iter().map(|entry| entry.operation_id.as_str()).collect();
+                let operation_ids: BTreeSet<&str> = group
+                    .iter()
+                    .map(|entry| entry.operation_id.as_str())
+                    .collect();
                 if operation_ids.len() > 1 {
                     group.len().saturating_sub(1)
                 } else {
@@ -379,9 +382,10 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
                                 | AcknowledgementState::Pending
                                 | AcknowledgementState::Unknown
                         );
-                    let same_key_same_arguments = evidence.target_contract.idempotency_keys_supported
-                        && attempt.idempotency_key == parent.idempotency_key
-                        && attempt.argument_digest == parent.argument_digest;
+                    let same_key_same_arguments =
+                        evidence.target_contract.idempotency_keys_supported
+                            && attempt.idempotency_key == parent.idempotency_key
+                            && attempt.argument_digest == parent.argument_digest;
                     let reconciled = matches!(
                         attempt.reconciliation_before_retry,
                         ReconciliationBeforeRetry::Committed
@@ -409,7 +413,12 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
     let target_ids = target_id_set(&evidence.target_ledger);
     let orphaned_target_effect_count = entries
         .iter()
-        .filter(|entry| !evidence.client_ledger.known_commit_ids.contains(&entry.commit_id))
+        .filter(|entry| {
+            !evidence
+                .client_ledger
+                .known_commit_ids
+                .contains(&entry.commit_id)
+        })
         .count();
     let mut target_client_ledger_conflict_count = evidence
         .client_ledger
@@ -420,7 +429,11 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
 
     let mut unmatched_target_commit_count = 0;
     for entry in entries {
-        if !evidence.attempts.iter().any(|attempt| attempt_matches_entry(attempt, entry)) {
+        if !evidence
+            .attempts
+            .iter()
+            .any(|attempt| attempt_matches_entry(attempt, entry))
+        {
             unmatched_target_commit_count += 1;
         }
         if entry.kind == TargetEntryKind::Effect
@@ -436,8 +449,15 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
         .map(|entry| (entry.commit_id.as_str(), entry))
         .collect();
     let mut compensation_link_violation_count = 0;
-    for entry in entries.iter().filter(|entry| entry.kind == TargetEntryKind::Compensation) {
-        match entry.compensates_for.as_deref().and_then(|id| by_commit.get(id).copied()) {
+    for entry in entries
+        .iter()
+        .filter(|entry| entry.kind == TargetEntryKind::Compensation)
+    {
+        match entry
+            .compensates_for
+            .as_deref()
+            .and_then(|id| by_commit.get(id).copied())
+        {
             None => compensation_link_violation_count += 1,
             Some(original) => {
                 if original.kind != TargetEntryKind::Effect
@@ -490,9 +510,10 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
             }
             ReconciliationStatus::NotStarted
                 if entries.is_empty()
-                    && evidence.attempts.iter().all(|attempt| {
-                        attempt.dispatch_state == DispatchState::NotSent
-                    }) =>
+                    && evidence
+                        .attempts
+                        .iter()
+                        .all(|attempt| attempt.dispatch_state == DispatchState::NotSent) =>
             {
                 reconciled_state = ReconciledState::NotCommitted;
             }
@@ -526,18 +547,18 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
         target_client_ledger_conflict_count += 1;
     }
 
-    let authorization_linearization = evidence
-        .authorization_timing
-        .as_ref()
-        .map_or(AuthorizationLinearization::NotEvaluated, AuthorizationTiming::evaluate);
-    let authorization_linearization_violation_count =
-        if authorization_linearization == AuthorizationLinearization::RevocationBeforeCommit
-            && !effect_entries.is_empty()
-        {
-            1
-        } else {
-            0
-        };
+    let authorization_linearization = evidence.authorization_timing.as_ref().map_or(
+        AuthorizationLinearization::NotEvaluated,
+        AuthorizationTiming::evaluate,
+    );
+    let authorization_linearization_violation_count = if authorization_linearization
+        == AuthorizationLinearization::RevocationBeforeCommit
+        && !effect_entries.is_empty()
+    {
+        1
+    } else {
+        0
+    };
     let timing_uncertain = matches!(
         authorization_linearization,
         AuthorizationLinearization::TimebaseUnqualified
@@ -734,8 +755,14 @@ mod tests {
         attempt.idempotency_key = duplicate.idempotency_key.clone();
         evidence.attempts.push(attempt);
         evidence.target_ledger.entries.push(duplicate);
-        evidence.client_ledger.known_commit_ids.insert("commit:2".into());
-        evidence.reconciliation.result_commit_ids.insert("commit:2".into());
+        evidence
+            .client_ledger
+            .known_commit_ids
+            .insert("commit:2".into());
+        evidence
+            .reconciliation
+            .result_commit_ids
+            .insert("commit:2".into());
         let result = evaluate(&evidence);
         assert_eq!(result.duplicate_effect_count, 1);
         assert_eq!(result.disposition, FinalDisposition::Violation);
@@ -757,7 +784,10 @@ mod tests {
     #[test]
     fn consumed_nonce_is_not_resurrected_after_restore() {
         let mut evidence = sample();
-        evidence.authority_ledger.consumed_nonce_ids.insert("nonce:1".into());
+        evidence
+            .authority_ledger
+            .consumed_nonce_ids
+            .insert("nonce:1".into());
         let result = evaluate(&evidence);
         assert_eq!(result.authority_resurrection_count, 1);
         assert_eq!(result.disposition, FinalDisposition::Violation);
@@ -768,7 +798,10 @@ mod tests {
         let mut evidence = sample();
         evidence.authorization_timing.as_mut().unwrap().revocation = Some(interval(5, 6));
         let result = evaluate(&evidence);
-        assert_eq!(result.authorization_linearization, AuthorizationLinearization::RevocationBeforeCommit);
+        assert_eq!(
+            result.authorization_linearization,
+            AuthorizationLinearization::RevocationBeforeCommit
+        );
         assert_eq!(result.authorization_linearization_violation_count, 1);
         assert_eq!(result.disposition, FinalDisposition::Violation);
     }
@@ -778,7 +811,10 @@ mod tests {
         let mut evidence = sample();
         evidence.authorization_timing.as_mut().unwrap().revocation = Some(interval(12, 13));
         let result = evaluate(&evidence);
-        assert_eq!(result.authorization_linearization, AuthorizationLinearization::CommitBeforeRevocation);
+        assert_eq!(
+            result.authorization_linearization,
+            AuthorizationLinearization::CommitBeforeRevocation
+        );
         assert_eq!(result.disposition, FinalDisposition::QualifiedCommitted);
     }
 
@@ -824,8 +860,14 @@ mod tests {
         };
         evidence.attempts.push(compensation_attempt);
         evidence.target_ledger.entries.push(compensation.clone());
-        evidence.client_ledger.known_commit_ids.insert(compensation.commit_id.clone());
-        evidence.reconciliation.result_commit_ids.insert(compensation.commit_id);
+        evidence
+            .client_ledger
+            .known_commit_ids
+            .insert(compensation.commit_id.clone());
+        evidence
+            .reconciliation
+            .result_commit_ids
+            .insert(compensation.commit_id);
         let result = evaluate(&evidence);
         assert_eq!(result.compensation_link_violation_count, 0);
     }
@@ -835,7 +877,10 @@ mod tests {
         let mut evidence = sample();
         evidence.authorization_timing.as_mut().unwrap().revocation = Some(interval(9, 12));
         let result = evaluate(&evidence);
-        assert_eq!(result.authorization_linearization, AuthorizationLinearization::RevocationCommitOverlap);
+        assert_eq!(
+            result.authorization_linearization,
+            AuthorizationLinearization::RevocationCommitOverlap
+        );
         assert_eq!(result.disposition, FinalDisposition::Indeterminate);
     }
 }
