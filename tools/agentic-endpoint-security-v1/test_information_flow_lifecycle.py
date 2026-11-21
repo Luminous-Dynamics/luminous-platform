@@ -20,7 +20,7 @@ def test_frozen_corpus_matches_independent_reference_outcomes() -> None:
     suite = checker.load(checker.BASE / "information-flow-lifecycle.fixtures.json")
     schema = checker.load(checker.BASE / "information-flow-lifecycle.schema.json")
     counts = checker.validate_suite(suite, schema)
-    assert counts == {"positive_control": 5, "negative_control": 12, "indeterminate_control": 2}
+    assert counts == {"positive_control": 6, "negative_control": 14, "indeterminate_control": 2}
 
 
 def test_fully_specified_user_parameters_are_preserved() -> None:
