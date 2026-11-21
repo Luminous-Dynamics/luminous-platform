@@ -9,7 +9,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "benchmarks" / "agentic-endpoint-security-v1"
 DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
-CONTROL_COUNTS = {"positive_control": 7, "negative_control": 17, "indeterminate_control": 4}
+DOMAIN_FIELDS = ("process_runtime", "event_stream", "signing_root", "credential_root", "clock_authority", "storage_backend", "control_plane", "operator", "provider")
+CRITICAL_DOMAINS = DOMAIN_FIELDS[:7]
+CONTROL_COUNTS = {"positive_control": 7, "negative_control": 18, "indeterminate_control": 5}
 
 
 def load(path: Path) -> Any:
@@ -22,9 +24,28 @@ def load(path: Path) -> Any:
 def evaluate(case: dict[str, Any]) -> dict[str, Any]:
     state, cert = case["resource_state"], case["frontier_certificate"]
     operation, fence, events = case["operation"], case["fence"], case["target_events"]
+    oic = case["oic_binding"]
+    subject_domains = oic["subject_domains"]
+    owner_domains = oic["resource_owner_domains"]
+    witness_domains = oic["witness"]["domains"]
+    oic_unknown_domain_count = sum(
+        1
+        for domain in CRITICAL_DOMAINS
+        for mapping in (subject_domains, owner_domains, witness_domains)
+        if not isinstance(mapping.get(domain), str)
+        or not mapping[domain].strip()
+        or mapping[domain].strip().casefold() == "unknown"
+    )
+    witness_domain_correlation_count = sum(
+        1 for domain in CRITICAL_DOMAINS
+        if witness_domains.get(domain) in {subject_domains.get(domain), owner_domains.get(domain)}
+    )
     owner_unknown = (
-        not state["owner_available"] or not state["high_water_persisted"]
+        not state["owner_available"]
+        or not state["high_water_persisted"]
         or not state["external_witness_independent"]
+        or oic_unknown_domain_count > 0
+        or witness_domain_correlation_count > 0
     )
     high_regression = int(state["external_witness_generation"] > state["high_water_generation"])
     if owner_unknown or not cert["complete"] or not cert["independent"] or not cert["witness_qualified"] or cert["read_consistency"] == "unknown":
@@ -138,10 +159,29 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
 
 def validate_case(case: dict[str, Any], catalog_ids: set[str]) -> None:
     case_id = case.get("case_id", "<unknown>")
-    if set(case) != {"case_id", "control_class", "resource_state", "frontier_certificate", "operation", "fence", "target_events", "reconciliation", "expected"}:
+    if set(case) != {"case_id", "control_class", "oic_binding", "resource_state", "frontier_certificate", "operation", "fence", "target_events", "reconciliation", "expected"}:
         raise ValueError(f"{case_id}: case fields differ")
     state, cert = case["resource_state"], case["frontier_certificate"]
     operation, fence = case["operation"], case["fence"]
+    oic = case["oic_binding"]
+    if set(oic) != {"profile_id", "oic_case_id", "required_disjoint_domains", "subject_domains", "resource_owner_domains", "witness"}:
+        raise ValueError(f"{case_id}: OIC binding fields differ")
+    if oic["profile_id"] != "critical_effect_truth_v0" or oic["required_disjoint_domains"] != list(CRITICAL_DOMAINS):
+        raise ValueError(f"{case_id}: OIC critical effect-truth profile cannot be weakened")
+    if not isinstance(oic["oic_case_id"], str) or not oic["oic_case_id"].startswith("OIC-"):
+        raise ValueError(f"{case_id}: OIC closure fixture reference is missing")
+    for name in ("subject_domains", "resource_owner_domains"):
+        if set(oic[name]) != set(DOMAIN_FIELDS):
+            raise ValueError(f"{case_id}: {name} does not match OIC domain inventory")
+    witness = oic["witness"]
+    if set(witness) != {"witness_id", "role", "domains", "evidence_ref", "attestation_ref"}:
+        raise ValueError(f"{case_id}: frontier witness identity fields differ")
+    if witness["role"] not in {"resource_observer", "host_observer", "independent_oracle", "supervisor", "source_inventory"}:
+        raise ValueError(f"{case_id}: invalid OIC witness role")
+    if set(witness["domains"]) != set(DOMAIN_FIELDS):
+        raise ValueError(f"{case_id}: witness does not match OIC domain inventory")
+    if not witness["witness_id"] or not witness["evidence_ref"] or not witness["attestation_ref"]:
+        raise ValueError(f"{case_id}: OIC witness identity/evidence references must be nonempty")
     oic = case["oic_binding"]
     if set(oic) != {"profile_id", "oic_case_id", "required_disjoint_domains", "subject_domains", "resource_owner_domains", "witness"}:
         raise ValueError(f"{case_id}: OIC binding fields differ")
@@ -220,8 +260,8 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
     if len(catalog_ids) != len(catalog) or not catalog_ids:
         raise ValueError("invalid CAPC effect catalog")
     cases = suite.get("cases", [])
-    if len(cases) != 28:
-        raise ValueError("CFF requires 26 frozen cases")
+    if len(cases) != 30:
+        raise ValueError("CFF requires 30 frozen cases")
     counts = {"positive_control": 0, "negative_control": 0, "indeterminate_control": 0}
     seen = set()
     for case in cases:
