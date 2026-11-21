@@ -220,6 +220,24 @@ def test_observed_field_set_must_match_bound_parameter_set() -> None:
 
 
 
+
+def test_source_content_digest_must_be_sha256() -> None:
+    _assert_structure_rejects(
+        lambda case: case["sources"][0].__setitem__("content_digest", "sha256:not-a-digest")
+    )
+
+
+def test_lineage_value_digest_must_be_sha256() -> None:
+    _assert_structure_rejects(
+        lambda case: case["lineage_nodes"][0].__setitem__("value_digest", "sha256:not-a-digest")
+    )
+
+
+def test_observed_payload_digest_must_be_sha256() -> None:
+    _assert_structure_rejects(
+        lambda case: case["flow"].__setitem__("observed_payload_digest", "sha256:not-a-digest")
+    )
+
 def test_revoked_memory_source_cannot_be_reused_after_revocation() -> None:
     result = checker.evaluate_case(fixture("IFL-021"))
     assert result["flow_decision"] == "denied"
