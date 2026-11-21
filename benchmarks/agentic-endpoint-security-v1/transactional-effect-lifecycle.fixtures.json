@@ -14,9 +14,9 @@
   },
   "canonical_effect_owner": "CAPC-v0.1",
   "control_distribution": {
-    "positive_control": 7,
-    "indeterminate_control": 4,
-    "negative_control": 9
+    "positive_control": 9,
+    "negative_control": 9,
+    "indeterminate_control": 5
   },
   "effects": [
     {
@@ -138,7 +138,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "not_committed",
         "disposition": "qualified_not_committed"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-002",
@@ -227,7 +228,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-003",
@@ -316,7 +318,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-004",
@@ -387,7 +390,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-005",
@@ -458,7 +462,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-006",
@@ -561,7 +566,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-007",
@@ -646,7 +652,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-008",
@@ -764,7 +771,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-009",
@@ -882,7 +890,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-010",
@@ -955,7 +964,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "not_committed",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-011",
@@ -1077,7 +1087,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "partial",
         "disposition": "qualified_partial"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-012",
@@ -1164,7 +1175,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "indeterminate"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-013",
@@ -1237,7 +1249,8 @@
         "false_completion_claim_count": 1,
         "reconciled_state": "not_committed",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-014",
@@ -1355,7 +1368,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-015",
@@ -1458,7 +1472,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-016",
@@ -1543,7 +1558,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-017",
@@ -1614,7 +1630,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "unknown",
         "disposition": "indeterminate"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-018",
@@ -1703,7 +1720,8 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-019",
@@ -1790,7 +1808,8 @@
         "false_completion_claim_count": 1,
         "reconciled_state": "unknown",
         "disposition": "violation"
-      }
+      },
+      "authorization_timing": null
     },
     {
       "scenario_id": "TELR-020",
@@ -1922,6 +1941,322 @@
         "false_completion_claim_count": 0,
         "reconciled_state": "committed",
         "disposition": "qualified_committed"
+      },
+      "authorization_timing": null
+    },
+    {
+      "scenario_id": "TELR-021",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-TELR-021",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-TELR-021",
+          "idempotency_key": "key-TELR-021",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-TELR-021"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "not_committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {},
+      "authorization_timing": {
+        "grant_interval": {
+          "event_id": "grant-TELR-021",
+          "lower_ns": 0,
+          "upper_ns": 1,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 1,
+          "capture_point": "authority_grant_committed"
+        },
+        "revocation_interval": {
+          "event_id": "revoke-TELR-021",
+          "lower_ns": 7,
+          "upper_ns": 8,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 3,
+          "capture_point": "authority_revocation_committed"
+        },
+        "commit_interval": {
+          "event_id": "commit-TELR-021",
+          "lower_ns": 10,
+          "upper_ns": 11,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 2,
+          "capture_point": "target_commit_linearization"
+        },
+        "linearization_point": "target_commit",
+        "owner_policy_ref": "authority-policy:TELR-021"
+      }
+    },
+    {
+      "scenario_id": "TELR-022",
+      "control_class": "indeterminate_control",
+      "operation": {
+        "semantic_operation_id": "intent-TELR-022",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-TELR-022",
+          "idempotency_key": "key-TELR-022",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-TELR-022"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": []
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [],
+        "evidence_sealed": false,
+        "evidence_integrity": true,
+        "completed_claim": false
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "unknown",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": false,
+        "in_flight_bound_known": true,
+        "result_commit_ids": []
+      },
+      "expected": {},
+      "authorization_timing": {
+        "grant_interval": {
+          "event_id": "grant-TELR-022",
+          "lower_ns": 0,
+          "upper_ns": 1,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 1,
+          "capture_point": "authority_grant_committed"
+        },
+        "revocation_interval": {
+          "event_id": "revoke-TELR-022",
+          "lower_ns": 9,
+          "upper_ns": 12,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 3,
+          "capture_point": "authority_revocation_committed"
+        },
+        "commit_interval": {
+          "event_id": "commit-TELR-022",
+          "lower_ns": 10,
+          "upper_ns": 11,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 2,
+          "capture_point": "target_commit_linearization"
+        },
+        "linearization_point": "target_commit",
+        "owner_policy_ref": "authority-policy:TELR-022"
+      }
+    },
+    {
+      "scenario_id": "TELR-023",
+      "control_class": "positive_control",
+      "operation": {
+        "semantic_operation_id": "intent-TELR-023",
+        "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "effect_id": "effect:record-write",
+        "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected_batch_items": [],
+        "checkpoint_restore_seen": false
+      },
+      "target_contract": {
+        "idempotency_keys_supported": true,
+        "read_back_supported": true,
+        "maximum_in_flight_bound_known": true,
+        "visibility_bound_steps": 5
+      },
+      "attempts": [
+        {
+          "attempt_id": "a1",
+          "operation_id": "op-TELR-023",
+          "idempotency_key": "key-TELR-023",
+          "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "dispatch_state": "sent",
+          "ack_state": "received",
+          "retry_parent_attempt_id": null,
+          "reconciliation_before_attempt": "not_applicable",
+          "restored_from_checkpoint": false,
+          "authority_generation": 1,
+          "grant_id": "grant:write",
+          "nonce_id": "nonce-TELR-023"
+        }
+      ],
+      "target_ledger": {
+        "complete": true,
+        "independent": true,
+        "entries": [
+          {
+            "commit_id": "c1",
+            "operation_id": "op-TELR-023",
+            "semantic_operation_id": "intent-TELR-023",
+            "idempotency_key": "key-TELR-023",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "effect_id": "effect:record-write",
+            "kind": "effect",
+            "batch_item_id": null,
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-TELR-023"
+          }
+        ]
+      },
+      "client_ledger": {
+        "complete": true,
+        "known_commit_ids": [
+          "c1"
+        ],
+        "evidence_sealed": true,
+        "evidence_integrity": true,
+        "completed_claim": true
+      },
+      "authority_ledger": {
+        "consumed_nonce_ids": [],
+        "maximum_consumed_generation": 1
+      },
+      "reconciliation": {
+        "status": "committed",
+        "target_oracle_complete": true,
+        "independent": true,
+        "consistency_bound_elapsed": true,
+        "in_flight_bound_known": true,
+        "result_commit_ids": [
+          "c1"
+        ]
+      },
+      "expected": {},
+      "authorization_timing": {
+        "grant_interval": {
+          "event_id": "grant-TELR-023",
+          "lower_ns": 0,
+          "upper_ns": 1,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 1,
+          "capture_point": "authority_grant_committed"
+        },
+        "revocation_interval": {
+          "event_id": "revoke-TELR-023",
+          "lower_ns": 20,
+          "upper_ns": 21,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 3,
+          "capture_point": "authority_revocation_committed"
+        },
+        "commit_interval": {
+          "event_id": "commit-TELR-023",
+          "lower_ns": 10,
+          "upper_ns": 11,
+          "time_scale": "TAI",
+          "clock_domain": "clock:ptp-lab",
+          "clock_epoch": "epoch:1",
+          "timebase_ref": "timebase:qualified-1",
+          "timebase_verified": true,
+          "sequence": 2,
+          "capture_point": "target_commit_linearization"
+        },
+        "linearization_point": "target_commit",
+        "owner_policy_ref": "authority-policy:TELR-023"
       }
     }
   ]
