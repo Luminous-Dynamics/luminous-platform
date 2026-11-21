@@ -35,12 +35,14 @@ def assess_evidence(e:dict[str,Any],claim:dict[str,Any])->str:
     if kind=="mutations":return "valid" if e["source_kind"]=="repository_mutation_suite" else "failed"
     if kind=="workflow":
         if e["run_status"] in {"queued","in_progress"}:return "unknown"
-        good=(e["source_kind"]=="github_actions_api" and e["run_status"]=="completed"
-              and e["run_conclusion"]=="success" and e["run_head_sha"]==claim["subject_commit"]
+        good=(e["source_kind"]=="github_actions_api" and bool(e["run_id"])
+              and e["run_status"]=="completed" and e["run_conclusion"]=="success"
+              and e["run_head_sha"]==claim["subject_commit"]
               and set(claim["required_checks"]).issubset(e["passed_checks"]))
         return "valid" if good else "failed"
     if kind=="attestation":
-        good=(e["signature_verified"] is True and e["attester_id"] in claim["trusted_attesters"]
+        good=(e["source_kind"]=="in_toto_attestation_verifier" and e["signature_verified"] is True
+              and e["attester_id"] in claim["trusted_attesters"]
               and e["attestation_subject_digest"]==claim["subject_digest"])
         return "valid" if good else "failed"
     if kind=="runtime":
@@ -56,8 +58,10 @@ def assess_evidence(e:dict[str,Any],claim:dict[str,Any])->str:
               and e["descriptor_digest"]==claim["current_descriptor_digest"])
         return "valid" if good else "failed"
     if kind=="observer_fault":
-        good=(e["fault_campaign_executed"] is True and e["observer_fault_qualified"] is True
-              and e["observer_independent"] is True and e["observer_fault_domain_id"]!=claim["subject_domain_id"])
+        good=(e["source_kind"]=="observer_fault_campaign" and e["fault_campaign_executed"] is True
+              and e["observer_fault_qualified"] is True and e["observer_independent"] is True
+              and e["observer_fault_domain_id"]==e["observer_domain_id"]
+              and e["observer_fault_domain_id"]!=claim["subject_domain_id"])
         return "valid" if good else "failed"
     if kind=="target_effect":
         if e["source_kind"]=="agent_self_report" or e["observer_independent"] is not True or e["observer_domain_id"]==claim["subject_domain_id"]:
@@ -71,7 +75,7 @@ def assess_evidence(e:dict[str,Any],claim:dict[str,Any])->str:
                  and set(claim["scope"]["operations"]).issubset(e["operations"]))
         return "valid" if covered and e["source_kind"]=="resource_owner_observer" else "failed"
     if kind=="timebase":
-        return "valid" if e["timebase_state"]=="qualified" and bool(e["timebase_id"]) else "unknown"
+        return "valid" if e["source_kind"]=="timebase_verifier" and e["timebase_state"]=="qualified" and bool(e["timebase_id"]) else "unknown"
     if kind=="continuation":
         if e["proof_complete"] is not True or e["replay_free"] is not True:return "failed"
         return "valid" if e["witness_complete"] is True else "unknown"
@@ -84,13 +88,18 @@ def evaluate(case:dict[str,Any])->dict[str,Any]:
     statuses={category:"missing" for category in CATEGORIES}
     invalid=[]
     for category,obligation in by_category.items():
-        results=[assess_evidence(evidence[eid],claim) if eid in evidence else "missing"
-                 for eid in obligation["evidence_ids"]]
+        results=[
+            assess_evidence(evidence[eid],claim)
+            if eid in evidence and evidence[eid]["evidence_type"]==category
+            else "failed" if eid in evidence
+            else "missing"
+            for eid in obligation["evidence_ids"]
+        ]
         if "valid" in results:statuses[category]="discharged"
         elif "failed" in results:statuses[category]="failed"
         else:statuses[category]="missing_or_unknown"
         for eid in obligation["evidence_ids"]:
-            if eid in evidence and assess_evidence(evidence[eid],claim)=="failed":invalid.append(eid)
+            if eid in evidence and (evidence[eid]["evidence_type"]!=category or assess_evidence(evidence[eid],claim)=="failed"):invalid.append(eid)
     required=PROFILES[claim["requested_profile"]]
     residual=[]
     for category in required:
@@ -99,7 +108,9 @@ def evaluate(case:dict[str,Any])->dict[str,Any]:
             residual.append(obligation["obligation_id"] if obligation else f"MISSING-{claim['claim_id']}-{category.upper()}")
     if not claim["bundle_sealed"] or not claim["bundle_digest"]:
         residual.append(f"CLAIM-BUNDLE-{claim['claim_id']}")
-    supported=sorted(name for name,categories in PROFILES.items() if all(statuses[c]=="discharged" for c in categories))
+    supported=[] if not claim["bundle_sealed"] or not claim["bundle_digest"] else sorted(
+        name for name,categories in PROFILES.items() if all(statuses[c]=="discharged" for c in categories)
+    )
     if not residual:state="qualified"
     elif invalid or not claim["bundle_sealed"] or not claim["bundle_digest"]:state="failed"
     else:state="indeterminate"
@@ -126,6 +137,12 @@ def validate_case(case:dict[str,Any])->None:
         raise ValueError(f"{sid}: trusted attester policy must be explicit and unique")
     if not claim["required_checks"] or len(set(claim["required_checks"]))!=len(claim["required_checks"]):
         raise ValueError(f"{sid}: required check set must be explicit and unique")
+    if claim["effect_expectation"]=="observed" and not claim["expected_effect_id"]:
+        raise ValueError(f"{sid}: observed-effect claim requires a canonical effect id")
+    if claim["effect_expectation"]=="no_effect" and claim["expected_effect_id"] is not None:
+        raise ValueError(f"{sid}: no-effect claim cannot name a committed effect id")
+    if claim["effect_expectation"] is None and claim["expected_effect_id"] is not None:
+        raise ValueError(f"{sid}: unspecified effect expectation cannot bind an effect id")
     if len(set(claim["scope"]["resource_ids"]))!=len(claim["scope"]["resource_ids"]) or len(set(claim["scope"]["operations"]))!=len(claim["scope"]["operations"]):
         raise ValueError(f"{sid}: duplicate scope item")
     categories=[o["category"] for o in case["obligations"]]
