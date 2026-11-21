@@ -25,7 +25,7 @@ def reject(suite,schema):
 class MTCITests(unittest.TestCase):
  def test_frozen_descriptor_and_authority_panel(self):
   s,schema=inputs()
-  self.assertEqual(checker.validate_suite(s,schema),{"cases":14,"positive_control":1,"negative_control":12,"indeterminate_control":1})
+  self.assertEqual(checker.validate_suite(s,schema),{"cases":15,"positive_control":1,"negative_control":13,"indeterminate_control":1})
 
  def test_input_schema_rug_pull_is_detected(self):
   s,_=inputs();c=case(s,"MTCI-001")
@@ -62,6 +62,10 @@ class MTCITests(unittest.TestCase):
  def test_approval_does_not_transfer_to_replaced_descriptor(self):
   s,_=inputs();c=case(s,"MTCI-012")
   self.assertNotEqual(c["approval"]["reviewed_descriptor_digest"],c["presented_descriptor"]["canonical_descriptor_digest"])
+  self.assertFalse(checker.descriptor_ok(c))
+
+ def test_per_response_server_identity_substitution_is_denied(self):
+  s,_=inputs();c=case(s,"MTCI-015")
   self.assertFalse(checker.descriptor_ok(c))
 
  def test_unknown_server_identity_remains_indeterminate(self):
