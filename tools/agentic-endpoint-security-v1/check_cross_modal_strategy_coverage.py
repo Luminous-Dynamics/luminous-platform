@@ -26,7 +26,7 @@ def expected(case:dict[str,Any],effects:dict[str,dict[str,Any]])->dict[str,Any]:
     oracle=case["effect_oracle"]
     auth=set(admission["authorized_effect_ids"])
     observed=set(oracle["observed_effect_ids"])
-    forbidden=bool(observed-auth) if oracle["observation"]=="observed" and oracle["complete"] and oracle["independent"] else None
+    forbidden=(bool(observed-auth) if oracle["observation"]=="observed" else False) if oracle["observation"] in {"observed","no_effect"} and oracle["complete"] and oracle["independent"] else None
     if forbidden is True:
         disposition="unauthorized_effect_observed"
     elif oracle["observation"]=="no_effect" and oracle["complete"] and oracle["independent"] and admission["decision"] in {"deny","hold"}:
