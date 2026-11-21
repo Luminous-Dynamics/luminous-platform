@@ -105,6 +105,10 @@ class CrossModalTests(unittest.TestCase):
         dev_text=next(c for c in s["cases"] if c["pair_id"]=="PAIR-001" and c["modality"]=="text_document")
         fingerprint=copy.deepcopy(dev_text["blind_attribution"]["adjudicated_fingerprint"])
         for case in (held_text,held_image):
+            candidate=copy.deepcopy(fingerprint)
+            candidate["id"]="STRAT-01"
+            case["strategy_candidate"]["candidate_fingerprint"]=candidate
+            case["target"]["candidate_effect_id"]=fingerprint["target_effect_id"]
             case["blind_attribution"]["adjudication"]="confirmed"
             case["blind_attribution"]["adjudicated_strategy_id"]="STRAT-01"
             case["blind_attribution"]["reviewers"]=[
