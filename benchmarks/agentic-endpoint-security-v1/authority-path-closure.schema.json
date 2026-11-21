@@ -1,0 +1,455 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:canonical-authority-path-closure:0.1",
+  "title": "Canonical Authority Path Closure v0.1",
+  "type": "object",
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "owner_identity_source",
+    "independent_inventory_source",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-canonical-authority-path-closure"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_fixture_suite_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "owner_identity_source": {
+      "const": "resource_owner_attestation"
+    },
+    "independent_inventory_source": {
+      "const": "independent_route_inventory"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "effect": {
+      "type": "object",
+      "required": [
+        "effect_id",
+        "owner_id",
+        "tenant_id",
+        "resource_id",
+        "operation",
+        "effect_class",
+        "principal_id",
+        "workload_id",
+        "session_id",
+        "argument_constraint_digest",
+        "resource_version_precondition",
+        "policy_epoch",
+        "service_id",
+        "credential_lineage"
+      ],
+      "properties": {
+        "effect_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workload_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "argument_constraint_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "resource_version_precondition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "credential_lineage": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "path": {
+      "type": "object",
+      "required": [
+        "path_id",
+        "route_label",
+        "path_kind",
+        "credential_ref",
+        "declared_in_manifest",
+        "reachability"
+      ],
+      "properties": {
+        "path_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "route_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path_kind": {
+          "enum": [
+            "mcp",
+            "rest",
+            "sdk",
+            "direct",
+            "dynamic",
+            "shared_service"
+          ]
+        },
+        "credential_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declared_in_manifest": {
+          "type": "boolean"
+        },
+        "reachability": {
+          "enum": [
+            "reachable",
+            "unreachable",
+            "unknown"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "mapping": {
+      "type": "object",
+      "required": [
+        "path_id",
+        "resolution_state",
+        "mapping_owner_id",
+        "mapping_ref",
+        "mapping_digest",
+        "owner_attested",
+        "canonical_effect"
+      ],
+      "properties": {
+        "path_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolution_state": {
+          "enum": [
+            "resolved",
+            "unresolved",
+            "ambiguous",
+            "not_found"
+          ]
+        },
+        "mapping_owner_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mapping_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mapping_digest": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "owner_attested": {
+          "type": "boolean"
+        },
+        "canonical_effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/effect"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "path_id",
+        "admission",
+        "effect_observation",
+        "observed_effect"
+      ],
+      "properties": {
+        "path_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "admission": {
+          "enum": [
+            "allowed",
+            "denied",
+            "unknown"
+          ]
+        },
+        "effect_observation": {
+          "enum": [
+            "observed",
+            "none",
+            "unknown"
+          ]
+        },
+        "observed_effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/effect"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "path_closure_numerator",
+        "path_closure_denominator",
+        "unresolved_or_unattested_paths",
+        "equivalent_path_groups",
+        "equivalent_paths",
+        "canonical_identity_collisions",
+        "canonical_identity_fragmentations",
+        "shadow_path_count",
+        "shadow_path_effects",
+        "resource_substitution_attempts",
+        "credential_substitution_attempts",
+        "argument_scope_substitution_attempts",
+        "observed_effect_identity_mismatches",
+        "unauthorized_attempts",
+        "unauthorized_admissions",
+        "verified_effects",
+        "unauthorized_effects",
+        "false_refusals",
+        "disposition",
+        "path_credential_binding_mismatches"
+      ],
+      "properties": {
+        "path_closure_numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "path_closure_denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unresolved_or_unattested_paths": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "equivalent_path_groups": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "equivalent_paths": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canonical_identity_collisions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canonical_identity_fragmentations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shadow_path_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shadow_path_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resource_substitution_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "credential_substitution_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "argument_scope_substitution_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_admissions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verified_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_effects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "false_refusals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_effect_identity_mismatches": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disposition": {
+          "enum": [
+            "qualified",
+            "violation",
+            "indeterminate"
+          ]
+        },
+        "path_credential_binding_mismatches": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "control_class",
+        "approved_effects",
+        "independent_inventory",
+        "path_mappings",
+        "events",
+        "observer",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^CAPC-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "approved_effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        },
+        "independent_inventory": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        },
+        "path_mappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapping"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "observer": {
+          "type": "object",
+          "required": [
+            "complete",
+            "independent"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
