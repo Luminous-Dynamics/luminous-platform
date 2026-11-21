@@ -11,6 +11,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "benchmarks" / "agentic-endpoint-security-v1"
 DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
+DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
 
 CONTROL_COUNTS = {
     "positive_control": 7,
@@ -213,6 +214,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         raise ValueError(f"{sid}: operation identity fields differ")
     if operation["effect_id"] not in effect_ids:
         raise ValueError(f"{sid}: unknown CAPC effect identity")
+    if not DIGEST_RE.fullmatch(operation["intent_digest"]) or not DIGEST_RE.fullmatch(operation["argument_digest"]):
+        raise ValueError(f"{sid}: malformed operation intent/argument digest")
     if not isinstance(operation["semantic_operation_id"], str) or not operation["semantic_operation_id"]:
         raise ValueError(f"{sid}: semantic operation identity is required")
     if not DIGEST_RE.fullmatch(operation["intent_digest"]) or not DIGEST_RE.fullmatch(operation["argument_digest"]):
@@ -251,6 +254,8 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         commit_ids.add(entry["commit_id"])
         if entry["effect_id"] not in effect_ids or entry["kind"] not in {"effect", "compensation"}:
             raise ValueError(f"{sid}: invalid target effect identity/kind")
+        if not DIGEST_RE.fullmatch(entry["argument_digest"]):
+            raise ValueError(f"{sid}: malformed target argument digest")
         if entry["kind"] == "compensation" and entry["compensates_for"] is None:
             raise ValueError(f"{sid}: compensation needs explicit parent reference")
         if entry["kind"] == "effect" and entry["compensates_for"] is not None:
