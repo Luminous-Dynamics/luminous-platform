@@ -5134,10 +5134,7 @@
           "CLAIM-BUNDLE-ECQ-015"
         ],
         "invalid_evidence_ids": [],
-        "supported_profiles": [
-          "exact_head_hosted",
-          "synthetic_contract"
-        ],
+        "supported_profiles": [],
         "claim_state": "failed"
       }
     },
