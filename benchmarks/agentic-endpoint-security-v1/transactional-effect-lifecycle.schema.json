@@ -181,7 +181,9 @@
         "effect_id",
         "kind",
         "batch_item_id",
-        "compensates_for"
+        "compensates_for",
+        "grant_id",
+        "nonce_id"
       ],
       "properties": {
         "commit_id": {
@@ -220,6 +222,14 @@
             "string",
             "null"
           ]
+        },
+        "grant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nonce_id": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
