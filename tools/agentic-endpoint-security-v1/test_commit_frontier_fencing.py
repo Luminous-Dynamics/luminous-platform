@@ -32,7 +32,7 @@ class CommitFrontierFencingTests(unittest.TestCase):
     def test_frozen_fence_panel(self):
         suite, schema = inputs()
         self.assertEqual(checker.validate_suite(suite, schema), {
-            "cases": 28, "positive_control": 7, "negative_control": 17, "indeterminate_control": 4
+            "cases": 30, "positive_control": 7, "negative_control": 18, "indeterminate_control": 5
         })
 
     def test_current_resource_generation_allows_write(self):
@@ -123,6 +123,24 @@ class CommitFrontierFencingTests(unittest.TestCase):
         suite, schema = inputs()
         current = case(suite, "CFF-001")
         current["target_events"].append(copy.deepcopy(current["target_events"][0]))
+        reject(suite, schema)
+
+    def test_frontier_witness_sharing_resource_owner_domain_cannot_qualify(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "CFF-029"))
+        self.assertEqual(outcome["witness_domain_correlation_count"], 1)
+        self.assertEqual(outcome["witness_correlation_acceptance_count"], 1)
+        self.assertEqual(outcome["disposition"], "violation")
+
+    def test_unknown_witness_failure_domain_remains_indeterminate(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "CFF-030"))
+        self.assertEqual(outcome["oic_unknown_domain_count"], 1)
+        self.assertEqual(outcome["disposition"], "indeterminate")
+
+    def test_required_oic_failure_domains_cannot_be_weakened(self):
+        suite, schema = inputs()
+        case(suite, "CFF-001")["oic_binding"]["required_disjoint_domains"] = ["process_runtime"]
         reject(suite, schema)
 
     def test_incomplete_frontier_witness_stays_indeterminate(self):
