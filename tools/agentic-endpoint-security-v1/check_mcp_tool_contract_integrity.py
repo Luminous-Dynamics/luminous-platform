@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[2]
 BASE=ROOT/"benchmarks"/"agentic-endpoint-security-v1"
 DIGEST=re.compile(r"^sha256:[a-f0-9]{64}$")
 DESCRIPTOR_FIELDS=("server_identity","server_origin","server_audience","protocol_version","transport","tool_name","tool_id","description_digest","input_schema_digest","output_schema_digest","annotations_digest","canonical_descriptor_digest","server_artifact_digest","build_provenance_ref","canonicalization_version")
-COMPONENT_FIELDS=("description_digest","input_schema_digest","output_schema_digest","annotations_digest","server_artifact_digest","server_identity","server_origin","protocol_version","transport","tool_name","tool_id","build_provenance_ref","canonicalization_version")
+COMPONENT_FIELDS=("description_digest","input_schema_digest","output_schema_digest","annotations_digest","server_artifact_digest","server_identity","server_origin","server_audience","protocol_version","transport","tool_name","tool_id","build_provenance_ref","canonicalization_version")
 
 
 def load(path:Path)->Any:
@@ -55,6 +55,9 @@ def validate_case(case:dict[str,Any],effect_ids:set[str])->None:
         for field in ("description_digest","input_schema_digest","output_schema_digest","annotations_digest","canonical_descriptor_digest","server_artifact_digest"):
             if not DIGEST.fullmatch(d[field]):raise ValueError(f"{sid}: malformed descriptor digest {field}")
     if case["identity_status"] not in {"verified","unknown"}:raise ValueError(f"{sid}: invalid server identity status")
+    approval=case["approval"]
+    if set(approval)!={"reviewed_descriptor_digest","approved_tool_id","review_epoch","approval_ref","approved_issuer","required_scopes"}:raise ValueError(f"{sid}: approval fields differ from contract")
+    if not approval["required_scopes"]:raise ValueError(f"{sid}: approved scope set cannot be empty")
     a=case["authority"]
     if set(a)!={"issuer","token_audience","expected_issuer","expected_audience","granted_scopes","required_scopes","grant_id","policy_epoch","nonce_id","nonce_status","session_handle_used_for_auth"}:raise ValueError(f"{sid}: authority fields differ")
     if a["nonce_status"] not in {"fresh","consumed","unknown"}:raise ValueError(f"{sid}: invalid nonce state")
