@@ -125,6 +125,22 @@ class TransactionalLifecycleTests(unittest.TestCase):
         current["reconciliation"]["status"] = "committed"
         reject(suite, schema)
 
+    def test_partial_reconciliation_cannot_claim_full_commit(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-011")
+        current["reconciliation"]["status"] = "committed"
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["target_client_ledger_conflict_count"], 1)
+        self.assertEqual(outcome["disposition"], "violation")
+
+    def test_reconciliation_commit_ids_must_match_target_ledger(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-002")
+        current["reconciliation"]["result_commit_ids"] = ["different-commit"]
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["target_client_ledger_conflict_count"], 1)
+        self.assertEqual(outcome["disposition"], "violation")
+
     def test_idempotency_contract_cannot_be_silently_disabled(self):
         suite, schema = inputs()
         case(suite, "TELR-006")["target_contract"]["idempotency_keys_supported"] = False
