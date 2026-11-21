@@ -108,6 +108,11 @@ class ProgressFrontierTests(unittest.TestCase):
         suite,_=inputs()
         self.assertEqual(checker.evaluate(case(suite,"PFTE-018"))["disposition"],"qualified_partial")
 
+    def test_aborted_label_with_incomplete_oracle_is_not_a_violation(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "PFTE-019"))
+        self.assertEqual(outcome["disposition"], "indeterminate")
+
     def test_incomplete_compensation_evidence_remains_indeterminate(self):
         suite,_=inputs()
         outcome=checker.evaluate(case(suite,"PFTE-019"))
