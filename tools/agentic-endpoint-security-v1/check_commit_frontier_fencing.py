@@ -9,7 +9,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "benchmarks" / "agentic-endpoint-security-v1"
 DIGEST = re.compile(r"^sha256:[a-f0-9]{64}$")
-CONTROL_COUNTS = {"positive_control": 7, "negative_control": 16, "indeterminate_control": 3}
+CONTROL_COUNTS = {"positive_control": 7, "negative_control": 17, "indeterminate_control": 4}
 
 
 def load(path: Path) -> Any:
@@ -197,7 +197,7 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
     if len(catalog_ids) != len(catalog) or not catalog_ids:
         raise ValueError("invalid CAPC effect catalog")
     cases = suite.get("cases", [])
-    if len(cases) != 26:
+    if len(cases) != 28:
         raise ValueError("CFF requires 26 frozen cases")
     counts = {"positive_control": 0, "negative_control": 0, "indeterminate_control": 0}
     seen = set()
