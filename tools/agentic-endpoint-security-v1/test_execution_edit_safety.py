@@ -57,6 +57,12 @@ class ExecutionEditTests(unittest.TestCase):
   c=case(s,"EESPE-002")["candidates"][0]
   c["results_pending"]=[]
   reject(s,schema)
+ def test_continuation_cannot_invent_a_required_result(self):
+  s,schema=inputs()
+  current=case(s,"EESPE-001")
+  current["candidates"][0]["results_available"].append("result:invented")
+  reject(s,schema)
+
  def test_finite_candidate_set_cannot_be_declared_non_exhaustive(self):
   s,schema=inputs();case(s,"EESPE-001")["candidate_set_exhaustive"]=False
   reject(s,schema)
