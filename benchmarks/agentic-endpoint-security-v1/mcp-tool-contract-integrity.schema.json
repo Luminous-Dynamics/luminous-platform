@@ -11,7 +11,8 @@
     "no_aggregate_score",
     "constraints",
     "canonical_effect_owner",
-    "cases"
+    "cases",
+    "effects"
   ],
   "properties": {
     "profile": {
@@ -59,6 +60,13 @@
       "maxItems": 14,
       "items": {
         "$ref": "#/$defs/case"
+      }
+    },
+    "effects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/effect"
       }
     }
   },
