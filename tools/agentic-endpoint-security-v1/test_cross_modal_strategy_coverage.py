@@ -42,6 +42,16 @@ class CrossModalTests(unittest.TestCase):
         self.assertEqual(image["model_trace"]["instruction_recognition"],"not_recognized")
         self.assertFalse(image["action_trace"]["redirected_from_trusted_baseline"])
 
+    def test_complete_no_effect_oracle_reports_false_not_unknown(self):
+        s,_=inputs()
+        c=episode(s,"PAIR-002","text_document")
+        self.assertIs(c["expected"]["unauthorized_effect_observed"],False)
+
+    def test_incomplete_effect_oracle_preserves_unknown(self):
+        s,_=inputs()
+        c=episode(s,"PAIR-008","text_document")
+        self.assertIsNone(c["expected"]["unauthorized_effect_observed"])
+
     def test_action_redirect_can_be_blocked_without_effect(self):
         s,_=inputs()
         text=episode(s,"PAIR-002","text_document")
