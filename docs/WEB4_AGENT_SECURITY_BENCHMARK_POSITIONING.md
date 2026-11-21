@@ -73,6 +73,21 @@ All published figures are specific to their evaluated models, agents, versions, 
 | MTCI #524 | 15 MCP descriptor/authority controls, including per-response identity. | Named clients/servers/protocol, descriptor canonicalization and live per-call authorization. |
 | TELR #526 | 23 synthetic lifecycle/recovery cases, target/client ledger reconciliation, duplicate/replay/compensation and time-interval linearization. | Disposable target service, injected response loss/late commits/restore faults and independent target ledger. |
 
+## Claim–obligation–evidence reporting
+
+A 10 November 2026 structured review of agent authorization assurance screened a 75-source library into a 30-source analytical corpus and 92 claim-level records. In that closed corpus, only five strict sources made mediation/non-bypassability claims; none of the 21 agent-focused sources had an evaluable revocation claim, and none of the 30 coded sources made a delegation-containment claim. The authors explicitly describe their MAAP reporting profile as preliminary rather than a validated score. These are corpus-bounded review findings, not claims that deployed agents universally lack those controls. [Structured review](https://link.springer.com/article/10.1007/s10207-026-01343-w).
+
+This suggests an additional research-method improvement: report every security result as a **claim record**, not merely as a benchmark score. For a claim \(c\), record:
+
+- claim scope: principals, delegated actors, protected resources, operations, environment, threat assumptions and version boundary;
+- obligations \(O(c)\): the concrete conditions that must hold for the claim (e.g. complete mediation, latest grant, consumed nonce, exact descriptor, independent target oracle);
+- evidence \(E(c)\): only obligations supported by the actual check/run/observation, with exact commit, workflow, inputs, event span and oracle identity;
+- protected effect: what external resource state was actually observed, or explicitly that only a plan/call/final-state proxy was measured;
+- residual assumptions and unknowns;
+- residual gap \(G(c)=O(c)-E(c)\), represented as a **set of unmet obligations**, never compressed into a scalar assurance score.
+
+Use this structure when reporting each PR and future empirical run. It will prevent a synthetic contract pass from being misreported as a runtime guarantee, and will make matched comparisons meaningful even when two benchmarks use different oracles.
+
 ## Competitive target ladder
 
 ### Stage A — deterministic contract qualification
