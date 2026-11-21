@@ -72,6 +72,18 @@ class MTCITests(unittest.TestCase):
   s,_=inputs();c=case(s,"MTCI-014")
   self.assertTrue(checker.descriptor_ok(c));self.assertTrue(checker.authority_ok(c))
 
+ def test_expected_audience_cannot_be_redefined_by_presented_authority(self):
+  s,schema=inputs();c=case(s,"MTCI-014")
+  c["authority"]["expected_audience"]="audience:attacker"
+  c["authority"]["token_audience"]="audience:attacker"
+  reject(s,schema)
+
+ def test_required_scope_set_is_pinned_by_approval(self):
+  s,schema=inputs();c=case(s,"MTCI-014")
+  c["authority"]["required_scopes"]=["records.write"]
+  c["authority"]["granted_scopes"]=["records.write"]
+  reject(s,schema)
+
  def test_denied_invocation_cannot_be_observed_as_successful_effect(self):
   s,schema=inputs();c=case(s,"MTCI-001")
   c["oracle"]["observation"]="observed";c["oracle"]["observed_effect_ids"]=["effect:records-read"];c["oracle"]["complete"]=True;c["oracle"]["independent"]=True
