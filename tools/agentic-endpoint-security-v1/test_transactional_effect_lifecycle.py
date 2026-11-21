@@ -207,6 +207,26 @@ class TransactionalLifecycleTests(unittest.TestCase):
         current["authorization_timing"]["commit_interval"]["timebase_verified"] = False
         self.assertEqual(checker.evaluate(current)["authorization_linearization_state"], "timebase_unqualified")
 
+    def test_clock_domain_mismatch_keeps_authorization_order_unqualified(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-023")
+        current["authorization_timing"]["revocation_interval"]["clock_domain"] = "independent-clock"
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["authorization_linearization_state"], "timebase_unqualified")
+        self.assertEqual(outcome["disposition"], "indeterminate")
+
+    def test_reused_event_identity_is_rejected(self):
+        suite, schema = inputs()
+        current = case(suite, "TELR-023")
+        current["authorization_timing"]["commit_interval"]["event_id"] = current["authorization_timing"]["grant_interval"]["event_id"]
+        reject(suite, schema)
+
+    def test_negative_uncertainty_interval_is_rejected(self):
+        suite, schema = inputs()
+        current = case(suite, "TELR-023")
+        current["authorization_timing"]["commit_interval"]["lower_ns"] = -1
+        reject(suite, schema)
+
     def test_touching_uncertainty_intervals_do_not_prove_strict_order(self):
         suite, _ = inputs()
         current = case(suite, "TELR-023")
