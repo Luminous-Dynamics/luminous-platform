@@ -159,7 +159,9 @@
           "credential_root": "agent:credential_root:CFF-001",
           "clock_authority": "agent:clock_authority:CFF-001",
           "storage_backend": "agent:storage_backend:CFF-001",
-          "control_plane": "agent:control_plane:CFF-001"
+          "control_plane": "agent:control_plane:CFF-001",
+          "operator": "agent:operator:CFF-001",
+          "provider": "agent:provider:CFF-001"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-001",
@@ -168,7 +170,9 @@
           "credential_root": "resource-owner:credential_root:CFF-001",
           "clock_authority": "resource-owner:clock_authority:CFF-001",
           "storage_backend": "resource-owner:storage_backend:CFF-001",
-          "control_plane": "resource-owner:control_plane:CFF-001"
+          "control_plane": "resource-owner:control_plane:CFF-001",
+          "operator": "resource-owner:operator:CFF-001",
+          "provider": "resource-owner:provider:CFF-001"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-001",
@@ -180,7 +184,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-001",
             "clock_authority": "frontier-witness:clock_authority:CFF-001",
             "storage_backend": "frontier-witness:storage_backend:CFF-001",
-            "control_plane": "frontier-witness:control_plane:CFF-001"
+            "control_plane": "frontier-witness:control_plane:CFF-001",
+            "operator": "frontier-witness:operator:CFF-001",
+            "provider": "frontier-witness:provider:CFF-001"
           },
           "evidence_ref": "highwater-evidence:CFF-001",
           "attestation_ref": "highwater-attestation:CFF-001"
@@ -312,7 +318,9 @@
           "credential_root": "agent:credential_root:CFF-002",
           "clock_authority": "agent:clock_authority:CFF-002",
           "storage_backend": "agent:storage_backend:CFF-002",
-          "control_plane": "agent:control_plane:CFF-002"
+          "control_plane": "agent:control_plane:CFF-002",
+          "operator": "agent:operator:CFF-002",
+          "provider": "agent:provider:CFF-002"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-002",
@@ -321,7 +329,9 @@
           "credential_root": "resource-owner:credential_root:CFF-002",
           "clock_authority": "resource-owner:clock_authority:CFF-002",
           "storage_backend": "resource-owner:storage_backend:CFF-002",
-          "control_plane": "resource-owner:control_plane:CFF-002"
+          "control_plane": "resource-owner:control_plane:CFF-002",
+          "operator": "resource-owner:operator:CFF-002",
+          "provider": "resource-owner:provider:CFF-002"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-002",
@@ -333,7 +343,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-002",
             "clock_authority": "frontier-witness:clock_authority:CFF-002",
             "storage_backend": "frontier-witness:storage_backend:CFF-002",
-            "control_plane": "frontier-witness:control_plane:CFF-002"
+            "control_plane": "frontier-witness:control_plane:CFF-002",
+            "operator": "frontier-witness:operator:CFF-002",
+            "provider": "frontier-witness:provider:CFF-002"
           },
           "evidence_ref": "highwater-evidence:CFF-002",
           "attestation_ref": "highwater-attestation:CFF-002"
@@ -467,7 +479,9 @@
           "credential_root": "agent:credential_root:CFF-003",
           "clock_authority": "agent:clock_authority:CFF-003",
           "storage_backend": "agent:storage_backend:CFF-003",
-          "control_plane": "agent:control_plane:CFF-003"
+          "control_plane": "agent:control_plane:CFF-003",
+          "operator": "agent:operator:CFF-003",
+          "provider": "agent:provider:CFF-003"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-003",
@@ -476,7 +490,9 @@
           "credential_root": "resource-owner:credential_root:CFF-003",
           "clock_authority": "resource-owner:clock_authority:CFF-003",
           "storage_backend": "resource-owner:storage_backend:CFF-003",
-          "control_plane": "resource-owner:control_plane:CFF-003"
+          "control_plane": "resource-owner:control_plane:CFF-003",
+          "operator": "resource-owner:operator:CFF-003",
+          "provider": "resource-owner:provider:CFF-003"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-003",
@@ -488,7 +504,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-003",
             "clock_authority": "frontier-witness:clock_authority:CFF-003",
             "storage_backend": "frontier-witness:storage_backend:CFF-003",
-            "control_plane": "frontier-witness:control_plane:CFF-003"
+            "control_plane": "frontier-witness:control_plane:CFF-003",
+            "operator": "frontier-witness:operator:CFF-003",
+            "provider": "frontier-witness:provider:CFF-003"
           },
           "evidence_ref": "highwater-evidence:CFF-003",
           "attestation_ref": "highwater-attestation:CFF-003"
@@ -620,7 +638,9 @@
           "credential_root": "agent:credential_root:CFF-004",
           "clock_authority": "agent:clock_authority:CFF-004",
           "storage_backend": "agent:storage_backend:CFF-004",
-          "control_plane": "agent:control_plane:CFF-004"
+          "control_plane": "agent:control_plane:CFF-004",
+          "operator": "agent:operator:CFF-004",
+          "provider": "agent:provider:CFF-004"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-004",
@@ -629,7 +649,9 @@
           "credential_root": "resource-owner:credential_root:CFF-004",
           "clock_authority": "resource-owner:clock_authority:CFF-004",
           "storage_backend": "resource-owner:storage_backend:CFF-004",
-          "control_plane": "resource-owner:control_plane:CFF-004"
+          "control_plane": "resource-owner:control_plane:CFF-004",
+          "operator": "resource-owner:operator:CFF-004",
+          "provider": "resource-owner:provider:CFF-004"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-004",
@@ -641,7 +663,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-004",
             "clock_authority": "frontier-witness:clock_authority:CFF-004",
             "storage_backend": "frontier-witness:storage_backend:CFF-004",
-            "control_plane": "frontier-witness:control_plane:CFF-004"
+            "control_plane": "frontier-witness:control_plane:CFF-004",
+            "operator": "frontier-witness:operator:CFF-004",
+            "provider": "frontier-witness:provider:CFF-004"
           },
           "evidence_ref": "highwater-evidence:CFF-004",
           "attestation_ref": "highwater-attestation:CFF-004"
@@ -775,7 +799,9 @@
           "credential_root": "agent:credential_root:CFF-005",
           "clock_authority": "agent:clock_authority:CFF-005",
           "storage_backend": "agent:storage_backend:CFF-005",
-          "control_plane": "agent:control_plane:CFF-005"
+          "control_plane": "agent:control_plane:CFF-005",
+          "operator": "agent:operator:CFF-005",
+          "provider": "agent:provider:CFF-005"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-005",
@@ -784,7 +810,9 @@
           "credential_root": "resource-owner:credential_root:CFF-005",
           "clock_authority": "resource-owner:clock_authority:CFF-005",
           "storage_backend": "resource-owner:storage_backend:CFF-005",
-          "control_plane": "resource-owner:control_plane:CFF-005"
+          "control_plane": "resource-owner:control_plane:CFF-005",
+          "operator": "resource-owner:operator:CFF-005",
+          "provider": "resource-owner:provider:CFF-005"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-005",
@@ -796,7 +824,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-005",
             "clock_authority": "frontier-witness:clock_authority:CFF-005",
             "storage_backend": "frontier-witness:storage_backend:CFF-005",
-            "control_plane": "frontier-witness:control_plane:CFF-005"
+            "control_plane": "frontier-witness:control_plane:CFF-005",
+            "operator": "frontier-witness:operator:CFF-005",
+            "provider": "frontier-witness:provider:CFF-005"
           },
           "evidence_ref": "highwater-evidence:CFF-005",
           "attestation_ref": "highwater-attestation:CFF-005"
@@ -928,7 +958,9 @@
           "credential_root": "agent:credential_root:CFF-006",
           "clock_authority": "agent:clock_authority:CFF-006",
           "storage_backend": "agent:storage_backend:CFF-006",
-          "control_plane": "agent:control_plane:CFF-006"
+          "control_plane": "agent:control_plane:CFF-006",
+          "operator": "agent:operator:CFF-006",
+          "provider": "agent:provider:CFF-006"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-006",
@@ -937,7 +969,9 @@
           "credential_root": "resource-owner:credential_root:CFF-006",
           "clock_authority": "resource-owner:clock_authority:CFF-006",
           "storage_backend": "resource-owner:storage_backend:CFF-006",
-          "control_plane": "resource-owner:control_plane:CFF-006"
+          "control_plane": "resource-owner:control_plane:CFF-006",
+          "operator": "resource-owner:operator:CFF-006",
+          "provider": "resource-owner:provider:CFF-006"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-006",
@@ -949,7 +983,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-006",
             "clock_authority": "frontier-witness:clock_authority:CFF-006",
             "storage_backend": "frontier-witness:storage_backend:CFF-006",
-            "control_plane": "frontier-witness:control_plane:CFF-006"
+            "control_plane": "frontier-witness:control_plane:CFF-006",
+            "operator": "frontier-witness:operator:CFF-006",
+            "provider": "frontier-witness:provider:CFF-006"
           },
           "evidence_ref": "highwater-evidence:CFF-006",
           "attestation_ref": "highwater-attestation:CFF-006"
@@ -1083,7 +1119,9 @@
           "credential_root": "agent:credential_root:CFF-007",
           "clock_authority": "agent:clock_authority:CFF-007",
           "storage_backend": "agent:storage_backend:CFF-007",
-          "control_plane": "agent:control_plane:CFF-007"
+          "control_plane": "agent:control_plane:CFF-007",
+          "operator": "agent:operator:CFF-007",
+          "provider": "agent:provider:CFF-007"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-007",
@@ -1092,7 +1130,9 @@
           "credential_root": "resource-owner:credential_root:CFF-007",
           "clock_authority": "resource-owner:clock_authority:CFF-007",
           "storage_backend": "resource-owner:storage_backend:CFF-007",
-          "control_plane": "resource-owner:control_plane:CFF-007"
+          "control_plane": "resource-owner:control_plane:CFF-007",
+          "operator": "resource-owner:operator:CFF-007",
+          "provider": "resource-owner:provider:CFF-007"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-007",
@@ -1104,7 +1144,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-007",
             "clock_authority": "frontier-witness:clock_authority:CFF-007",
             "storage_backend": "frontier-witness:storage_backend:CFF-007",
-            "control_plane": "frontier-witness:control_plane:CFF-007"
+            "control_plane": "frontier-witness:control_plane:CFF-007",
+            "operator": "frontier-witness:operator:CFF-007",
+            "provider": "frontier-witness:provider:CFF-007"
           },
           "evidence_ref": "highwater-evidence:CFF-007",
           "attestation_ref": "highwater-attestation:CFF-007"
@@ -1261,7 +1303,9 @@
           "credential_root": "agent:credential_root:CFF-008",
           "clock_authority": "agent:clock_authority:CFF-008",
           "storage_backend": "agent:storage_backend:CFF-008",
-          "control_plane": "agent:control_plane:CFF-008"
+          "control_plane": "agent:control_plane:CFF-008",
+          "operator": "agent:operator:CFF-008",
+          "provider": "agent:provider:CFF-008"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-008",
@@ -1270,7 +1314,9 @@
           "credential_root": "resource-owner:credential_root:CFF-008",
           "clock_authority": "resource-owner:clock_authority:CFF-008",
           "storage_backend": "resource-owner:storage_backend:CFF-008",
-          "control_plane": "resource-owner:control_plane:CFF-008"
+          "control_plane": "resource-owner:control_plane:CFF-008",
+          "operator": "resource-owner:operator:CFF-008",
+          "provider": "resource-owner:provider:CFF-008"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-008",
@@ -1282,7 +1328,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-008",
             "clock_authority": "frontier-witness:clock_authority:CFF-008",
             "storage_backend": "frontier-witness:storage_backend:CFF-008",
-            "control_plane": "frontier-witness:control_plane:CFF-008"
+            "control_plane": "frontier-witness:control_plane:CFF-008",
+            "operator": "frontier-witness:operator:CFF-008",
+            "provider": "frontier-witness:provider:CFF-008"
           },
           "evidence_ref": "highwater-evidence:CFF-008",
           "attestation_ref": "highwater-attestation:CFF-008"
@@ -1414,7 +1462,9 @@
           "credential_root": "agent:credential_root:CFF-009",
           "clock_authority": "agent:clock_authority:CFF-009",
           "storage_backend": "agent:storage_backend:CFF-009",
-          "control_plane": "agent:control_plane:CFF-009"
+          "control_plane": "agent:control_plane:CFF-009",
+          "operator": "agent:operator:CFF-009",
+          "provider": "agent:provider:CFF-009"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-009",
@@ -1423,7 +1473,9 @@
           "credential_root": "resource-owner:credential_root:CFF-009",
           "clock_authority": "resource-owner:clock_authority:CFF-009",
           "storage_backend": "resource-owner:storage_backend:CFF-009",
-          "control_plane": "resource-owner:control_plane:CFF-009"
+          "control_plane": "resource-owner:control_plane:CFF-009",
+          "operator": "resource-owner:operator:CFF-009",
+          "provider": "resource-owner:provider:CFF-009"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-009",
@@ -1435,7 +1487,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-009",
             "clock_authority": "frontier-witness:clock_authority:CFF-009",
             "storage_backend": "frontier-witness:storage_backend:CFF-009",
-            "control_plane": "frontier-witness:control_plane:CFF-009"
+            "control_plane": "frontier-witness:control_plane:CFF-009",
+            "operator": "frontier-witness:operator:CFF-009",
+            "provider": "frontier-witness:provider:CFF-009"
           },
           "evidence_ref": "highwater-evidence:CFF-009",
           "attestation_ref": "highwater-attestation:CFF-009"
@@ -1567,7 +1621,9 @@
           "credential_root": "agent:credential_root:CFF-010",
           "clock_authority": "agent:clock_authority:CFF-010",
           "storage_backend": "agent:storage_backend:CFF-010",
-          "control_plane": "agent:control_plane:CFF-010"
+          "control_plane": "agent:control_plane:CFF-010",
+          "operator": "agent:operator:CFF-010",
+          "provider": "agent:provider:CFF-010"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-010",
@@ -1576,7 +1632,9 @@
           "credential_root": "resource-owner:credential_root:CFF-010",
           "clock_authority": "resource-owner:clock_authority:CFF-010",
           "storage_backend": "resource-owner:storage_backend:CFF-010",
-          "control_plane": "resource-owner:control_plane:CFF-010"
+          "control_plane": "resource-owner:control_plane:CFF-010",
+          "operator": "resource-owner:operator:CFF-010",
+          "provider": "resource-owner:provider:CFF-010"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-010",
@@ -1588,7 +1646,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-010",
             "clock_authority": "frontier-witness:clock_authority:CFF-010",
             "storage_backend": "frontier-witness:storage_backend:CFF-010",
-            "control_plane": "frontier-witness:control_plane:CFF-010"
+            "control_plane": "frontier-witness:control_plane:CFF-010",
+            "operator": "frontier-witness:operator:CFF-010",
+            "provider": "frontier-witness:provider:CFF-010"
           },
           "evidence_ref": "highwater-evidence:CFF-010",
           "attestation_ref": "highwater-attestation:CFF-010"
@@ -1722,7 +1782,9 @@
           "credential_root": "agent:credential_root:CFF-011",
           "clock_authority": "agent:clock_authority:CFF-011",
           "storage_backend": "agent:storage_backend:CFF-011",
-          "control_plane": "agent:control_plane:CFF-011"
+          "control_plane": "agent:control_plane:CFF-011",
+          "operator": "agent:operator:CFF-011",
+          "provider": "agent:provider:CFF-011"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-011",
@@ -1731,7 +1793,9 @@
           "credential_root": "resource-owner:credential_root:CFF-011",
           "clock_authority": "resource-owner:clock_authority:CFF-011",
           "storage_backend": "resource-owner:storage_backend:CFF-011",
-          "control_plane": "resource-owner:control_plane:CFF-011"
+          "control_plane": "resource-owner:control_plane:CFF-011",
+          "operator": "resource-owner:operator:CFF-011",
+          "provider": "resource-owner:provider:CFF-011"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-011",
@@ -1743,7 +1807,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-011",
             "clock_authority": "frontier-witness:clock_authority:CFF-011",
             "storage_backend": "frontier-witness:storage_backend:CFF-011",
-            "control_plane": "frontier-witness:control_plane:CFF-011"
+            "control_plane": "frontier-witness:control_plane:CFF-011",
+            "operator": "frontier-witness:operator:CFF-011",
+            "provider": "frontier-witness:provider:CFF-011"
           },
           "evidence_ref": "highwater-evidence:CFF-011",
           "attestation_ref": "highwater-attestation:CFF-011"
@@ -1877,7 +1943,9 @@
           "credential_root": "agent:credential_root:CFF-012",
           "clock_authority": "agent:clock_authority:CFF-012",
           "storage_backend": "agent:storage_backend:CFF-012",
-          "control_plane": "agent:control_plane:CFF-012"
+          "control_plane": "agent:control_plane:CFF-012",
+          "operator": "agent:operator:CFF-012",
+          "provider": "agent:provider:CFF-012"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-012",
@@ -1886,7 +1954,9 @@
           "credential_root": "resource-owner:credential_root:CFF-012",
           "clock_authority": "resource-owner:clock_authority:CFF-012",
           "storage_backend": "resource-owner:storage_backend:CFF-012",
-          "control_plane": "resource-owner:control_plane:CFF-012"
+          "control_plane": "resource-owner:control_plane:CFF-012",
+          "operator": "resource-owner:operator:CFF-012",
+          "provider": "resource-owner:provider:CFF-012"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-012",
@@ -1898,7 +1968,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-012",
             "clock_authority": "frontier-witness:clock_authority:CFF-012",
             "storage_backend": "frontier-witness:storage_backend:CFF-012",
-            "control_plane": "frontier-witness:control_plane:CFF-012"
+            "control_plane": "frontier-witness:control_plane:CFF-012",
+            "operator": "frontier-witness:operator:CFF-012",
+            "provider": "frontier-witness:provider:CFF-012"
           },
           "evidence_ref": "highwater-evidence:CFF-012",
           "attestation_ref": "highwater-attestation:CFF-012"
@@ -2030,7 +2102,9 @@
           "credential_root": "agent:credential_root:CFF-013",
           "clock_authority": "agent:clock_authority:CFF-013",
           "storage_backend": "agent:storage_backend:CFF-013",
-          "control_plane": "agent:control_plane:CFF-013"
+          "control_plane": "agent:control_plane:CFF-013",
+          "operator": "agent:operator:CFF-013",
+          "provider": "agent:provider:CFF-013"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-013",
@@ -2039,7 +2113,9 @@
           "credential_root": "resource-owner:credential_root:CFF-013",
           "clock_authority": "resource-owner:clock_authority:CFF-013",
           "storage_backend": "resource-owner:storage_backend:CFF-013",
-          "control_plane": "resource-owner:control_plane:CFF-013"
+          "control_plane": "resource-owner:control_plane:CFF-013",
+          "operator": "resource-owner:operator:CFF-013",
+          "provider": "resource-owner:provider:CFF-013"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-013",
@@ -2051,7 +2127,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-013",
             "clock_authority": "frontier-witness:clock_authority:CFF-013",
             "storage_backend": "frontier-witness:storage_backend:CFF-013",
-            "control_plane": "frontier-witness:control_plane:CFF-013"
+            "control_plane": "frontier-witness:control_plane:CFF-013",
+            "operator": "frontier-witness:operator:CFF-013",
+            "provider": "frontier-witness:provider:CFF-013"
           },
           "evidence_ref": "highwater-evidence:CFF-013",
           "attestation_ref": "highwater-attestation:CFF-013"
@@ -2185,7 +2263,9 @@
           "credential_root": "agent:credential_root:CFF-014",
           "clock_authority": "agent:clock_authority:CFF-014",
           "storage_backend": "agent:storage_backend:CFF-014",
-          "control_plane": "agent:control_plane:CFF-014"
+          "control_plane": "agent:control_plane:CFF-014",
+          "operator": "agent:operator:CFF-014",
+          "provider": "agent:provider:CFF-014"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-014",
@@ -2194,7 +2274,9 @@
           "credential_root": "resource-owner:credential_root:CFF-014",
           "clock_authority": "resource-owner:clock_authority:CFF-014",
           "storage_backend": "resource-owner:storage_backend:CFF-014",
-          "control_plane": "resource-owner:control_plane:CFF-014"
+          "control_plane": "resource-owner:control_plane:CFF-014",
+          "operator": "resource-owner:operator:CFF-014",
+          "provider": "resource-owner:provider:CFF-014"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-014",
@@ -2206,7 +2288,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-014",
             "clock_authority": "frontier-witness:clock_authority:CFF-014",
             "storage_backend": "frontier-witness:storage_backend:CFF-014",
-            "control_plane": "frontier-witness:control_plane:CFF-014"
+            "control_plane": "frontier-witness:control_plane:CFF-014",
+            "operator": "frontier-witness:operator:CFF-014",
+            "provider": "frontier-witness:provider:CFF-014"
           },
           "evidence_ref": "highwater-evidence:CFF-014",
           "attestation_ref": "highwater-attestation:CFF-014"
@@ -2338,7 +2422,9 @@
           "credential_root": "agent:credential_root:CFF-015",
           "clock_authority": "agent:clock_authority:CFF-015",
           "storage_backend": "agent:storage_backend:CFF-015",
-          "control_plane": "agent:control_plane:CFF-015"
+          "control_plane": "agent:control_plane:CFF-015",
+          "operator": "agent:operator:CFF-015",
+          "provider": "agent:provider:CFF-015"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-015",
@@ -2347,7 +2433,9 @@
           "credential_root": "resource-owner:credential_root:CFF-015",
           "clock_authority": "resource-owner:clock_authority:CFF-015",
           "storage_backend": "resource-owner:storage_backend:CFF-015",
-          "control_plane": "resource-owner:control_plane:CFF-015"
+          "control_plane": "resource-owner:control_plane:CFF-015",
+          "operator": "resource-owner:operator:CFF-015",
+          "provider": "resource-owner:provider:CFF-015"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-015",
@@ -2359,7 +2447,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-015",
             "clock_authority": "frontier-witness:clock_authority:CFF-015",
             "storage_backend": "frontier-witness:storage_backend:CFF-015",
-            "control_plane": "frontier-witness:control_plane:CFF-015"
+            "control_plane": "frontier-witness:control_plane:CFF-015",
+            "operator": "frontier-witness:operator:CFF-015",
+            "provider": "frontier-witness:provider:CFF-015"
           },
           "evidence_ref": "highwater-evidence:CFF-015",
           "attestation_ref": "highwater-attestation:CFF-015"
@@ -2493,7 +2583,9 @@
           "credential_root": "agent:credential_root:CFF-016",
           "clock_authority": "agent:clock_authority:CFF-016",
           "storage_backend": "agent:storage_backend:CFF-016",
-          "control_plane": "agent:control_plane:CFF-016"
+          "control_plane": "agent:control_plane:CFF-016",
+          "operator": "agent:operator:CFF-016",
+          "provider": "agent:provider:CFF-016"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-016",
@@ -2502,7 +2594,9 @@
           "credential_root": "resource-owner:credential_root:CFF-016",
           "clock_authority": "resource-owner:clock_authority:CFF-016",
           "storage_backend": "resource-owner:storage_backend:CFF-016",
-          "control_plane": "resource-owner:control_plane:CFF-016"
+          "control_plane": "resource-owner:control_plane:CFF-016",
+          "operator": "resource-owner:operator:CFF-016",
+          "provider": "resource-owner:provider:CFF-016"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-016",
@@ -2514,7 +2608,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-016",
             "clock_authority": "frontier-witness:clock_authority:CFF-016",
             "storage_backend": "frontier-witness:storage_backend:CFF-016",
-            "control_plane": "frontier-witness:control_plane:CFF-016"
+            "control_plane": "frontier-witness:control_plane:CFF-016",
+            "operator": "frontier-witness:operator:CFF-016",
+            "provider": "frontier-witness:provider:CFF-016"
           },
           "evidence_ref": "highwater-evidence:CFF-016",
           "attestation_ref": "highwater-attestation:CFF-016"
@@ -2648,7 +2744,9 @@
           "credential_root": "agent:credential_root:CFF-017",
           "clock_authority": "agent:clock_authority:CFF-017",
           "storage_backend": "agent:storage_backend:CFF-017",
-          "control_plane": "agent:control_plane:CFF-017"
+          "control_plane": "agent:control_plane:CFF-017",
+          "operator": "agent:operator:CFF-017",
+          "provider": "agent:provider:CFF-017"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-017",
@@ -2657,7 +2755,9 @@
           "credential_root": "resource-owner:credential_root:CFF-017",
           "clock_authority": "resource-owner:clock_authority:CFF-017",
           "storage_backend": "resource-owner:storage_backend:CFF-017",
-          "control_plane": "resource-owner:control_plane:CFF-017"
+          "control_plane": "resource-owner:control_plane:CFF-017",
+          "operator": "resource-owner:operator:CFF-017",
+          "provider": "resource-owner:provider:CFF-017"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-017",
@@ -2669,7 +2769,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-017",
             "clock_authority": "frontier-witness:clock_authority:CFF-017",
             "storage_backend": "frontier-witness:storage_backend:CFF-017",
-            "control_plane": "frontier-witness:control_plane:CFF-017"
+            "control_plane": "frontier-witness:control_plane:CFF-017",
+            "operator": "frontier-witness:operator:CFF-017",
+            "provider": "frontier-witness:provider:CFF-017"
           },
           "evidence_ref": "highwater-evidence:CFF-017",
           "attestation_ref": "highwater-attestation:CFF-017"
@@ -2778,7 +2880,9 @@
           "credential_root": "agent:credential_root:CFF-018",
           "clock_authority": "agent:clock_authority:CFF-018",
           "storage_backend": "agent:storage_backend:CFF-018",
-          "control_plane": "agent:control_plane:CFF-018"
+          "control_plane": "agent:control_plane:CFF-018",
+          "operator": "agent:operator:CFF-018",
+          "provider": "agent:provider:CFF-018"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-018",
@@ -2787,7 +2891,9 @@
           "credential_root": "resource-owner:credential_root:CFF-018",
           "clock_authority": "resource-owner:clock_authority:CFF-018",
           "storage_backend": "resource-owner:storage_backend:CFF-018",
-          "control_plane": "resource-owner:control_plane:CFF-018"
+          "control_plane": "resource-owner:control_plane:CFF-018",
+          "operator": "resource-owner:operator:CFF-018",
+          "provider": "resource-owner:provider:CFF-018"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-018",
@@ -2799,7 +2905,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-018",
             "clock_authority": "frontier-witness:clock_authority:CFF-018",
             "storage_backend": "frontier-witness:storage_backend:CFF-018",
-            "control_plane": "frontier-witness:control_plane:CFF-018"
+            "control_plane": "frontier-witness:control_plane:CFF-018",
+            "operator": "frontier-witness:operator:CFF-018",
+            "provider": "frontier-witness:provider:CFF-018"
           },
           "evidence_ref": "highwater-evidence:CFF-018",
           "attestation_ref": "highwater-attestation:CFF-018"
@@ -2933,7 +3041,9 @@
           "credential_root": "agent:credential_root:CFF-019",
           "clock_authority": "agent:clock_authority:CFF-019",
           "storage_backend": "agent:storage_backend:CFF-019",
-          "control_plane": "agent:control_plane:CFF-019"
+          "control_plane": "agent:control_plane:CFF-019",
+          "operator": "agent:operator:CFF-019",
+          "provider": "agent:provider:CFF-019"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-019",
@@ -2942,7 +3052,9 @@
           "credential_root": "resource-owner:credential_root:CFF-019",
           "clock_authority": "resource-owner:clock_authority:CFF-019",
           "storage_backend": "resource-owner:storage_backend:CFF-019",
-          "control_plane": "resource-owner:control_plane:CFF-019"
+          "control_plane": "resource-owner:control_plane:CFF-019",
+          "operator": "resource-owner:operator:CFF-019",
+          "provider": "resource-owner:provider:CFF-019"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-019",
@@ -2954,7 +3066,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-019",
             "clock_authority": "frontier-witness:clock_authority:CFF-019",
             "storage_backend": "frontier-witness:storage_backend:CFF-019",
-            "control_plane": "frontier-witness:control_plane:CFF-019"
+            "control_plane": "frontier-witness:control_plane:CFF-019",
+            "operator": "frontier-witness:operator:CFF-019",
+            "provider": "frontier-witness:provider:CFF-019"
           },
           "evidence_ref": "highwater-evidence:CFF-019",
           "attestation_ref": "highwater-attestation:CFF-019"
@@ -3088,7 +3202,9 @@
           "credential_root": "agent:credential_root:CFF-020",
           "clock_authority": "agent:clock_authority:CFF-020",
           "storage_backend": "agent:storage_backend:CFF-020",
-          "control_plane": "agent:control_plane:CFF-020"
+          "control_plane": "agent:control_plane:CFF-020",
+          "operator": "agent:operator:CFF-020",
+          "provider": "agent:provider:CFF-020"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-020",
@@ -3097,7 +3213,9 @@
           "credential_root": "resource-owner:credential_root:CFF-020",
           "clock_authority": "resource-owner:clock_authority:CFF-020",
           "storage_backend": "resource-owner:storage_backend:CFF-020",
-          "control_plane": "resource-owner:control_plane:CFF-020"
+          "control_plane": "resource-owner:control_plane:CFF-020",
+          "operator": "resource-owner:operator:CFF-020",
+          "provider": "resource-owner:provider:CFF-020"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-020",
@@ -3109,7 +3227,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-020",
             "clock_authority": "frontier-witness:clock_authority:CFF-020",
             "storage_backend": "frontier-witness:storage_backend:CFF-020",
-            "control_plane": "frontier-witness:control_plane:CFF-020"
+            "control_plane": "frontier-witness:control_plane:CFF-020",
+            "operator": "frontier-witness:operator:CFF-020",
+            "provider": "frontier-witness:provider:CFF-020"
           },
           "evidence_ref": "highwater-evidence:CFF-020",
           "attestation_ref": "highwater-attestation:CFF-020"
@@ -3218,7 +3338,9 @@
           "credential_root": "agent:credential_root:CFF-021",
           "clock_authority": "agent:clock_authority:CFF-021",
           "storage_backend": "agent:storage_backend:CFF-021",
-          "control_plane": "agent:control_plane:CFF-021"
+          "control_plane": "agent:control_plane:CFF-021",
+          "operator": "agent:operator:CFF-021",
+          "provider": "agent:provider:CFF-021"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-021",
@@ -3227,7 +3349,9 @@
           "credential_root": "resource-owner:credential_root:CFF-021",
           "clock_authority": "resource-owner:clock_authority:CFF-021",
           "storage_backend": "resource-owner:storage_backend:CFF-021",
-          "control_plane": "resource-owner:control_plane:CFF-021"
+          "control_plane": "resource-owner:control_plane:CFF-021",
+          "operator": "resource-owner:operator:CFF-021",
+          "provider": "resource-owner:provider:CFF-021"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-021",
@@ -3239,7 +3363,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-021",
             "clock_authority": "frontier-witness:clock_authority:CFF-021",
             "storage_backend": "frontier-witness:storage_backend:CFF-021",
-            "control_plane": "frontier-witness:control_plane:CFF-021"
+            "control_plane": "frontier-witness:control_plane:CFF-021",
+            "operator": "frontier-witness:operator:CFF-021",
+            "provider": "frontier-witness:provider:CFF-021"
           },
           "evidence_ref": "highwater-evidence:CFF-021",
           "attestation_ref": "highwater-attestation:CFF-021"
@@ -3371,7 +3497,9 @@
           "credential_root": "agent:credential_root:CFF-022",
           "clock_authority": "agent:clock_authority:CFF-022",
           "storage_backend": "agent:storage_backend:CFF-022",
-          "control_plane": "agent:control_plane:CFF-022"
+          "control_plane": "agent:control_plane:CFF-022",
+          "operator": "agent:operator:CFF-022",
+          "provider": "agent:provider:CFF-022"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-022",
@@ -3380,7 +3508,9 @@
           "credential_root": "resource-owner:credential_root:CFF-022",
           "clock_authority": "resource-owner:clock_authority:CFF-022",
           "storage_backend": "resource-owner:storage_backend:CFF-022",
-          "control_plane": "resource-owner:control_plane:CFF-022"
+          "control_plane": "resource-owner:control_plane:CFF-022",
+          "operator": "resource-owner:operator:CFF-022",
+          "provider": "resource-owner:provider:CFF-022"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-022",
@@ -3392,7 +3522,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-022",
             "clock_authority": "frontier-witness:clock_authority:CFF-022",
             "storage_backend": "frontier-witness:storage_backend:CFF-022",
-            "control_plane": "frontier-witness:control_plane:CFF-022"
+            "control_plane": "frontier-witness:control_plane:CFF-022",
+            "operator": "frontier-witness:operator:CFF-022",
+            "provider": "frontier-witness:provider:CFF-022"
           },
           "evidence_ref": "highwater-evidence:CFF-022",
           "attestation_ref": "highwater-attestation:CFF-022"
@@ -3501,7 +3633,9 @@
           "credential_root": "agent:credential_root:CFF-023",
           "clock_authority": "agent:clock_authority:CFF-023",
           "storage_backend": "agent:storage_backend:CFF-023",
-          "control_plane": "agent:control_plane:CFF-023"
+          "control_plane": "agent:control_plane:CFF-023",
+          "operator": "agent:operator:CFF-023",
+          "provider": "agent:provider:CFF-023"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-023",
@@ -3510,7 +3644,9 @@
           "credential_root": "resource-owner:credential_root:CFF-023",
           "clock_authority": "resource-owner:clock_authority:CFF-023",
           "storage_backend": "resource-owner:storage_backend:CFF-023",
-          "control_plane": "resource-owner:control_plane:CFF-023"
+          "control_plane": "resource-owner:control_plane:CFF-023",
+          "operator": "resource-owner:operator:CFF-023",
+          "provider": "resource-owner:provider:CFF-023"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-023",
@@ -3522,7 +3658,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-023",
             "clock_authority": "frontier-witness:clock_authority:CFF-023",
             "storage_backend": "frontier-witness:storage_backend:CFF-023",
-            "control_plane": "frontier-witness:control_plane:CFF-023"
+            "control_plane": "frontier-witness:control_plane:CFF-023",
+            "operator": "frontier-witness:operator:CFF-023",
+            "provider": "frontier-witness:provider:CFF-023"
           },
           "evidence_ref": "highwater-evidence:CFF-023",
           "attestation_ref": "highwater-attestation:CFF-023"
@@ -3654,7 +3792,9 @@
           "credential_root": "agent:credential_root:CFF-024",
           "clock_authority": "agent:clock_authority:CFF-024",
           "storage_backend": "agent:storage_backend:CFF-024",
-          "control_plane": "agent:control_plane:CFF-024"
+          "control_plane": "agent:control_plane:CFF-024",
+          "operator": "agent:operator:CFF-024",
+          "provider": "agent:provider:CFF-024"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-024",
@@ -3663,7 +3803,9 @@
           "credential_root": "resource-owner:credential_root:CFF-024",
           "clock_authority": "resource-owner:clock_authority:CFF-024",
           "storage_backend": "resource-owner:storage_backend:CFF-024",
-          "control_plane": "resource-owner:control_plane:CFF-024"
+          "control_plane": "resource-owner:control_plane:CFF-024",
+          "operator": "resource-owner:operator:CFF-024",
+          "provider": "resource-owner:provider:CFF-024"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-024",
@@ -3675,7 +3817,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-024",
             "clock_authority": "frontier-witness:clock_authority:CFF-024",
             "storage_backend": "frontier-witness:storage_backend:CFF-024",
-            "control_plane": "frontier-witness:control_plane:CFF-024"
+            "control_plane": "frontier-witness:control_plane:CFF-024",
+            "operator": "frontier-witness:operator:CFF-024",
+            "provider": "frontier-witness:provider:CFF-024"
           },
           "evidence_ref": "highwater-evidence:CFF-024",
           "attestation_ref": "highwater-attestation:CFF-024"
@@ -3809,7 +3953,9 @@
           "credential_root": "agent:credential_root:CFF-025",
           "clock_authority": "agent:clock_authority:CFF-025",
           "storage_backend": "agent:storage_backend:CFF-025",
-          "control_plane": "agent:control_plane:CFF-025"
+          "control_plane": "agent:control_plane:CFF-025",
+          "operator": "agent:operator:CFF-025",
+          "provider": "agent:provider:CFF-025"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-025",
@@ -3818,7 +3964,9 @@
           "credential_root": "resource-owner:credential_root:CFF-025",
           "clock_authority": "resource-owner:clock_authority:CFF-025",
           "storage_backend": "resource-owner:storage_backend:CFF-025",
-          "control_plane": "resource-owner:control_plane:CFF-025"
+          "control_plane": "resource-owner:control_plane:CFF-025",
+          "operator": "resource-owner:operator:CFF-025",
+          "provider": "resource-owner:provider:CFF-025"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-025",
@@ -3830,7 +3978,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-025",
             "clock_authority": "frontier-witness:clock_authority:CFF-025",
             "storage_backend": "frontier-witness:storage_backend:CFF-025",
-            "control_plane": "frontier-witness:control_plane:CFF-025"
+            "control_plane": "frontier-witness:control_plane:CFF-025",
+            "operator": "frontier-witness:operator:CFF-025",
+            "provider": "frontier-witness:provider:CFF-025"
           },
           "evidence_ref": "highwater-evidence:CFF-025",
           "attestation_ref": "highwater-attestation:CFF-025"
@@ -3964,7 +4114,9 @@
           "credential_root": "agent:credential_root:CFF-026",
           "clock_authority": "agent:clock_authority:CFF-026",
           "storage_backend": "agent:storage_backend:CFF-026",
-          "control_plane": "agent:control_plane:CFF-026"
+          "control_plane": "agent:control_plane:CFF-026",
+          "operator": "agent:operator:CFF-026",
+          "provider": "agent:provider:CFF-026"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-026",
@@ -3973,7 +4125,9 @@
           "credential_root": "resource-owner:credential_root:CFF-026",
           "clock_authority": "resource-owner:clock_authority:CFF-026",
           "storage_backend": "resource-owner:storage_backend:CFF-026",
-          "control_plane": "resource-owner:control_plane:CFF-026"
+          "control_plane": "resource-owner:control_plane:CFF-026",
+          "operator": "resource-owner:operator:CFF-026",
+          "provider": "resource-owner:provider:CFF-026"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-026",
@@ -3985,7 +4139,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-026",
             "clock_authority": "frontier-witness:clock_authority:CFF-026",
             "storage_backend": "frontier-witness:storage_backend:CFF-026",
-            "control_plane": "frontier-witness:control_plane:CFF-026"
+            "control_plane": "frontier-witness:control_plane:CFF-026",
+            "operator": "frontier-witness:operator:CFF-026",
+            "provider": "frontier-witness:provider:CFF-026"
           },
           "evidence_ref": "highwater-evidence:CFF-026",
           "attestation_ref": "highwater-attestation:CFF-026"
@@ -4117,7 +4273,9 @@
           "credential_root": "agent:credential_root:CFF-027",
           "clock_authority": "agent:clock_authority:CFF-027",
           "storage_backend": "agent:storage_backend:CFF-027",
-          "control_plane": "agent:control_plane:CFF-027"
+          "control_plane": "agent:control_plane:CFF-027",
+          "operator": "agent:operator:CFF-027",
+          "provider": "agent:provider:CFF-027"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-027",
@@ -4126,7 +4284,9 @@
           "credential_root": "resource-owner:credential_root:CFF-027",
           "clock_authority": "resource-owner:clock_authority:CFF-027",
           "storage_backend": "resource-owner:storage_backend:CFF-027",
-          "control_plane": "resource-owner:control_plane:CFF-027"
+          "control_plane": "resource-owner:control_plane:CFF-027",
+          "operator": "resource-owner:operator:CFF-027",
+          "provider": "resource-owner:provider:CFF-027"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-027",
@@ -4138,7 +4298,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-027",
             "clock_authority": "frontier-witness:clock_authority:CFF-027",
             "storage_backend": "frontier-witness:storage_backend:CFF-027",
-            "control_plane": "frontier-witness:control_plane:CFF-027"
+            "control_plane": "frontier-witness:control_plane:CFF-027",
+            "operator": "frontier-witness:operator:CFF-027",
+            "provider": "frontier-witness:provider:CFF-027"
           },
           "evidence_ref": "highwater-evidence:CFF-027",
           "attestation_ref": "highwater-attestation:CFF-027"
@@ -4247,7 +4409,9 @@
           "credential_root": "agent:credential_root:CFF-028",
           "clock_authority": "agent:clock_authority:CFF-028",
           "storage_backend": "agent:storage_backend:CFF-028",
-          "control_plane": "agent:control_plane:CFF-028"
+          "control_plane": "agent:control_plane:CFF-028",
+          "operator": "agent:operator:CFF-028",
+          "provider": "agent:provider:CFF-028"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-028",
@@ -4256,7 +4420,9 @@
           "credential_root": "resource-owner:credential_root:CFF-028",
           "clock_authority": "resource-owner:clock_authority:CFF-028",
           "storage_backend": "resource-owner:storage_backend:CFF-028",
-          "control_plane": "resource-owner:control_plane:CFF-028"
+          "control_plane": "resource-owner:control_plane:CFF-028",
+          "operator": "resource-owner:operator:CFF-028",
+          "provider": "resource-owner:provider:CFF-028"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-028",
@@ -4268,7 +4434,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-028",
             "clock_authority": "frontier-witness:clock_authority:CFF-028",
             "storage_backend": "frontier-witness:storage_backend:CFF-028",
-            "control_plane": "frontier-witness:control_plane:CFF-028"
+            "control_plane": "frontier-witness:control_plane:CFF-028",
+            "operator": "frontier-witness:operator:CFF-028",
+            "provider": "frontier-witness:provider:CFF-028"
           },
           "evidence_ref": "highwater-evidence:CFF-028",
           "attestation_ref": "highwater-attestation:CFF-028"
@@ -4402,7 +4570,9 @@
           "credential_root": "agent:credential_root:CFF-001",
           "clock_authority": "agent:clock_authority:CFF-001",
           "storage_backend": "agent:storage_backend:CFF-001",
-          "control_plane": "agent:control_plane:CFF-001"
+          "control_plane": "agent:control_plane:CFF-001",
+          "operator": "agent:operator:CFF-029",
+          "provider": "agent:provider:CFF-029"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-001",
@@ -4411,7 +4581,9 @@
           "credential_root": "resource-owner:credential_root:CFF-001",
           "clock_authority": "resource-owner:clock_authority:CFF-001",
           "storage_backend": "resource-owner:storage_backend:CFF-001",
-          "control_plane": "resource-owner:control_plane:CFF-001"
+          "control_plane": "resource-owner:control_plane:CFF-001",
+          "operator": "resource-owner:operator:CFF-029",
+          "provider": "resource-owner:provider:CFF-029"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-001",
@@ -4423,7 +4595,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-001",
             "clock_authority": "frontier-witness:clock_authority:CFF-001",
             "storage_backend": "frontier-witness:storage_backend:CFF-001",
-            "control_plane": "resource-owner:control_plane:CFF-001"
+            "control_plane": "resource-owner:control_plane:CFF-001",
+            "operator": "frontier-witness:operator:CFF-029",
+            "provider": "frontier-witness:provider:CFF-029"
           },
           "evidence_ref": "highwater-evidence:CFF-001",
           "attestation_ref": "highwater-attestation:CFF-001"
@@ -4532,7 +4706,9 @@
           "credential_root": "agent:credential_root:CFF-018",
           "clock_authority": "agent:clock_authority:CFF-018",
           "storage_backend": "agent:storage_backend:CFF-018",
-          "control_plane": "agent:control_plane:CFF-018"
+          "control_plane": "agent:control_plane:CFF-018",
+          "operator": "agent:operator:CFF-030",
+          "provider": "agent:provider:CFF-030"
         },
         "resource_owner_domains": {
           "process_runtime": "resource-owner:process_runtime:CFF-018",
@@ -4541,7 +4717,9 @@
           "credential_root": "resource-owner:credential_root:CFF-018",
           "clock_authority": "resource-owner:clock_authority:CFF-018",
           "storage_backend": "resource-owner:storage_backend:CFF-018",
-          "control_plane": "resource-owner:control_plane:CFF-018"
+          "control_plane": "resource-owner:control_plane:CFF-018",
+          "operator": "resource-owner:operator:CFF-030",
+          "provider": "resource-owner:provider:CFF-030"
         },
         "witness": {
           "witness_id": "frontier-witness:CFF-018",
@@ -4553,7 +4731,9 @@
             "credential_root": "frontier-witness:credential_root:CFF-018",
             "clock_authority": "frontier-witness:clock_authority:CFF-018",
             "storage_backend": "unknown",
-            "control_plane": "frontier-witness:control_plane:CFF-018"
+            "control_plane": "frontier-witness:control_plane:CFF-018",
+            "operator": "frontier-witness:operator:CFF-030",
+            "provider": "frontier-witness:provider:CFF-030"
           },
           "evidence_ref": "highwater-evidence:CFF-018",
           "attestation_ref": "highwater-attestation:CFF-018"
