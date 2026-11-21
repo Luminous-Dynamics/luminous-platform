@@ -1,0 +1,1213 @@
+{
+  "profile": "luminous-mcp-tool-contract-integrity",
+  "version": "0.1",
+  "status": "synthetic_descriptor_and_authority_contract_not_executed",
+  "no_aggregate_score": true,
+  "constraints": {
+    "no_production_mcp_servers": true,
+    "no_real_credentials": true,
+    "isolated_test_environment": true,
+    "independent_effect_oracle_required": true
+  },
+  "canonical_effect_owner": "CAPC-v0.1",
+  "cases": [
+    {
+      "scenario_id": "MTCI-001",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-001"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-001"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-001"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-002",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-002"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-002"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-002"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-003",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "canonical_descriptor_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-003"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-003"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-003"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-004",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://shadow.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-004"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-004"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-004"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-005",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-005"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-005"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-005"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-006",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup.shadow",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-006"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-006"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-006"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-007",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-007"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:other-service",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-007"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-007"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-008",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-008"
+      },
+      "authority": {
+        "issuer": "issuer:untrusted",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-008"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-008"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-009",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-009"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "*"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-009"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-009"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-010",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-010"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "consumed",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-010"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-010"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-011",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-011"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": true
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-011"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-011"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-012",
+      "control_class": "negative_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-012"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "deny",
+        "reason": "descriptor_or_authority_mismatch",
+        "evidence_ref": "admission:MTCI-012"
+      },
+      "oracle": {
+        "observation": "no_effect",
+        "observed_effect_ids": [],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-012"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "denied"
+      }
+    },
+    {
+      "scenario_id": "MTCI-013",
+      "control_class": "indeterminate_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "unknown",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-013"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "hold",
+        "reason": "server_identity_unresolved",
+        "evidence_ref": "admission:MTCI-013"
+      },
+      "oracle": {
+        "observation": "incomplete",
+        "observed_effect_ids": [],
+        "complete": false,
+        "independent": false,
+        "evidence_ref": "oracle:MTCI-013"
+      },
+      "expected": {
+        "descriptor_integrity_ok": false,
+        "authority_integrity_ok": false,
+        "disposition": "identity_indeterminate"
+      }
+    },
+    {
+      "scenario_id": "MTCI-014",
+      "control_class": "positive_control",
+      "reviewed_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "presented_descriptor": {
+        "server_identity": "server:records",
+        "server_origin": "https://records.example.test",
+        "protocol_version": "2026-07-28",
+        "transport": "streamable_http",
+        "tool_name": "records.lookup",
+        "tool_id": "tool:records.lookup",
+        "description_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_schema_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "output_schema_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "annotations_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "canonical_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "server_artifact_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "build_provenance_ref": "build:records:1",
+        "canonicalization_version": "mcp-c14n-v1"
+      },
+      "identity_status": "verified",
+      "approval": {
+        "reviewed_descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "approved_tool_id": "tool:records.lookup",
+        "review_epoch": "epoch:9",
+        "approval_ref": "approval:MTCI-014"
+      },
+      "authority": {
+        "issuer": "issuer:corp",
+        "token_audience": "audience:records",
+        "expected_issuer": "issuer:corp",
+        "expected_audience": "audience:records",
+        "granted_scopes": [
+          "records.read"
+        ],
+        "required_scopes": [
+          "records.read"
+        ],
+        "grant_id": "grant:records-read",
+        "policy_epoch": "epoch:9",
+        "nonce_id": "nonce:unique",
+        "nonce_status": "fresh",
+        "session_handle_used_for_auth": false
+      },
+      "invocation": {
+        "attempt_id": "attempt:001",
+        "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "effect_id": "effect:records-read",
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "admission": {
+        "decision": "allow",
+        "reason": "exact_descriptor_and_authority_match",
+        "evidence_ref": "admission:MTCI-014"
+      },
+      "oracle": {
+        "observation": "observed",
+        "observed_effect_ids": [
+          "effect:records-read"
+        ],
+        "complete": true,
+        "independent": true,
+        "evidence_ref": "oracle:MTCI-014"
+      },
+      "expected": {
+        "descriptor_integrity_ok": true,
+        "authority_integrity_ok": true,
+        "disposition": "accepted"
+      }
+    }
+  ],
+  "effects": [
+    {
+      "effect_id": "effect:records-read",
+      "owner_id": "owner:records",
+      "tenant_id": "tenant-a",
+      "resource_id": "resource:record-17",
+      "operation": "record.read",
+      "effect_class": "read",
+      "principal_id": "principal:agent",
+      "workload_id": "workload:assistant",
+      "session_id": "session:mtci",
+      "argument_constraint_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "resource_version_precondition": "version:7",
+      "policy_epoch": "epoch:9",
+      "service_id": "service:records",
+      "credential_lineage": "credential:records-read"
+    },
+    {
+      "effect_id": "effect:records-write",
+      "owner_id": "owner:records",
+      "tenant_id": "tenant-a",
+      "resource_id": "resource:record-17",
+      "operation": "record.write",
+      "effect_class": "write",
+      "principal_id": "principal:agent",
+      "workload_id": "workload:assistant",
+      "session_id": "session:mtci",
+      "argument_constraint_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "resource_version_precondition": "version:7",
+      "policy_epoch": "epoch:9",
+      "service_id": "service:records",
+      "credential_lineage": "credential:records-write"
+    }
+  ]
+}
