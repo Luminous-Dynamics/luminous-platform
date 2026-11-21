@@ -15,7 +15,7 @@ def inputs():
  return s,schema
 
 def case(suite,sid):
- return copy.deepcopy(next(c for c in suite["cases"] if c["scenario_id"]==sid))
+ return next(c for c in suite["cases"] if c["scenario_id"]==sid)
 
 def reject(suite,schema):
  try:checker.validate_suite(suite,schema)
