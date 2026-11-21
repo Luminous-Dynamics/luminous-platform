@@ -294,7 +294,8 @@
             "attempt_id",
             "descriptor_digest",
             "effect_id",
-            "argument_digest"
+            "argument_digest",
+            "response_server_identity"
           ],
           "properties": {
             "attempt_id": {
@@ -307,6 +308,9 @@
               "type": "string"
             },
             "argument_digest": {
+              "type": "string"
+            },
+            "response_server_identity": {
               "type": "string"
             }
           }
@@ -394,7 +398,8 @@
               ]
             }
           }
-        }
+        },
+        "required": []
       }
     },
     "effect": {
