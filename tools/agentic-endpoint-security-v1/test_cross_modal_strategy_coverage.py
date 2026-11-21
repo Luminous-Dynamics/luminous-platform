@@ -88,17 +88,33 @@ class CrossModalTests(unittest.TestCase):
 
     def test_strategy_cluster_cannot_leak_across_splits(self):
         s,schema=inputs()
-        c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-005" and c["modality"]=="text_document")
-        c["split"]="development"
-        for field in ("split",):
-            other=next(x for x in s["cases"] if x["pair_id"]=="PAIR-005" and x["modality"]=="page_image")
-            other[field]="development"
-        c["blind_attribution"]["adjudicated_strategy_id"]="STRAT-01"
-        other["blind_attribution"]["adjudicated_strategy_id"]="STRAT-01"
-        c["blind_attribution"]["reviewers"]=[{"reviewer_id":"reviewer:alpha","strategy_id":"STRAT-01"},{"reviewer_id":"reviewer:beta","strategy_id":"STRAT-01"}]
-        other["blind_attribution"]=copy.deepcopy(c["blind_attribution"])
-        c["blind_attribution"]["adjudicated_fingerprint"]=copy.deepcopy(c["strategy_candidate"]["candidate_fingerprint"])
-        other["blind_attribution"]["adjudicated_fingerprint"]=copy.deepcopy(c["strategy_candidate"]["candidate_fingerprint"])
+        held_text=next(c for c in s["cases"] if c["pair_id"]=="PAIR-005" and c["modality"]=="text_document")
+        held_image=next(c for c in s["cases"] if c["pair_id"]=="PAIR-005" and c["modality"]=="page_image")
+        dev_text=next(c for c in s["cases"] if c["pair_id"]=="PAIR-001" and c["modality"]=="text_document")
+        fingerprint=copy.deepcopy(dev_text["blind_attribution"]["adjudicated_fingerprint"])
+        for case in (held_text,held_image):
+            case["blind_attribution"]["adjudication"]="confirmed"
+            case["blind_attribution"]["adjudicated_strategy_id"]="STRAT-01"
+            case["blind_attribution"]["reviewers"]=[
+                {"reviewer_id":"reviewer:alpha","strategy_id":"STRAT-01"},
+                {"reviewer_id":"reviewer:beta","strategy_id":"STRAT-01"}
+            ]
+            case["blind_attribution"]["adjudicated_fingerprint"]=copy.deepcopy(fingerprint)
+        reject(s,schema)
+
+
+    def test_admission_cannot_change_preregistered_authorization_set(self):
+        s,schema=inputs()
+        c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-003")
+        c["admission"]["authorized_effect_ids"]=["effect:document-write"]
+        reject(s,schema)
+
+    def test_action_redirection_must_differ_from_trusted_baseline(self):
+        s,schema=inputs()
+        c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-002")
+        c["action_trace"]["attempted_effect_id"]=c["task"]["baseline_effect_id"]
+        c["target"]["attempted_effect_id"]=c["task"]["baseline_effect_id"]
+        c["strategy_candidate"]["candidate_fingerprint"]["target_effect_id"]=c["task"]["baseline_effect_id"]
         reject(s,schema)
 
     def test_unqualified_observer_cannot_claim_observed_consequence(self):
