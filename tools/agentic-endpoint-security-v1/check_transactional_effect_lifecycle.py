@@ -230,6 +230,11 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
             "argument_digest", "effect_id", "kind", "batch_item_id", "compensates_for",
         }:
             raise ValueError(f"{sid}: target ledger entry fields differ")
+        if entry["kind"] == "effect" and (
+            entry["effect_id"] != operation["effect_id"]
+            or entry["semantic_operation_id"] != operation["semantic_operation_id"]
+        ):
+            raise ValueError(f"{sid}: target effect is not bound to the declared operation/effect identity")
         if entry["commit_id"] in commit_ids:
             raise ValueError(f"{sid}: duplicate target commit id")
         commit_ids.add(entry["commit_id"])
