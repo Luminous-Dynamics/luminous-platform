@@ -530,10 +530,14 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
         .authorization_timing
         .as_ref()
         .map_or(AuthorizationLinearization::NotEvaluated, AuthorizationTiming::evaluate);
-    let authorization_linearization_violation_count = usize::from(
-        authorization_linearization == AuthorizationLinearization::RevocationBeforeCommit
-            && !effect_entries.is_empty(),
-    );
+    let authorization_linearization_violation_count =
+        if authorization_linearization == AuthorizationLinearization::RevocationBeforeCommit
+            && !effect_entries.is_empty()
+        {
+            1
+        } else {
+            0
+        };
     let timing_uncertain = matches!(
         authorization_linearization,
         AuthorizationLinearization::TimebaseUnqualified
@@ -541,12 +545,15 @@ pub fn evaluate(evidence: &LifecycleEvidence) -> Evaluation {
             | AuthorizationLinearization::RevocationCommitOverlap
     );
 
-    let false_completion_claim_count = usize::from(
-        evidence.client_ledger.completed_claim
-            && (reconciled_state != ReconciledState::Committed
-                || orphaned_target_effect_count > 0
-                || target_client_ledger_conflict_count > 0),
-    );
+    let false_completion_claim_count = if evidence.client_ledger.completed_claim
+        && (reconciled_state != ReconciledState::Committed
+            || orphaned_target_effect_count > 0
+            || target_client_ledger_conflict_count > 0)
+    {
+        1
+    } else {
+        0
+    };
 
     let total_violations = duplicate_effect_count
         + key_argument_conflict_count
@@ -773,6 +780,54 @@ mod tests {
         let result = evaluate(&evidence);
         assert_eq!(result.authorization_linearization, AuthorizationLinearization::CommitBeforeRevocation);
         assert_eq!(result.disposition, FinalDisposition::QualifiedCommitted);
+    }
+
+    #[test]
+    fn target_commit_must_match_dispatch_authority_receipt() {
+        let mut evidence = sample();
+        evidence.target_ledger.entries[0].grant_id = "grant:substituted".into();
+        let result = evaluate(&evidence);
+        assert_eq!(result.unmatched_target_commit_count, 1);
+        assert_eq!(result.disposition, FinalDisposition::Violation);
+    }
+
+    #[test]
+    fn compensation_is_a_distinct_operation_with_separate_authority() {
+        let mut evidence = sample();
+        let original = evidence.target_ledger.entries[0].clone();
+        let compensation = TargetLedgerEntry {
+            commit_id: "commit:compensation".into(),
+            operation_id: "operation:compensation".into(),
+            semantic_operation_id: "intent:compensation".into(),
+            idempotency_key: "idempotency:compensation".into(),
+            argument_digest: "args:compensation".into(),
+            effect_id: "effect:compensation".into(),
+            kind: TargetEntryKind::Compensation,
+            batch_item_id: None,
+            compensates_for: Some(original.commit_id.clone()),
+            grant_id: "grant:compensation".into(),
+            nonce_id: "nonce:compensation".into(),
+        };
+        let compensation_attempt = DispatchAttempt {
+            attempt_id: "attempt:compensation".into(),
+            operation_id: compensation.operation_id.clone(),
+            idempotency_key: compensation.idempotency_key.clone(),
+            argument_digest: compensation.argument_digest.clone(),
+            dispatch_state: DispatchState::Sent,
+            acknowledgement: AcknowledgementState::Received,
+            retry_parent_attempt_id: None,
+            reconciliation_before_retry: ReconciliationBeforeRetry::NotApplicable,
+            restored_from_checkpoint: false,
+            authority_generation: 1,
+            grant_id: compensation.grant_id.clone(),
+            nonce_id: compensation.nonce_id.clone(),
+        };
+        evidence.attempts.push(compensation_attempt);
+        evidence.target_ledger.entries.push(compensation.clone());
+        evidence.client_ledger.known_commit_ids.insert(compensation.commit_id.clone());
+        evidence.reconciliation.result_commit_ids.insert(compensation.commit_id);
+        let result = evaluate(&evidence);
+        assert_eq!(result.compensation_link_violation_count, 0);
     }
 
     #[test]
