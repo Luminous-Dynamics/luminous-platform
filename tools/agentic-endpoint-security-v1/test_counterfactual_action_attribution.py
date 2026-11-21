@@ -25,7 +25,7 @@ def reject(suite,schema):
 class CounterfactualTests(unittest.TestCase):
     def test_frozen_triplets_match_reference_outcomes(self):
         s,schema=inputs()
-        self.assertEqual(checker.validate_suite(s,schema),{"episodes":18,"triplets":6,"development_triplets":3,"held_out_triplets":3,"attack_strategies":3})
+        self.assertEqual(checker.validate_suite(s,schema),{"episodes":18,"triplets":6,"development_triplets":3,"held_out_triplets":3,"attack_strategies":4})
 
     def test_redirect_blocked_by_admission_is_action_not_consequence_effect(self):
         s,_=inputs();e=checker.evaluate_triplet(group(s,"CFX-001"))
