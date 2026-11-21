@@ -4334,19 +4334,19 @@
       },
       "target_events": [
         {
-          "event_id": "CFF-001-e1",
+          "event_id": "CFF-029-e1",
           "decision": "accepted",
           "decision_reason": "none",
           "resource_id": "resource:doc-1",
-          "tx_id": "CFF-001",
-          "branch_id": "branch:CFF-001",
+          "tx_id": "CFF-029",
+          "branch_id": "branch:CFF-029",
           "effect_id": "effect:resource-write",
           "token_id": "fence:CFF-001",
           "token_generation": 9,
           "grant_id": "grant:CFF-001",
           "policy_epoch": "epoch-9",
           "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          "idempotency_key": "idem:CFF-001",
+          "idempotency_key": "idem:CFF-029",
           "observed_highwater_at_commit": 9,
           "observed_owner_revision_at_commit": 100,
           "observed_generation_at_check": 9,
@@ -4360,7 +4360,7 @@
         "complete": true,
         "independent": true,
         "observed_event_ids": [
-          "CFF-001-e1"
+          "CFF-029-e1"
         ]
       },
       "expected": {
@@ -4370,7 +4370,7 @@
         "witness_correlation_acceptance_count": 1,
         "stale_token_acceptance_count": 0,
         "late_epoch_acceptance_count": 0,
-        "wrong_binding_acceptance_count": 2,
+        "wrong_binding_acceptance_count": 0,
         "policy_epoch_acceptance_count": 0,
         "stale_resource_version_acceptance_count": 0,
         "stale_frontier_acceptance_count": 1,
