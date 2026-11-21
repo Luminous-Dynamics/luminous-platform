@@ -104,7 +104,15 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
         if entry["kind"] != "compensation":
             continue
         original = by_id.get(entry["compensates_for"])
-        if original is None or original["kind"] != "effect":
+        if (
+            original is None or original["kind"] != "effect"
+            or entry["operation_id"] == original["operation_id"]
+            or entry["semantic_operation_id"] == original["semantic_operation_id"]
+            or entry["effect_id"] == original["effect_id"]
+            or entry["idempotency_key"] == original["idempotency_key"]
+            or entry["grant_id"] == original["grant_id"]
+            or entry["nonce_id"] == original["nonce_id"]
+        ):
             compensation_violations += 1
 
     expected_batch = set(case["operation"]["expected_batch_items"])
@@ -247,7 +255,7 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
     for entry in target["entries"]:
         if set(entry) != {
             "commit_id", "operation_id", "semantic_operation_id", "idempotency_key",
-            "argument_digest", "effect_id", "kind", "batch_item_id", "compensates_for",
+            "argument_digest", "effect_id", "kind", "batch_item_id", "compensates_for", "grant_id", "nonce_id",
         }:
             raise ValueError(f"{sid}: target ledger entry fields differ")
         if entry["kind"] == "effect" and (
@@ -325,12 +333,14 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
     # A target-side commit must correspond to a recorded dispatch for the same
     # operation, idempotency key, and exact argument digest.
     attempted_tuples = {
-        (attempt["operation_id"], attempt["idempotency_key"], attempt["argument_digest"])
+        (attempt["operation_id"], attempt["idempotency_key"], attempt["argument_digest"],
+         attempt["grant_id"], attempt["nonce_id"])
         for attempt in case["attempts"]
     }
     for entry in target["entries"]:
-        if (entry["operation_id"], entry["idempotency_key"], entry["argument_digest"]) not in attempted_tuples:
-            raise ValueError(f"{sid}: target commit has no matching dispatched attempt")
+        if (entry["operation_id"], entry["idempotency_key"], entry["argument_digest"],
+            entry["grant_id"], entry["nonce_id"]) not in attempted_tuples:
+            raise ValueError(f"{sid}: target commit has no matching dispatched attempt/authority receipt")
 
     # Preserve client/target disagreements as evidence; evaluate() classifies them as violations.
     reconciliation = case["reconciliation"]
