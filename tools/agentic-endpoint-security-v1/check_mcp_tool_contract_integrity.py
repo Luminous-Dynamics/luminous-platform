@@ -20,7 +20,7 @@ def load(path:Path)->Any:
 
 def descriptor_ok(case:dict[str,Any])->bool:
     reviewed=case["reviewed_descriptor"];presented=case["presented_descriptor"]
-    return all(reviewed[k]==presented[k] for k in COMPONENT_FIELDS) and case["approval"]["reviewed_descriptor_digest"]==presented["canonical_descriptor_digest"] and case["approval"]["approved_tool_id"]==presented["tool_id"]
+    return all(reviewed[k]==presented[k] for k in COMPONENT_FIELDS) and reviewed["canonical_descriptor_digest"]==presented["canonical_descriptor_digest"]==case["approval"]["reviewed_descriptor_digest"] and case["approval"]["approved_tool_id"]==reviewed["tool_id"]==presented["tool_id"]
 
 
 def authority_ok(case:dict[str,Any])->bool:
