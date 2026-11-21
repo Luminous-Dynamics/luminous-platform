@@ -4483,7 +4483,7 @@
         "epoch": 5,
         "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "idempotency_key": "idem:CFF-029",
-        "grant_id": "grant:CFF-001",
+        "grant_id": "grant:CFF-029",
         "policy_epoch": "epoch-9",
         "resource_version_precondition": "v1"
       },
@@ -4511,7 +4511,7 @@
           "effect_id": "effect:resource-write",
           "token_id": "fence:CFF-029",
           "token_generation": 9,
-          "grant_id": "grant:CFF-001",
+          "grant_id": "grant:CFF-029",
           "policy_epoch": "epoch-9",
           "operation_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "idempotency_key": "idem:CFF-029",
