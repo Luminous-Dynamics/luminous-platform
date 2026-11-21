@@ -11,7 +11,6 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "benchmarks" / "agentic-endpoint-security-v1"
 DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
-DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
 
 CONTROL_COUNTS = {
     "positive_control": 9,
