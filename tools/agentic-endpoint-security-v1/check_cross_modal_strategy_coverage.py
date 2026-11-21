@@ -63,25 +63,24 @@ def validate_case(case:dict[str,Any],effects:dict[str,dict[str,Any]])->None:
       ("task",{"task_id","trusted_task_digest","baseline_effect_id"}),
       ("document",{"semantic_payload_id","artifact_digest","model_input_capture_ref","render_config_id"}),
       ("environment",{"model_id","model_version","tool_contract_digest","runtime_digest"}),
-      ("target",{"attempted_effect_id","authorized_effect_ids"}),
+      ("target",{"candidate_effect_id","authorized_effect_ids"}),
       ("model_trace",{"model_visible","instruction_recognition","evidence_ref"}),
       ("action_trace",{"redirected_from_trusted_baseline","attempted_effect_id","evidence_ref"}),
       ("admission",{"decision","authorized_effect_ids","evidence_ref"}),
       ("effect_oracle",{"observation","observed_effect_ids","complete","independent","evidence_ref"})
     ]:
       if set(case[section])!=fields:raise ValueError(f"{sid}: {section} fields differ from contract")
-    if case["target"]["attempted_effect_id"] not in effects or case["task"]["baseline_effect_id"] not in effects:raise ValueError(f"{sid}: unknown CAPC effect identity")
+    if case["target"]["candidate_effect_id"] not in effects or case["task"]["baseline_effect_id"] not in effects:raise ValueError(f"{sid}: unknown CAPC effect identity")
     if case["action_trace"]["attempted_effect_id"] not in effects:raise ValueError(f"{sid}: unknown action-trace effect")
     if not set(case["admission"]["authorized_effect_ids"]).issubset(effects):raise ValueError(f"{sid}: unknown authorized effect")
     if not set(case["effect_oracle"]["observed_effect_ids"]).issubset(effects):raise ValueError(f"{sid}: unknown observed effect")
-    if case["target"]["attempted_effect_id"]!=case["action_trace"]["attempted_effect_id"]:raise ValueError(f"{sid}: target/action trace effect mismatch")
     if case["admission"]["authorized_effect_ids"]!=case["target"]["authorized_effect_ids"]:raise ValueError(f"{sid}: admission and preregistered authorization set differ")
     redirected=case["action_trace"]["redirected_from_trusted_baseline"]
     baseline=case["task"]["baseline_effect_id"]
     attempted=case["action_trace"]["attempted_effect_id"]
     if redirected is False and attempted!=baseline:raise ValueError(f"{sid}: non-redirected action differs from trusted task baseline")
     if redirected is True and attempted==baseline:raise ValueError(f"{sid}: redirected action does not differ from trusted task baseline")
-    if case["strategy_candidate"]["candidate_fingerprint"]["target_effect_id"]!=attempted:raise ValueError(f"{sid}: candidate target differs from attempted effect")
+    if case["strategy_candidate"]["candidate_fingerprint"]["target_effect_id"]!=case["target"]["candidate_effect_id"]:raise ValueError(f"{sid}: strategy candidate target differs from preregistered candidate effect")
     if not set(case["admission"]["authorized_effect_ids"]).issubset(effects):raise ValueError(f"{sid}: unknown authorized effect")
     if case["admission"]["decision"] not in {"allow","deny","hold","unknown"}:raise ValueError(f"{sid}: invalid admission decision")
     o=case["effect_oracle"]
