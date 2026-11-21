@@ -395,7 +395,7 @@ def evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
                 1 for field in set(expected_bindings) & set(observed_bindings)
                 if expected_bindings[field] == observed_bindings[field]
             )
-        if flow["observed_payload_digest"] is None or not DIGEST_RE.fullmatch(
+        if flow["observed_payload_digest"] is None or not DIGEST.fullmatch(
             flow["observed_payload_digest"]
         ):
             observed_payload_mismatches += 1
@@ -472,10 +472,10 @@ def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
         if set(case["observer"]) != {"complete", "independent"}:
             raise ValueError(f'{case["scenario_id"]}: observer quality must have separate flags')
         for source in case["sources"]:
-            if not DIGEST_RE.fullmatch(source["content_digest"]):
+            if not DIGEST.fullmatch(source["content_digest"]):
                 raise ValueError(f'{case["scenario_id"]}: malformed source digest')
         for node in case["lineage_nodes"]:
-            if not DIGEST_RE.fullmatch(node["value_digest"]):
+            if not DIGEST.fullmatch(node["value_digest"]):
                 raise ValueError(f'{case["scenario_id"]}: malformed lineage node digest')
         if case["flow"]["effect_observation"] == "observed" and case["flow"]["observed_payload_digest"] is None:
             raise ValueError(f'{case["scenario_id"]}: observed sink effect requires payload digest')
@@ -488,9 +488,9 @@ def validate_structure(suite: dict[str, Any], schema: dict[str, Any]) -> None:
         if case["flow"]["effect_observation"] == "observed":
             if set(observed_fields) != set(parameter_fields):
                 raise ValueError(f'{case["scenario_id"]}: observed sink fields must exactly match parameter bindings')
-            if not DIGEST_RE.fullmatch(case["flow"]["observed_payload_digest"] or ""):
+            if not DIGEST.fullmatch(case["flow"]["observed_payload_digest"] or ""):
                 raise ValueError(f'{case["scenario_id"]}: malformed observed payload digest')
-            if any(not DIGEST_RE.fullmatch(item["observed_value_digest"] or "") for item in case["flow"]["observed_bindings"]):
+            if any(not DIGEST.fullmatch(item["observed_value_digest"] or "") for item in case["flow"]["observed_bindings"]):
                 raise ValueError(f'{case["scenario_id"]}: malformed observed parameter digest')
         elif observed_fields or case["flow"]["observed_payload_digest"] is not None:
             raise ValueError(f'{case["scenario_id"]}: non-observed effect cannot carry observed payload values')
