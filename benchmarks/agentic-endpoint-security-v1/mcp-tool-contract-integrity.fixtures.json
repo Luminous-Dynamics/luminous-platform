@@ -80,7 +80,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -169,7 +170,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -258,7 +260,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -347,7 +350,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -436,7 +440,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -525,7 +530,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -614,7 +620,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -703,7 +710,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -792,7 +800,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -881,7 +890,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -970,7 +980,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -1059,7 +1070,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "deny",
@@ -1148,7 +1160,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "hold",
@@ -1237,7 +1250,8 @@
         "attempt_id": "attempt:001",
         "descriptor_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
         "effect_id": "effect:records-read",
-        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        "argument_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "response_server_identity": "server:records"
       },
       "admission": {
         "decision": "allow",
