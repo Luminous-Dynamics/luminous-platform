@@ -90,7 +90,7 @@
       },
       "expected": {
         "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "authority_integrity_ok": true,
         "disposition": "denied"
       }
     },
@@ -173,7 +173,7 @@
       },
       "expected": {
         "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "authority_integrity_ok": true,
         "disposition": "denied"
       }
     },
@@ -256,7 +256,7 @@
       },
       "expected": {
         "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "authority_integrity_ok": true,
         "disposition": "denied"
       }
     },
@@ -339,7 +339,7 @@
       },
       "expected": {
         "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "authority_integrity_ok": true,
         "disposition": "denied"
       }
     },
@@ -422,7 +422,7 @@
       },
       "expected": {
         "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "authority_integrity_ok": true,
         "disposition": "denied"
       }
     },
@@ -505,7 +505,7 @@
       },
       "expected": {
         "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "authority_integrity_ok": true,
         "disposition": "denied"
       }
     },
@@ -587,7 +587,7 @@
         "evidence_ref": "oracle:MTCI-007"
       },
       "expected": {
-        "descriptor_integrity_ok": false,
+        "descriptor_integrity_ok": true,
         "authority_integrity_ok": false,
         "disposition": "denied"
       }
@@ -670,7 +670,7 @@
         "evidence_ref": "oracle:MTCI-008"
       },
       "expected": {
-        "descriptor_integrity_ok": false,
+        "descriptor_integrity_ok": true,
         "authority_integrity_ok": false,
         "disposition": "denied"
       }
@@ -753,7 +753,7 @@
         "evidence_ref": "oracle:MTCI-009"
       },
       "expected": {
-        "descriptor_integrity_ok": false,
+        "descriptor_integrity_ok": true,
         "authority_integrity_ok": false,
         "disposition": "denied"
       }
@@ -836,7 +836,7 @@
         "evidence_ref": "oracle:MTCI-010"
       },
       "expected": {
-        "descriptor_integrity_ok": false,
+        "descriptor_integrity_ok": true,
         "authority_integrity_ok": false,
         "disposition": "denied"
       }
@@ -919,7 +919,7 @@
         "evidence_ref": "oracle:MTCI-011"
       },
       "expected": {
-        "descriptor_integrity_ok": false,
+        "descriptor_integrity_ok": true,
         "authority_integrity_ok": false,
         "disposition": "denied"
       }
@@ -1085,8 +1085,8 @@
         "evidence_ref": "oracle:MTCI-013"
       },
       "expected": {
-        "descriptor_integrity_ok": false,
-        "authority_integrity_ok": false,
+        "descriptor_integrity_ok": true,
+        "authority_integrity_ok": true,
         "disposition": "identity_indeterminate"
       }
     },
