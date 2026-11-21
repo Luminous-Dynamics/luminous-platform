@@ -1,0 +1,625 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:commit-frontier-fencing:0.1",
+  "title": "Commit Frontier Fencing and Late-Arrival Resistance Benchmark v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "constraints",
+    "canonical_effect_owner",
+    "control_distribution",
+    "effect_catalog",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-commit-frontier-fencing"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_resource_fence_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "disposable_resource_owner_required",
+        "external_network_access",
+        "production_endpoints",
+        "real_credentials_or_customer_data",
+        "synthetic_canaries_only",
+        "atomic_compare_and_write_required",
+        "owner_enforced_monotonic_generation_required",
+        "unknown_owner_highwater_blocks_mutation"
+      ],
+      "properties": {
+        "disposable_resource_owner_required": {
+          "const": true
+        },
+        "external_network_access": {
+          "const": false
+        },
+        "production_endpoints": {
+          "const": false
+        },
+        "real_credentials_or_customer_data": {
+          "const": false
+        },
+        "synthetic_canaries_only": {
+          "const": true
+        },
+        "atomic_compare_and_write_required": {
+          "const": true
+        },
+        "owner_enforced_monotonic_generation_required": {
+          "const": true
+        },
+        "unknown_owner_highwater_blocks_mutation": {
+          "const": true
+        }
+      }
+    },
+    "canonical_effect_owner": {
+      "const": "CAPC-v0.1"
+    },
+    "control_distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "positive_control",
+        "negative_control",
+        "indeterminate_control"
+      ],
+      "properties": {
+        "positive_control": {
+          "const": 7
+        },
+        "negative_control": {
+          "const": 16
+        },
+        "indeterminate_control": {
+          "const": 3
+        }
+      }
+    },
+    "effect_catalog": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "effect_id",
+          "owner_id",
+          "operation"
+        ],
+        "properties": {
+          "effect_id": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 26,
+      "maxItems": 26,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "resource_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_id",
+        "current_generation",
+        "high_water_generation",
+        "sealed_through_epoch",
+        "owner_revision",
+        "resource_version_at_grant",
+        "current_resource_version",
+        "policy_epoch",
+        "owner_available",
+        "high_water_persisted",
+        "external_witness_generation",
+        "external_witness_independent"
+      ],
+      "properties": {
+        "resource_id": {
+          "type": "string"
+        },
+        "current_generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "high_water_generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sealed_through_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "owner_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resource_version_at_grant": {
+          "type": "string"
+        },
+        "current_resource_version": {
+          "type": "string"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "owner_available": {
+          "type": "boolean"
+        },
+        "high_water_persisted": {
+          "type": "boolean"
+        },
+        "external_witness_generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "external_witness_independent": {
+          "type": "boolean"
+        }
+      }
+    },
+    "frontier_certificate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "certificate_id",
+        "resource_id",
+        "committed_through_epoch",
+        "observed_owner_revision",
+        "read_consistency",
+        "complete",
+        "independent",
+        "witness_qualified",
+        "allowed_lateness_epochs",
+        "source_closed",
+        "late_data_policy",
+        "witness_ref"
+      ],
+      "properties": {
+        "certificate_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "committed_through_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_owner_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "read_consistency": {
+          "enum": [
+            "linearizable",
+            "stale",
+            "unknown"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "independent": {
+          "type": "boolean"
+        },
+        "witness_qualified": {
+          "type": "boolean"
+        },
+        "allowed_lateness_epochs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_closed": {
+          "type": "boolean"
+        },
+        "late_data_policy": {
+          "enum": [
+            "closed",
+            "target_fence",
+            "unknown"
+          ]
+        },
+        "witness_ref": {
+          "type": "string"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tx_id",
+        "branch_id",
+        "semantic_operation_id",
+        "effect_id",
+        "resource_id",
+        "epoch",
+        "operation_digest",
+        "idempotency_key",
+        "grant_id",
+        "policy_epoch",
+        "resource_version_precondition"
+      ],
+      "properties": {
+        "tx_id": {
+          "type": "string"
+        },
+        "branch_id": {
+          "type": "string"
+        },
+        "semantic_operation_id": {
+          "type": "string"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "operation_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "idempotency_key": {
+          "type": "string"
+        },
+        "grant_id": {
+          "type": "string"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "resource_version_precondition": {
+          "type": "string"
+        }
+      }
+    },
+    "fence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "token_id",
+        "resource_id",
+        "generation",
+        "tx_id",
+        "branch_id",
+        "grant_id",
+        "policy_epoch",
+        "operation_digest",
+        "frontier_certificate_id",
+        "owner_revision_at_issue",
+        "authenticated"
+      ],
+      "properties": {
+        "token_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tx_id": {
+          "type": "string"
+        },
+        "branch_id": {
+          "type": "string"
+        },
+        "grant_id": {
+          "type": "string"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "operation_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "frontier_certificate_id": {
+          "type": "string"
+        },
+        "owner_revision_at_issue": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "authenticated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "target_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "decision",
+        "decision_reason",
+        "resource_id",
+        "tx_id",
+        "branch_id",
+        "effect_id",
+        "token_id",
+        "token_generation",
+        "grant_id",
+        "policy_epoch",
+        "operation_digest",
+        "idempotency_key",
+        "observed_highwater_at_commit",
+        "observed_owner_revision_at_commit",
+        "observed_generation_at_check",
+        "resource_version_before",
+        "resource_version_after",
+        "atomic_compare_and_write",
+        "effect_observed"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "accepted",
+            "rejected"
+          ]
+        },
+        "decision_reason": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "tx_id": {
+          "type": "string"
+        },
+        "branch_id": {
+          "type": "string"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "token_id": {
+          "type": "string"
+        },
+        "token_generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "grant_id": {
+          "type": "string"
+        },
+        "policy_epoch": {
+          "type": "string"
+        },
+        "operation_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "idempotency_key": {
+          "type": "string"
+        },
+        "observed_highwater_at_commit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_owner_revision_at_commit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observed_generation_at_check": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resource_version_before": {
+          "type": "string"
+        },
+        "resource_version_after": {
+          "type": "string"
+        },
+        "atomic_compare_and_write": {
+          "type": "boolean"
+        },
+        "effect_observed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "control_class",
+        "resource_state",
+        "frontier_certificate",
+        "operation",
+        "fence",
+        "target_events",
+        "reconciliation",
+        "expected"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^CFF-[0-9]{3}$"
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "resource_state": {
+          "$ref": "#/$defs/resource_state"
+        },
+        "frontier_certificate": {
+          "$ref": "#/$defs/frontier_certificate"
+        },
+        "operation": {
+          "$ref": "#/$defs/operation"
+        },
+        "fence": {
+          "$ref": "#/$defs/fence"
+        },
+        "target_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/target_event"
+          }
+        },
+        "reconciliation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "complete",
+            "independent",
+            "observed_event_ids"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "independent": {
+              "type": "boolean"
+            },
+            "observed_event_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "frontier_state",
+            "stale_token_acceptance_count",
+            "late_epoch_acceptance_count",
+            "wrong_binding_acceptance_count",
+            "policy_epoch_acceptance_count",
+            "stale_resource_version_acceptance_count",
+            "stale_frontier_acceptance_count",
+            "toctou_race_count",
+            "high_water_regression_count",
+            "atomic_fence_failure_count",
+            "target_owner_revision_mismatch_count",
+            "target_high_water_mismatch_count",
+            "false_reject_count",
+            "target_effect_count",
+            "disposition"
+          ],
+          "properties": {
+            "frontier_state": {
+              "enum": [
+                "ready",
+                "stale",
+                "behind",
+                "unknown",
+                "late_data_open"
+              ]
+            },
+            "stale_token_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "late_epoch_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "wrong_binding_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "policy_epoch_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale_resource_version_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale_frontier_acceptance_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "toctou_race_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high_water_regression_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "atomic_fence_failure_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "target_owner_revision_mismatch_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "target_high_water_mismatch_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "false_reject_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "target_effect_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "disposition": {
+              "enum": [
+                "qualified_allow",
+                "qualified_deny",
+                "false_reject",
+                "indeterminate",
+                "violation"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
