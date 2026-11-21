@@ -130,6 +130,16 @@ class TransactionalLifecycleTests(unittest.TestCase):
         case(suite, "TELR-006")["target_contract"]["idempotency_keys_supported"] = False
         reject(suite, schema)
 
+    def test_target_effect_must_match_operation_identity(self):
+        suite, schema = inputs()
+        case(suite, "TELR-002")["target_ledger"]["entries"][0]["semantic_operation_id"] = "different-intent"
+        reject(suite, schema)
+
+    def test_target_effect_must_match_canonical_operation_effect(self):
+        suite, schema = inputs()
+        case(suite, "TELR-002")["target_ledger"]["entries"][0]["effect_id"] = "effect:payment-create"
+        reject(suite, schema)
+
     def test_compensation_requires_original_target_commit(self):
         suite, schema = inputs()
         current = case(suite, "TELR-014")
