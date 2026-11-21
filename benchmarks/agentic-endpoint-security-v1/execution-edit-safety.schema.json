@@ -142,7 +142,8 @@
         "semantic_operation_id",
         "effect_id",
         "argument_digest",
-        "nonce_id"
+        "nonce_id",
+        "result_id"
       ],
       "properties": {
         "semantic_operation_id": {
@@ -157,6 +158,10 @@
         },
         "nonce_id": {
           "type": "string"
+        },
+        "result_id": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
