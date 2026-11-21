@@ -762,7 +762,7 @@
       "operation": {
         "semantic_operation_id": "intent-009",
         "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-        "effect_id": "effect:record-write",
+        "effect_id": "effect:payment-create",
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "expected_batch_items": [],
         "checkpoint_restore_seen": true
@@ -1223,9 +1223,9 @@
       "scenario_id": "TELR-014",
       "control_class": "positive_control",
       "operation": {
-        "semantic_operation_id": "intent:TELR-014",
+        "semantic_operation_id": "intent-014",
         "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-        "effect_id": "effect:record-write",
+        "effect_id": "effect:payment-create",
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "expected_batch_items": [],
         "checkpoint_restore_seen": false
@@ -1752,9 +1752,9 @@
       "scenario_id": "TELR-020",
       "control_class": "positive_control",
       "operation": {
-        "semantic_operation_id": "intent:TELR-020",
+        "semantic_operation_id": "intent-020",
         "intent_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-        "effect_id": "effect:record-write",
+        "effect_id": "effect:payment-create",
         "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "expected_batch_items": [],
         "checkpoint_restore_seen": false
