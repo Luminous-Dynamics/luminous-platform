@@ -1,0 +1,1439 @@
+{
+  "profile": "luminous-tool-capability-realization",
+  "version": "0.1",
+  "status": "synthetic_fixture_suite_not_executed",
+  "no_aggregate_score": true,
+  "canonical_effect_owner": "CAPC-v0.1",
+  "cases": [
+    {
+      "scenario_id": "CARI-001",
+      "control_class": "positive_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "2222222222222222222222222222222222222222",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static:read"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "alias:sdk-read",
+          "evidence_ref": "static:alias"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "matched"
+      }
+    },
+    {
+      "scenario_id": "CARI-002",
+      "control_class": "negative_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "3333333333333333333333333333333333333333",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:doc-write",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.write",
+            "effect_class": "write",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "helper:file-write",
+          "evidence_ref": "static:helper"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "implementation_expands_declaration"
+      }
+    },
+    {
+      "scenario_id": "CARI-003",
+      "control_class": "negative_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "4444444444444444444444444444444444444444",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:doc-write",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.write",
+            "effect_class": "write",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "helper:file-write",
+          "evidence_ref": "static:helper"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:doc-write",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.write",
+            "effect_class": "write",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "oracle:write"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 2,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 1,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "observed_undeclared_effect"
+      }
+    },
+    {
+      "scenario_id": "CARI-004",
+      "control_class": "positive_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "5555555555555555555555555555555555555555",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        },
+        {
+          "effect_id": "effect:doc-delete",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.delete",
+          "effect_class": "delete",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 2,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 1,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "declaration_overstates_implementation"
+      }
+    },
+    {
+      "scenario_id": "CARI-005",
+      "control_class": "indeterminate_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "6666666666666666666666666666666666666666",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        },
+        {
+          "effect": null,
+          "reachability": "unresolved",
+          "path_ref": "dynamic:plugin-loader",
+          "evidence_ref": "analysis-gap:plugin"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": false,
+        "unresolved_constructs": [
+          "dynamic plugin set unresolved"
+        ]
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 1,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CARI-006",
+      "control_class": "negative_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "7777777777777777777777777777777777777777",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:process-spawn",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:process-surface",
+            "operation": "process.spawn",
+            "effect_class": "execute",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:host",
+            "credential_lineage": "credential:task"
+          },
+          "reachability": "conditional",
+          "path_ref": "ffi:host-bridge",
+          "evidence_ref": "static:ffi-edge"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "implementation_expands_declaration"
+      }
+    },
+    {
+      "scenario_id": "CARI-007",
+      "control_class": "negative_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "8888888888888888888888888888888888888888",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:network-request",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:network-egress",
+            "operation": "network.request",
+            "effect_class": "network",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:http",
+            "credential_lineage": "credential:task"
+          },
+          "evidence_ref": "oracle:unexpected-egress"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 2,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 1,
+        "observed_unmodeled_effect_count": 1,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "observed_unmodeled_effect"
+      }
+    },
+    {
+      "scenario_id": "CARI-008",
+      "control_class": "indeterminate_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "9999999999999999999999999999999999999999",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:doc-write",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.write",
+            "effect_class": "write",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "untrusted:effect-claim"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": false
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 2,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 1,
+        "observed_unmodeled_effect_count": 1,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": false,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CARI-009",
+      "control_class": "positive_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "build-a",
+        "source_commit": "1111111111111111111111111111111111111111",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:build-a",
+        "binary_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "matched"
+      }
+    },
+    {
+      "scenario_id": "CARI-010",
+      "control_class": "negative_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "build-b",
+        "source_commit": "2222222222222222222222222222222222222222",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:build-b",
+        "binary_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        },
+        {
+          "effect": {
+            "effect_id": "effect:process-spawn",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:process-surface",
+            "operation": "process.spawn",
+            "effect_class": "execute",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:host",
+            "credential_lineage": "credential:task"
+          },
+          "reachability": "reachable",
+          "path_ref": "feature:host-tools",
+          "evidence_ref": "static:feature"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 2,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 1,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "implementation_expands_declaration"
+      }
+    },
+    {
+      "scenario_id": "CARI-011",
+      "control_class": "indeterminate_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "unbound-build",
+        "source_commit": "3333333333333333333333333333333333333333",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:unbound-build",
+        "binary_digest": null,
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": true,
+        "unresolved_constructs": []
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 0,
+        "artifact_binding_complete": false,
+        "observer_qualified": true,
+        "disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CARI-012",
+      "control_class": "indeterminate_control",
+      "artifact_binding": {
+        "tool_name": "records.lookup",
+        "human_version_label": "1.0.0",
+        "comparison_group_id": "capability-study",
+        "variant_id": "default",
+        "source_commit": "4444444444444444444444444444444444444444",
+        "source_tree_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "dependency_lock_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "build_provenance_ref": "build-provenance:default",
+        "binary_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "runtime_config_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "tool_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "declared_effects": [
+        {
+          "effect_id": "effect:doc-read",
+          "owner_id": "owner:records",
+          "tenant_id": "tenant-a",
+          "resource_id": "resource:doc-17",
+          "operation": "document.read",
+          "effect_class": "read",
+          "principal_id": "principal:tool",
+          "workload_id": "workload:agent",
+          "session_id": "session:case",
+          "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "resource_version_precondition": "version:7",
+          "policy_epoch": "epoch:9",
+          "service_id": "service:records",
+          "credential_lineage": "credential:tool"
+        }
+      ],
+      "implementation_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "reachability": "reachable",
+          "path_ref": "entry:lookup",
+          "evidence_ref": "static-proof:lookup"
+        },
+        {
+          "effect": null,
+          "reachability": "unresolved",
+          "path_ref": "remote:extension",
+          "evidence_ref": "analysis-gap:remote"
+        }
+      ],
+      "static_analysis": {
+        "analyser_id": "static-effect-surface-v0",
+        "analyser_version": "0.1",
+        "analysis_manifest_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "complete": false,
+        "unresolved_constructs": [
+          "opaque remote extension"
+        ]
+      },
+      "observed_effects": [
+        {
+          "effect": {
+            "effect_id": "effect:doc-read",
+            "owner_id": "owner:records",
+            "tenant_id": "tenant-a",
+            "resource_id": "resource:doc-17",
+            "operation": "document.read",
+            "effect_class": "read",
+            "principal_id": "principal:tool",
+            "workload_id": "workload:agent",
+            "session_id": "session:case",
+            "argument_constraint_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "resource_version_precondition": "version:7",
+            "policy_epoch": "epoch:9",
+            "service_id": "service:records",
+            "credential_lineage": "credential:tool"
+          },
+          "evidence_ref": "effect-observation:lookup"
+        }
+      ],
+      "observer": {
+        "complete": true,
+        "independent": true
+      },
+      "expected": {
+        "declared_effect_count": 1,
+        "implementation_effect_count": 1,
+        "observed_effect_count": 1,
+        "potential_undeclared_effect_count": 0,
+        "observed_undeclared_effect_count": 0,
+        "observed_unmodeled_effect_count": 0,
+        "declaration_overstatement_count": 0,
+        "unresolved_implementation_path_count": 1,
+        "artifact_binding_complete": true,
+        "observer_qualified": true,
+        "disposition": "indeterminate"
+      }
+    }
+  ]
+}
