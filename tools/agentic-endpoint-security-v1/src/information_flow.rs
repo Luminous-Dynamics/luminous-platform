@@ -300,9 +300,12 @@ impl Lineage {
 }
 
 fn digest_is_well_formed(value: &str) -> bool {
-    value
-        .strip_prefix("sha256:")
-        .is_some_and(|hex| hex.len() == 64 && hex.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
+    value.strip_prefix("sha256:").is_some_and(|hex| {
+        hex.len() == 64
+            && hex
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+    })
 }
 
 fn find_valid_declassification<'a>(
@@ -382,9 +385,7 @@ fn derive_lineage(
             faults.unknown_nodes.insert(node_id.to_owned());
         }
         for parent_id in &node.parents {
-            let parent = derive_lineage(
-                parent_id, input, sources, nodes, memo, visiting, faults,
-            );
+            let parent = derive_lineage(parent_id, input, sources, nodes, memo, visiting, faults);
             value.sources.extend(parent.sources);
             if parent.sensitivity.rank() > value.sensitivity.rank() {
                 value.sensitivity = parent.sensitivity;
@@ -511,7 +512,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
     }
     if action_lineage.sources.iter().any(|source_id| {
         sources.get(source_id).is_some_and(|source| {
-            matches!(source.class, SourceClass::ExternalUntrusted | SourceClass::AgentGenerated)
+            matches!(
+                source.class,
+                SourceClass::ExternalUntrusted | SourceClass::AgentGenerated
+            )
         })
     }) {
         action_decision = Decision::Denied;
@@ -521,7 +525,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
         action_decision = Decision::Indeterminate;
     }
 
-    let sink = input.sinks.iter().find(|sink| sink.id == input.flow.sink_id);
+    let sink = input
+        .sinks
+        .iter()
+        .find(|sink| sink.id == input.flow.sink_id);
     let mut flow_decision = if duplicate_identity {
         Decision::Denied
     } else {
@@ -536,7 +543,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
 
     let mut bindings: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for binding in &input.flow.bindings {
-        bindings.entry(binding.field.clone()).or_default().push(binding.node_id.clone());
+        bindings
+            .entry(binding.field.clone())
+            .or_default()
+            .push(binding.node_id.clone());
     }
     let rules: BTreeMap<String, ParameterRule> = input
         .parameter_rules
@@ -570,11 +580,21 @@ pub fn evaluate(input: &Input) -> Evaluation {
 
     if let Some(sink) = sink {
         for (field, rule) in &rules {
-            let Some(node_ids) = bindings.get(field) else { continue; };
-            if node_ids.len() != 1 { continue; }
+            let Some(node_ids) = bindings.get(field) else {
+                continue;
+            };
+            if node_ids.len() != 1 {
+                continue;
+            }
             let node_id = &node_ids[0];
             let value = derive_lineage(
-                node_id, input, &sources, &nodes, &mut memo, &mut visiting, &mut faults,
+                node_id,
+                input,
+                &sources,
+                &nodes,
+                &mut memo,
+                &mut visiting,
+                &mut faults,
             );
             if value.unknown {
                 if flow_decision != Decision::Denied {
@@ -588,7 +608,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
                 source_rule_failures += 1;
             }
             if value.sources.is_empty()
-                || value.sources.iter().any(|id| !rule.allowed_source_ids.contains(id))
+                || value
+                    .sources
+                    .iter()
+                    .any(|id| !rule.allowed_source_ids.contains(id))
             {
                 flow_decision = Decision::Denied;
                 source_rule_failures += 1;
@@ -599,13 +622,18 @@ pub fn evaluate(input: &Input) -> Evaluation {
                 .filter_map(|id| sources.get(id).map(|source| source.class))
                 .collect();
             if source_classes.len() != value.sources.len()
-                || source_classes.iter().any(|class| !rule.allowed_source_classes.contains(class))
+                || source_classes
+                    .iter()
+                    .any(|class| !rule.allowed_source_classes.contains(class))
             {
                 flow_decision = Decision::Denied;
                 source_rule_failures += 1;
             }
             if source_classes.iter().any(|class| {
-                matches!(class, SourceClass::ExternalUntrusted | SourceClass::AgentGenerated)
+                matches!(
+                    class,
+                    SourceClass::ExternalUntrusted | SourceClass::AgentGenerated
+                )
             }) && !rule.allow_untrusted
             {
                 flow_decision = Decision::Denied;
@@ -615,7 +643,11 @@ pub fn evaluate(input: &Input) -> Evaluation {
                 flow_decision = Decision::Denied;
                 cross_tenant_flow_count += 1;
             }
-            if value.purposes.iter().any(|purpose| purpose != &sink.purpose) {
+            if value
+                .purposes
+                .iter()
+                .any(|purpose| purpose != &sink.purpose)
+            {
                 flow_decision = Decision::Denied;
                 cross_purpose_flow_count += 1;
             }
@@ -645,8 +677,7 @@ pub fn evaluate(input: &Input) -> Evaluation {
         || flow_decision == Decision::Denied
     {
         AdmissionDecision::Deny
-    } else if action_decision == Decision::Indeterminate
-        || flow_decision == Decision::Indeterminate
+    } else if action_decision == Decision::Indeterminate || flow_decision == Decision::Indeterminate
     {
         AdmissionDecision::Hold
     } else {
@@ -662,8 +693,8 @@ pub fn evaluate(input: &Input) -> Evaluation {
         && admission_decision != AdmissionDecision::Allow;
 
     let observer_ok = input.observer.complete && input.observer.independent;
-    let independently_observed_effect = observer_ok
-        && input.flow.effect_observation == EffectObservation::Observed;
+    let independently_observed_effect =
+        observer_ok && input.flow.effect_observation == EffectObservation::Observed;
     let mut observed_payload_mismatches = 0usize;
     if independently_observed_effect {
         let expected: BTreeMap<_, _> = input
@@ -682,7 +713,11 @@ pub fn evaluate(input: &Input) -> Evaluation {
             .iter()
             .map(|binding| (binding.field.clone(), binding.value_digest.clone()))
             .collect();
-        for key in expected.keys().chain(observed.keys()).collect::<BTreeSet<_>>() {
+        for key in expected
+            .keys()
+            .chain(observed.keys())
+            .collect::<BTreeSet<_>>()
+        {
             if expected.get(*key) != observed.get(*key) {
                 observed_payload_mismatches += 1;
             }
@@ -727,7 +762,10 @@ pub fn evaluate(input: &Input) -> Evaluation {
         cross_purpose_flow_count,
         untrusted_parameter_count,
         action_origin_violations,
-        declassification_receipt_failures: faults.declass_failure_nodes.union(&sink_declass_failure_nodes).count(),
+        declassification_receipt_failures: faults
+            .declass_failure_nodes
+            .union(&sink_declass_failure_nodes)
+            .count(),
         independently_observed_effect,
         observed_payload_mismatches,
         unauthorized_disclosure,
@@ -740,7 +778,12 @@ pub fn evaluate(input: &Input) -> Evaluation {
 mod tests {
     use super::*;
 
-    fn source(id: &str, class: SourceClass, integrity: Integrity, sensitivity: Sensitivity) -> SourceRecord {
+    fn source(
+        id: &str,
+        class: SourceClass,
+        integrity: Integrity,
+        sensitivity: Sensitivity,
+    ) -> SourceRecord {
         SourceRecord {
             id: id.into(),
             class,
@@ -924,7 +967,9 @@ mod tests {
         input.task.required_action = None;
         input.task.allowed_actions = ["payment.validate".into()].into_iter().collect();
         input.flow.action = "system.delete".into();
-        input.sinks[0].allowed_actions.insert("system.delete".into());
+        input.sinks[0]
+            .allowed_actions
+            .insert("system.delete".into());
         let result = evaluate(&input);
         assert_eq!(result.action_decision, Decision::Denied);
         assert_eq!(result.admission_decision, AdmissionDecision::Deny);
@@ -952,17 +997,19 @@ mod tests {
         input.nodes.push(public_output);
         input.sinks[0].sensitivity_ceiling = Sensitivity::Public;
         input.flow.bindings[0].node_id = "node:declassified".into();
-        input.declassification_receipts.push(DeclassificationReceipt {
-            id: "declass:1".into(),
-            source_ids: ["source:user".into()].into_iter().collect(),
-            output_node_id: "node:declassified".into(),
-            sink_id: "sink:payments".into(),
-            audience: "finance".into(),
-            purpose: "task.process".into(),
-            owner_id: "owner:data".into(),
-            valid: true,
-            expires_at_step: 20,
-        });
+        input
+            .declassification_receipts
+            .push(DeclassificationReceipt {
+                id: "declass:1".into(),
+                source_ids: ["source:user".into()].into_iter().collect(),
+                output_node_id: "node:declassified".into(),
+                sink_id: "sink:payments".into(),
+                audience: "finance".into(),
+                purpose: "task.process".into(),
+                owner_id: "owner:data".into(),
+                valid: true,
+                expires_at_step: 20,
+            });
         input.flow.observed_bindings[0].value_digest = format!("sha256:{}", "d".repeat(64));
         let result = evaluate(&input);
         assert_eq!(result.flow_decision, Decision::Eligible);
@@ -991,17 +1038,19 @@ mod tests {
         input.nodes.push(public_output);
         input.sinks[0].sensitivity_ceiling = Sensitivity::Public;
         input.flow.bindings[0].node_id = "node:declassified".into();
-        input.declassification_receipts.push(DeclassificationReceipt {
-            id: "declass:expired".into(),
-            source_ids: ["source:user".into()].into_iter().collect(),
-            output_node_id: "node:declassified".into(),
-            sink_id: "sink:payments".into(),
-            audience: "finance".into(),
-            purpose: "task.process".into(),
-            owner_id: "owner:data".into(),
-            valid: true,
-            expires_at_step: 5,
-        });
+        input
+            .declassification_receipts
+            .push(DeclassificationReceipt {
+                id: "declass:expired".into(),
+                source_ids: ["source:user".into()].into_iter().collect(),
+                output_node_id: "node:declassified".into(),
+                sink_id: "sink:payments".into(),
+                audience: "finance".into(),
+                purpose: "task.process".into(),
+                owner_id: "owner:data".into(),
+                valid: true,
+                expires_at_step: 5,
+            });
         let result = evaluate(&input);
         assert_eq!(result.flow_decision, Decision::Denied);
         assert_eq!(result.declassification_receipt_failures, 1);
@@ -1054,8 +1103,7 @@ mod tests {
         let mut input = base_input();
         input.sources[0].class = SourceClass::Memory;
         input.sources[0].revoked_at_step = Some(8);
-        input.parameter_rules[0].allowed_source_ids =
-            ["source:user".into()].into_iter().collect();
+        input.parameter_rules[0].allowed_source_ids = ["source:user".into()].into_iter().collect();
         input.parameter_rules[0].allowed_source_classes =
             [SourceClass::Memory].into_iter().collect();
         let result = evaluate(&input);
