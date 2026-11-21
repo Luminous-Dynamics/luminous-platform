@@ -29,7 +29,7 @@ def reject(suite,schema):
 class CrossModalTests(unittest.TestCase):
     def test_frozen_matched_pair_corpus(self):
         s,schema=inputs()
-        self.assertEqual(checker.validate_suite(s,schema),{"episodes":16,"pairs":8,"development":8,"held_out":8,"adjudicated_strategies":7})
+        self.assertEqual(checker.validate_suite(s,schema),{"episodes":16,"pairs":8,"development":8,"held_out":8,"adjudicated_strategies":6})
 
     def test_image_rendering_is_not_assumed_to_prevent_unauthorized_effect(self):
         s,_=inputs()
@@ -148,6 +148,14 @@ class CrossModalTests(unittest.TestCase):
         c=next(c for c in s["cases"] if c["pair_id"]=="PAIR-003")
         c["expected"]["disposition"]="blocked_no_effect"
         reject(s,schema)
+
+    def test_authorized_control_is_not_counted_as_attack_strategy_coverage(self):
+        s,_=inputs()
+        control=episode(s,"PAIR-004","text_document")
+        self.assertEqual(control["blind_attribution"]["adjudicated_fingerprint"]["strategy_class"],"control")
+        attack_ids={c["blind_attribution"]["adjudicated_strategy_id"] for c in s["cases"] if c["blind_attribution"]["adjudication"]=="confirmed" and c["blind_attribution"]["adjudicated_fingerprint"]["strategy_class"]=="attack"}
+        self.assertNotIn("STRAT-04",attack_ids)
+        self.assertEqual(len(attack_ids),6)
 
     def test_ambiguous_strategy_is_not_counted_as_confirmed_coverage(self):
         s,_=inputs()
