@@ -141,6 +141,11 @@ class TransactionalLifecycleTests(unittest.TestCase):
         self.assertEqual(outcome["target_client_ledger_conflict_count"], 1)
         self.assertEqual(outcome["disposition"], "violation")
 
+    def test_partial_batch_cannot_be_claimed_complete(self):
+        suite, schema = inputs()
+        case(suite, "TELR-011")["client_ledger"]["completed_claim"] = True
+        reject(suite, schema)
+
     def test_idempotency_contract_cannot_be_silently_disabled(self):
         suite, schema = inputs()
         case(suite, "TELR-006")["target_contract"]["idempotency_keys_supported"] = False
