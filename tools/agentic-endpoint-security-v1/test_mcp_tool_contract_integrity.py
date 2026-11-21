@@ -104,9 +104,9 @@ class MTCITests(unittest.TestCase):
   reject(s,schema)
 
  def test_missing_required_scope_cannot_be_recovered_by_other_authority_fields(self):
-  s,schema=inputs();c=case(s,"MTCI-007")
-  c["authority"]["token_audience"]=c["authority"]["expected_audience"]
+  s,schema=inputs();c=case(s,"MTCI-014")
   c["authority"]["required_scopes"]=["records.write"]
+  c["authority"]["granted_scopes"]=["records.write"]
   reject(s,schema)
 
 if __name__=="__main__":unittest.main()
