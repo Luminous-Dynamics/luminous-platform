@@ -32,7 +32,7 @@ class CommitFrontierFencingTests(unittest.TestCase):
     def test_frozen_fence_panel(self):
         suite, schema = inputs()
         self.assertEqual(checker.validate_suite(suite, schema), {
-            "cases": 26, "positive_control": 7, "negative_control": 16, "indeterminate_control": 3
+            "cases": 28, "positive_control": 7, "negative_control": 17, "indeterminate_control": 4
         })
 
     def test_current_resource_generation_allows_write(self):
@@ -128,6 +128,16 @@ class CommitFrontierFencingTests(unittest.TestCase):
     def test_incomplete_frontier_witness_stays_indeterminate(self):
         suite, _ = inputs()
         self.assertEqual(checker.evaluate(case(suite, "CFF-023"))["disposition"], "indeterminate")
+
+    def test_late_arrival_is_rejected_while_source_remains_open(self):
+        suite, _ = inputs()
+        self.assertEqual(checker.evaluate(case(suite, "CFF-027"))["disposition"], "qualified_deny")
+
+    def test_unknown_late_data_policy_remains_indeterminate(self):
+        suite, _ = inputs()
+        outcome = checker.evaluate(case(suite, "CFF-028"))
+        self.assertEqual(outcome["frontier_state"], "late_data_open")
+        self.assertEqual(outcome["disposition"], "indeterminate")
 
     def test_allowed_late_data_still_needs_target_fence(self):
         suite, _ = inputs()
