@@ -121,6 +121,28 @@ class ProgressFrontierTests(unittest.TestCase):
         suite,_=inputs()
         self.assertEqual(checker.evaluate(case(suite,"PFTE-022"))["frontier_status"],"behind")
 
+    def test_compensation_must_reference_same_transaction_externalized_effect(self):
+        suite, schema = inputs()
+        current = case(suite, "PFTE-011")
+        compensation = next(item for item in current["target_events"] if item["event_kind"] == "compensation")
+        compensation["compensates_for"] = "ev-006"
+        reject(suite, schema)
+
+    def test_one_externalized_effect_cannot_receive_duplicate_compensations(self):
+        suite, _ = inputs()
+        current = copy.deepcopy(case(suite, "PFTE-011"))
+        compensation = next(item for item in current["target_events"] if item["event_id"] == "ev-11d")
+        compensation["compensates_for"] = "ev-11b"
+        outcome = checker.evaluate(current)
+        self.assertGreater(outcome["compensation_order_violation_count"], 0)
+        self.assertEqual(outcome["disposition"], "violation")
+
+    def test_target_event_sequences_are_unique(self):
+        suite, schema = inputs()
+        current = case(suite, "PFTE-021")
+        current["target_events"][1]["sequence"] = current["target_events"][0]["sequence"]
+        reject(suite, schema)
+
     def test_duplicate_target_event_id_is_rejected(self):
         suite,schema=inputs()
         current=case(suite,"PFTE-001")
