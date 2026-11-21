@@ -239,6 +239,8 @@ class TransactionalLifecycleTests(unittest.TestCase):
         compensation = next(entry for entry in current["target_ledger"]["entries"] if entry["kind"] == "compensation")
         original = next(entry for entry in current["target_ledger"]["entries"] if entry["kind"] == "effect")
         compensation["grant_id"] = original["grant_id"]
+        compensation_attempt = next(a for a in current["attempts"] if a["operation_id"] == compensation["operation_id"])
+        compensation_attempt["grant_id"] = original["grant_id"]
         reject(suite, schema)
 
     def test_target_commit_must_bind_to_dispatch_authority_receipt(self):
