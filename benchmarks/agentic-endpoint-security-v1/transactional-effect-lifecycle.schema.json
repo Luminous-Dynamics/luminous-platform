@@ -524,7 +524,8 @@
             "target_client_ledger_conflict_count",
             "compensation_link_violation_count",
             "reconciled_state",
-            "disposition"
+            "disposition",
+            "false_completion_claim_count"
           ],
           "properties": {
             "duplicate_effect_count": {
@@ -575,6 +576,10 @@
                 "indeterminate",
                 "violation"
               ]
+            },
+            "false_completion_claim_count": {
+              "type": "integer",
+              "minimum": 0
             }
           }
         }
