@@ -1,0 +1,549 @@
+{
+  "profile": "luminous-observer-common-cause-fault-injection",
+  "version": "0.1",
+  "status": "synthetic_fault_plan_contract_not_executed",
+  "no_aggregate_score": true,
+  "oic_profile_id": "critical_effect_truth_v0",
+  "required_disjoint_domains": [
+    "process_runtime",
+    "event_stream",
+    "signing_root",
+    "credential_root",
+    "clock_authority",
+    "storage_backend",
+    "control_plane"
+  ],
+  "minimum_independent_witnesses": 2,
+  "cases": [
+    {
+      "scenario_id": "CFI-001",
+      "control_class": "positive_control",
+      "oic_scenario_id": "OIC-001",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "maximum_independent_witnesses": 3,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "CFI-002",
+      "control_class": "positive_control",
+      "oic_scenario_id": "OIC-001",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "b",
+          "c"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "process_runtime",
+            "dependency_ref": "a:process_runtime"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a"
+        ],
+        "surviving_witness_ids": [
+          "b",
+          "c"
+        ],
+        "maximum_independent_witnesses": 2,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "CFI-003",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-002",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "event_stream",
+            "dependency_ref": "shared:event_stream"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-004",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-003",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "signing_root",
+            "dependency_ref": "shared:signing_root"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-005",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-004",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "credential_root",
+            "dependency_ref": "shared:credential_root"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-006",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-005",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "clock_authority",
+            "dependency_ref": "shared:clock_authority"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-007",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-006",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "storage_backend",
+            "dependency_ref": "shared:storage_backend"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-008",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-007",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "control_plane",
+            "dependency_ref": "shared:control_plane"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-009",
+      "control_class": "indeterminate_control",
+      "oic_scenario_id": "OIC-009",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "unknown"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b"
+        ],
+        "maximum_independent_witnesses": 2,
+        "observation_agreement": "conflict",
+        "final_disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CFI-010",
+      "control_class": "positive_control",
+      "oic_scenario_id": "OIC-010",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "no_effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b"
+        ],
+        "maximum_independent_witnesses": 2,
+        "observation_agreement": "no_effect",
+        "final_disposition": "qualified_no_effect"
+      }
+    },
+    {
+      "scenario_id": "CFI-011",
+      "control_class": "positive_control",
+      "oic_scenario_id": "OIC-014",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "no_effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "maximum_independent_witnesses": 2,
+        "observation_agreement": "no_effect",
+        "final_disposition": "qualified_no_effect"
+      }
+    },
+    {
+      "scenario_id": "CFI-012",
+      "control_class": "indeterminate_control",
+      "oic_scenario_id": "OIC-016",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "unknown"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b"
+        ],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "unknown",
+        "final_disposition": "indeterminate"
+      }
+    },
+    {
+      "scenario_id": "CFI-013",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-011",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b"
+        ],
+        "maximum_independent_witnesses": 0,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-014",
+      "control_class": "negative_control",
+      "oic_scenario_id": "OIC-001",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "c"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "process_runtime",
+            "dependency_ref": "a:process_runtime"
+          },
+          {
+            "domain": "event_stream",
+            "dependency_ref": "b:event_stream"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a",
+          "b"
+        ],
+        "surviving_witness_ids": [
+          "c"
+        ],
+        "maximum_independent_witnesses": 1,
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
+      }
+    },
+    {
+      "scenario_id": "CFI-015",
+      "control_class": "positive_control",
+      "oic_scenario_id": "OIC-001",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "b",
+          "c"
+        ],
+        "recovered_witnesses": [
+          {
+            "witness_id": "a",
+            "from_attestation_ref": "attestation:a",
+            "from_evidence_epoch": 1,
+            "to_evidence_epoch": 2,
+            "replacement_witness": {
+              "witness_id": "a",
+              "role": "independent_observer",
+              "domains": {
+                "process_runtime": "a:process_runtime:recovered-epoch-2",
+                "event_stream": "a:event_stream",
+                "signing_root": "a:signing_root",
+                "credential_root": "a:credential_root",
+                "clock_authority": "a:clock_authority",
+                "storage_backend": "a:storage_backend",
+                "control_plane": "a:control_plane",
+                "operator": "a:operator",
+                "provider": "a:provider"
+              },
+              "observation": "effect",
+              "evidence_ref": "evidence:a:recovered-epoch-2",
+              "attestation_ref": "attestation:a:recovered-epoch-2"
+            }
+          }
+        ]
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [
+          {
+            "domain": "process_runtime",
+            "dependency_ref": "a:process_runtime"
+          }
+        ],
+        "fault_actually_injected": "confirmed",
+        "resource_effect_truth": "effect"
+      },
+      "expected": {
+        "impacted_witness_ids": [
+          "a"
+        ],
+        "surviving_witness_ids": [
+          "a",
+          "b",
+          "c"
+        ],
+        "maximum_independent_witnesses": 3,
+        "observation_agreement": "effect",
+        "final_disposition": "qualified_effect"
+      }
+    },
+    {
+      "scenario_id": "CFI-016",
+      "control_class": "indeterminate_control",
+      "oic_scenario_id": "OIC-008",
+      "fault_plan_committed_before_episode": true,
+      "fault_plan_visibility": "withheld_until_disposition_commit",
+      "evaluation_input": {
+        "available_witness_ids": [
+          "a",
+          "b"
+        ],
+        "recovered_witnesses": []
+      },
+      "posthoc_ground_truth": {
+        "fault_plan": [],
+        "fault_actually_injected": "not_injected",
+        "resource_effect_truth": "unknown"
+      },
+      "expected": {
+        "impacted_witness_ids": [],
+        "surviving_witness_ids": [
+          "a",
+          "b"
+        ],
+        "maximum_independent_witnesses": 1,
+        "observation_agreement": "unknown",
+        "final_disposition": "indeterminate"
+      }
+    }
+  ]
+}

@@ -1227,7 +1227,9 @@
         "witness_count": 3,
         "known_domain_witnesses": 3,
         "unknown_domain_witnesses": 0,
-        "subject_correlated_witnesses": [],
+        "subject_correlated_witnesses": [
+          "c"
+        ],
         "correlated_pair_count": 1,
         "correlated_pairs": [
           {
@@ -1239,20 +1241,18 @@
             ]
           }
         ],
-        "maximum_independent_witnesses": 2,
+        "maximum_independent_witnesses": 1,
         "maximum_independent_sets": [
           [
-            "a",
-            "c"
+            "a"
           ],
           [
-            "b",
-            "c"
+            "b"
           ]
         ],
         "quorum": 2,
-        "observation_agreement": "effect",
-        "final_disposition": "qualified_effect"
+        "observation_agreement": "none",
+        "final_disposition": "unqualified"
       }
     },
     {
