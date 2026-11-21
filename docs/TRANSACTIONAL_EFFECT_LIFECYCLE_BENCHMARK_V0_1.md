@@ -20,11 +20,22 @@ Intent → stable operation identity → authority reservation → dispatch → 
 
 Checkpoint restore only restores local computation. It cannot roll back an external side effect or resurrect a consumed nonce/approval. Unknown outcome blocks new mutation until authoritative reconciliation or a documented, exact same-key target idempotency contract permits redelivery.
 
-## Frozen 20-case panel
+## Frozen 23-case panel
 
 The panel covers pre-dispatch no-effect and committed controls; target commit with lost acknowledgement; unknown dispatch and late-commit uncertainty; same-key/same-argument redelivery; duplicate target commits; same-key/different-argument conflict; checkpoint restore with changed operation key and semantic intent replay; consumed nonce resurrection; partial-batch reconciliation; orphaned target commit after local evidence failure; client-ledger false commit claim; valid compensation and invalid original link; blind new-key retry under unknown outcome; evidence-integrity failure; reconciliation claiming no commit despite a target-side commit; and duplicate compensation delivery.
 
-Distribution: seven positive, nine negative and four indeterminate controls. These are deterministic synthetic contract cases, not independent statistical samples.
+Distribution: nine positive, nine negative and five indeterminate controls. These are deterministic synthetic contract cases, not independent statistical samples.
+
+## Authorization linearization under clock uncertainty
+
+For an authority grant, revocation and target commit, v0.1 uses the target commit as the owner-defined linearization point. Event times are intervals, not point estimates. Event intervals can be compared only when their time scale, clock domain, epoch and verified timebase match. The benchmark proves A precedes B only when `upper(A) < lower(B)`.
+
+- Grant interval strictly before commit: grant ordering is proven.
+- Revocation strictly before commit: the target effect is not authorized at the commit linearization point; a committed effect is a violation.
+- Commit strictly before revocation: the effect occurred while authority was still valid, subject to the owner’s explicit policy.
+- Overlapping revocation/commit intervals, unverified timebase or unproven grant order: authorization ordering is indeterminate. Do not infer order from nominal timestamps or sequence labels alone.
+
+This is a synthetic contract only. Real deployments must bind intervals to owner-qualified timebase mappings and preserve clock uncertainty/holdover provenance.
 
 ## Reconciliation semantics
 
