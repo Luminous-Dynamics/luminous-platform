@@ -54,6 +54,29 @@ class TransactionalLifecycleTests(unittest.TestCase):
         suite, _ = inputs()
         self.assertEqual(checker.evaluate(case(suite, "TELR-008"))["duplicate_effect_count"], 1)
 
+    def test_new_key_same_semantic_operation_is_still_a_duplicate_effect(self):
+        suite, _ = inputs()
+        current = case(suite, "TELR-002")
+        current["attempts"].append({
+            "attempt_id": "a2", "operation_id": "op-002-new", "idempotency_key": "new-key",
+            "argument_digest": current["operation"]["argument_digest"], "dispatch_state": "sent",
+            "ack_state": "received", "retry_parent_attempt_id": None,
+            "reconciliation_before_attempt": "not_applicable", "restored_from_checkpoint": False,
+            "authority_generation": 1, "grant_id": "grant:write", "nonce_id": "nonce-new"
+        })
+        current["target_ledger"]["entries"].append({
+            "commit_id": "c2", "operation_id": "op-002-new",
+            "semantic_operation_id": current["operation"]["semantic_operation_id"],
+            "idempotency_key": "new-key", "argument_digest": current["operation"]["argument_digest"],
+            "effect_id": current["operation"]["effect_id"], "kind": "effect",
+            "batch_item_id": None, "compensates_for": None
+        })
+        current["client_ledger"]["known_commit_ids"].append("c2")
+        current["reconciliation"]["result_commit_ids"].append("c2")
+        outcome = checker.evaluate(current)
+        self.assertEqual(outcome["duplicate_effect_count"], 1)
+        self.assertEqual(outcome["disposition"], "violation")
+
     def test_checkpoint_restore_new_key_same_intent_is_semantic_replay(self):
         suite, _ = inputs()
         self.assertEqual(checker.evaluate(case(suite, "TELR-009"))["semantic_replay_count"], 1)
