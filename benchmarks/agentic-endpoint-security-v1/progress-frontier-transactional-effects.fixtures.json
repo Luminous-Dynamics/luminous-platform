@@ -1683,7 +1683,7 @@
       ],
       "history_events": [],
       "reconciliation": {
-        "status": "unknown",
+        "status": "aborted",
         "complete": false,
         "independent": true,
         "result_event_ids": [
