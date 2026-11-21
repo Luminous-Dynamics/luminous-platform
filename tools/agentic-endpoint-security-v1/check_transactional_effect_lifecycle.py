@@ -156,7 +156,7 @@ def evaluate(case: dict[str, Any]) -> dict[str, Any]:
 
     false_completion_claim = int(
         case["client_ledger"]["completed_claim"]
-        and (state not in {"committed", "partial"} or orphaned > 0 or ledger_conflicts > 0)
+        and (state != "committed" or orphaned > 0 or ledger_conflicts > 0)
     )
     violation_count = (
         duplicates + key_conflicts + semantic_replays + unsafe_retries
@@ -367,7 +367,10 @@ def validate_suite(suite: dict[str, Any], schema: dict[str, Any]) -> dict[str, i
         "principal_id", "workload_id", "session_id", "argument_constraint_digest",
         "resource_version_precondition", "policy_epoch", "service_id", "credential_lineage",
     }
-    if len(effect_ids) != len(effects) or not effect_ids or any(set(effect) != effect_fields for effect in effects):
+    if len(effect_ids) != len(effects) or not effect_ids or any(
+        set(effect) != effect_fields or not DIGEST_RE.fullmatch(effect["argument_constraint_digest"])
+        for effect in effects
+    ):
         raise ValueError("invalid CAPC effect inventory")
     cases = suite.get("cases", [])
     if len(cases) != 20:
