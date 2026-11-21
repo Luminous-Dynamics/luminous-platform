@@ -1,0 +1,449 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:execution-edit-safety:0.1",
+  "title": "Execution Edit Safety and Evidence Preservation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "version",
+    "status",
+    "no_aggregate_score",
+    "constraints",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-execution-edit-safety"
+    },
+    "version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_finite_continuation_contract_not_executed"
+    },
+    "no_aggregate_score": {
+      "const": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "isolated_test_only",
+        "no_external_effects",
+        "authoritative_history_required",
+        "finite_candidate_set_exhaustive",
+        "no_llm_as_safety_oracle"
+      ],
+      "properties": {
+        "isolated_test_only": {
+          "const": true
+        },
+        "no_external_effects": {
+          "const": true
+        },
+        "authoritative_history_required": {
+          "const": true
+        },
+        "finite_candidate_set_exhaustive": {
+          "const": true
+        },
+        "no_llm_as_safety_oracle": {
+          "const": true
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semantic_operation_id",
+        "effect_id",
+        "argument_digest",
+        "outcome",
+        "result_id",
+        "nonce_id",
+        "resource_id",
+        "resource_version"
+      ],
+      "properties": {
+        "semantic_operation_id": {
+          "type": "string"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "outcome": {
+          "enum": [
+            "committed",
+            "unresolved",
+            "not_dispatched"
+          ]
+        },
+        "result_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nonce_id": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_version": {
+          "type": "string"
+        }
+      }
+    },
+    "write": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_id",
+        "base_version",
+        "operation_id",
+        "branch_id"
+      ],
+      "properties": {
+        "resource_id": {
+          "type": "string"
+        },
+        "base_version": {
+          "type": "string"
+        },
+        "operation_id": {
+          "type": "string"
+        },
+        "branch_id": {
+          "type": "string"
+        }
+      }
+    },
+    "execute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "semantic_operation_id",
+        "effect_id",
+        "argument_digest",
+        "nonce_id",
+        "result_id"
+      ],
+      "properties": {
+        "semantic_operation_id": {
+          "type": "string"
+        },
+        "effect_id": {
+          "type": "string"
+        },
+        "argument_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "nonce_id": {
+          "type": "string"
+        },
+        "result_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_id",
+        "branch_id",
+        "history_revision",
+        "complete",
+        "authoritative",
+        "target_ledger_complete",
+        "target_ledger_independent",
+        "current_policy_revision",
+        "current_descriptor_digest",
+        "evidence_current",
+        "required_result_ids",
+        "completed_result_ids",
+        "pending_operations",
+        "consumed_nonce_ids",
+        "resource_versions",
+        "outstanding_calls_count"
+      ],
+      "properties": {
+        "execution_id": {
+          "type": "string"
+        },
+        "branch_id": {
+          "type": "string"
+        },
+        "history_revision": {
+          "type": "string"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "authoritative": {
+          "type": "boolean"
+        },
+        "target_ledger_complete": {
+          "type": "boolean"
+        },
+        "target_ledger_independent": {
+          "type": "boolean"
+        },
+        "current_policy_revision": {
+          "type": "string"
+        },
+        "current_descriptor_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "evidence_current": {
+          "type": "boolean"
+        },
+        "required_result_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "completed_result_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "pending_operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/operation"
+          }
+        },
+        "consumed_nonce_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "resource_versions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "outstanding_calls_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "continuation_id",
+        "policy_revision",
+        "descriptor_digest",
+        "results_available",
+        "results_pending",
+        "operations_to_execute",
+        "nonce_ids_to_use",
+        "resource_writes",
+        "evidence_current",
+        "atomic_edit_enforcement"
+      ],
+      "properties": {
+        "continuation_id": {
+          "type": "string"
+        },
+        "policy_revision": {
+          "type": "string"
+        },
+        "descriptor_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "results_available": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "results_pending": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "operations_to_execute": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/execute"
+          }
+        },
+        "nonce_ids_to_use": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "resource_writes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/write"
+          }
+        },
+        "evidence_current": {
+          "type": "boolean"
+        },
+        "atomic_edit_enforcement": {
+          "type": "boolean"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "edit_type",
+        "control_class",
+        "history",
+        "candidate_set_exhaustive",
+        "candidates",
+        "edit_decision",
+        "selected_continuation_id",
+        "no_safe_continuation_witness",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^EESPE-[0-9]{3}$"
+        },
+        "edit_type": {
+          "enum": [
+            "checkpoint",
+            "fork",
+            "restore",
+            "merge"
+          ]
+        },
+        "control_class": {
+          "enum": [
+            "positive_control",
+            "negative_control",
+            "indeterminate_control"
+          ]
+        },
+        "history": {
+          "$ref": "#/$defs/history"
+        },
+        "candidate_set_exhaustive": {
+          "const": true
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        },
+        "edit_decision": {
+          "enum": [
+            "accept",
+            "reject_no_safe_continuation"
+          ]
+        },
+        "selected_continuation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "no_safe_continuation_witness": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "safe_continuation_ids",
+            "exclusion_reasons",
+            "expected_edit_decision",
+            "selected_continuation_safe",
+            "no_safe_witness_valid",
+            "disposition"
+          ],
+          "properties": {
+            "safe_continuation_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "exclusion_reasons": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "expected_edit_decision": {
+              "enum": [
+                "accept",
+                "reject_no_safe_continuation"
+              ]
+            },
+            "selected_continuation_safe": {
+              "type": "boolean"
+            },
+            "no_safe_witness_valid": {
+              "type": "boolean"
+            },
+            "disposition": {
+              "enum": [
+                "safe_edit_accepted",
+                "unsafe_edit_attempt",
+                "no_safe_continuation_proved",
+                "missing_or_incorrect_no_safe_witness",
+                "decision_mismatch"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
