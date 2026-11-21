@@ -401,22 +401,43 @@ def validate_case(case: dict[str, Any], effect_ids: set[str]) -> None:
         if timing["linearization_point"] != "target_commit" or not timing["owner_policy_ref"]:
             raise ValueError(f"{sid}: unsupported or unreferenced authorization linearization policy")
         event_fields = {"event_id", "lower_ns", "upper_ns", "time_scale", "clock_domain", "clock_epoch", "timebase_ref", "timebase_verified", "sequence", "capture_point"}
+        event_ids = []
         for name in ("grant_interval", "commit_interval"):
             event = timing[name]
             if set(event) != event_fields:
                 raise ValueError(f"{sid}: {name} fields differ")
-            if type(event["lower_ns"]) is not int or type(event["upper_ns"]) is not int or event["lower_ns"] > event["upper_ns"]:
-                raise ValueError(f"{sid}: invalid {name} uncertainty interval")
-            if not event["event_id"] or not event["time_scale"] or not event["clock_domain"] or not event["clock_epoch"] or not event["timebase_ref"]:
+            if (
+                type(event["lower_ns"]) is not int
+                or type(event["upper_ns"]) is not int
+                or event["lower_ns"] < 0
+                or event["lower_ns"] > event["upper_ns"]
+                or type(event["sequence"]) is not int
+                or event["sequence"] < 0
+                or type(event["timebase_verified"]) is not bool
+            ):
+                raise ValueError(f"{sid}: invalid {name} uncertainty interval or sequence")
+            if not all(event[key] for key in ("event_id", "time_scale", "clock_domain", "clock_epoch", "timebase_ref", "capture_point")):
                 raise ValueError(f"{sid}: incomplete {name} timebase provenance")
+            event_ids.append(event["event_id"])
         revoke = timing["revocation_interval"]
         if revoke is not None:
             if set(revoke) != event_fields:
                 raise ValueError(f"{sid}: revocation interval fields differ")
-            if type(revoke["lower_ns"]) is not int or type(revoke["upper_ns"]) is not int or revoke["lower_ns"] > revoke["upper_ns"]:
-                raise ValueError(f"{sid}: invalid revocation uncertainty interval")
-            if not revoke["event_id"] or not revoke["time_scale"] or not revoke["clock_domain"] or not revoke["clock_epoch"] or not revoke["timebase_ref"]:
+            if (
+                type(revoke["lower_ns"]) is not int
+                or type(revoke["upper_ns"]) is not int
+                or revoke["lower_ns"] < 0
+                or revoke["lower_ns"] > revoke["upper_ns"]
+                or type(revoke["sequence"]) is not int
+                or revoke["sequence"] < 0
+                or type(revoke["timebase_verified"]) is not bool
+            ):
+                raise ValueError(f"{sid}: invalid revocation uncertainty interval or sequence")
+            if not all(revoke[key] for key in ("event_id", "time_scale", "clock_domain", "clock_epoch", "timebase_ref", "capture_point")):
                 raise ValueError(f"{sid}: incomplete revocation timebase provenance")
+            event_ids.append(revoke["event_id"])
+        if len(event_ids) != len(set(event_ids)):
+            raise ValueError(f"{sid}: event identities must be unique within authorization timing evidence")
 
     computed = evaluate(case)
     if case["expected"] != computed:
