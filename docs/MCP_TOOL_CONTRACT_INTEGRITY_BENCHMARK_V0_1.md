@@ -16,7 +16,7 @@ The synthetic digest-shaped values exercise exact matching; they are not hashes 
 
 ## Per-invocation authority
 
-Each call binds descriptor digest and tool id to the exact invocation/effect tuple and checks:
+Each call binds descriptor digest and tool id to the exact invocation/effect tuple, re-verifies the responding server identity, and checks:
 - issuer equals the expected authorization server;
 - token audience is the receiving MCP server;
 - granted scopes include the required tool/resource scopes and no wildcard overgrant;
@@ -28,7 +28,7 @@ Descriptor integrity, authority integrity, owner admission and observed effect r
 
 ## Frozen panel
 
-14 synthetic cases cover input/output schema drift, annotation changes, origin substitution, server build substitution, tool-id shadowing, wrong token audience, wrong issuer, wildcard scopes, nonce replay, session-handle misuse, stale approval after descriptor replacement, unresolved server identity and a fully pinned positive control.
+15 synthetic cases cover input/output schema drift, annotation changes, origin substitution, server build substitution, tool-id shadowing, wrong token audience, wrong issuer, wildcard scopes, nonce replay, session-handle misuse, stale approval after descriptor replacement, unresolved server identity, per-response server identity substitution and a fully pinned positive control.
 
 ## Targets (not results)
 
