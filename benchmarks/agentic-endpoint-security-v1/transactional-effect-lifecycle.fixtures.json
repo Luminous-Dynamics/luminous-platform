@@ -186,7 +186,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -273,7 +275,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -516,7 +520,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -702,7 +708,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           },
           {
             "commit_id": "c2",
@@ -713,7 +721,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -816,7 +826,9 @@
             "effect_id": "effect:payment-create",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           },
           {
             "commit_id": "c2",
@@ -827,7 +839,9 @@
             "effect_id": "effect:payment-create",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -1007,7 +1021,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": "item-1",
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           },
           {
             "commit_id": "c2",
@@ -1018,7 +1034,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": "item-2",
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -1107,7 +1125,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -1262,8 +1282,8 @@
           "reconciliation_before_attempt": "not_applicable",
           "restored_from_checkpoint": false,
           "authority_generation": 1,
-          "grant_id": "grant:write",
-          "nonce_id": "nonce-1"
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation"
         }
       ],
       "target_ledger": {
@@ -1279,7 +1299,9 @@
             "effect_id": "effect:payment-create",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           },
           {
             "commit_id": "c2",
@@ -1290,7 +1312,9 @@
             "effect_id": "effect:payment-compensate",
             "kind": "compensation",
             "batch_item_id": null,
-            "compensates_for": "c1"
+            "compensates_for": "c1",
+            "grant_id": "grant:compensation",
+            "nonce_id": "nonce:compensation"
           }
         ]
       },
@@ -1362,8 +1386,8 @@
           "reconciliation_before_attempt": "not_applicable",
           "restored_from_checkpoint": false,
           "authority_generation": 1,
-          "grant_id": "grant:write",
-          "nonce_id": "nonce-1"
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation"
         },
         {
           "attempt_id": "a2",
@@ -1393,7 +1417,9 @@
             "effect_id": "effect:payment-compensate",
             "kind": "compensation",
             "batch_item_id": null,
-            "compensates_for": "missing-original"
+            "compensates_for": "missing-original",
+            "grant_id": "grant:compensation",
+            "nonce_id": "nonce-comp"
           }
         ]
       },
@@ -1636,7 +1662,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -1723,7 +1751,9 @@
             "effect_id": "effect:record-write",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           }
         ]
       },
@@ -1805,8 +1835,8 @@
           "reconciliation_before_attempt": "not_applicable",
           "restored_from_checkpoint": false,
           "authority_generation": 1,
-          "grant_id": "grant:write",
-          "nonce_id": "nonce-1"
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation"
         },
         {
           "attempt_id": "a3",
@@ -1819,8 +1849,8 @@
           "reconciliation_before_attempt": "unknown",
           "restored_from_checkpoint": false,
           "authority_generation": 1,
-          "grant_id": "grant:write",
-          "nonce_id": "nonce-1"
+          "grant_id": "grant:compensation",
+          "nonce_id": "nonce:compensation-retry"
         }
       ],
       "target_ledger": {
@@ -1836,7 +1866,9 @@
             "effect_id": "effect:payment-create",
             "kind": "effect",
             "batch_item_id": null,
-            "compensates_for": null
+            "compensates_for": null,
+            "grant_id": "grant:write",
+            "nonce_id": "nonce-1"
           },
           {
             "commit_id": "c2",
@@ -1847,7 +1879,9 @@
             "effect_id": "effect:payment-compensate",
             "kind": "compensation",
             "batch_item_id": null,
-            "compensates_for": "c1"
+            "compensates_for": "c1",
+            "grant_id": "grant:compensation",
+            "nonce_id": "nonce:compensation"
           }
         ]
       },
