@@ -61,16 +61,16 @@
       "selected_continuation_id": "safe-preserve",
       "no_safe_continuation_witness": null,
       "expected": {
-        "safe_continuation_ids": [],
+        "safe_continuation_ids": [
+          "safe-preserve"
+        ],
         "exclusion_reasons": {
-          "safe-preserve": [
-            "unverified_result_claim"
-          ]
+          "safe-preserve": []
         },
-        "expected_edit_decision": "reject_no_safe_continuation",
-        "selected_continuation_safe": false,
+        "expected_edit_decision": "accept",
+        "selected_continuation_safe": true,
         "no_safe_witness_valid": false,
-        "disposition": "decision_mismatch"
+        "disposition": "safe_edit_accepted"
       }
     },
     {
