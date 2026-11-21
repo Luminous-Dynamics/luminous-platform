@@ -4488,7 +4488,7 @@
         "resource_version_precondition": "v1"
       },
       "fence": {
-        "token_id": "fence:CFF-001",
+        "token_id": "fence:CFF-029",
         "resource_id": "resource:doc-1",
         "generation": 9,
         "tx_id": "CFF-029",
@@ -4509,7 +4509,7 @@
           "tx_id": "CFF-029",
           "branch_id": "branch:CFF-029",
           "effect_id": "effect:resource-write",
-          "token_id": "fence:CFF-001",
+          "token_id": "fence:CFF-029",
           "token_generation": 9,
           "grant_id": "grant:CFF-001",
           "policy_epoch": "epoch-9",
