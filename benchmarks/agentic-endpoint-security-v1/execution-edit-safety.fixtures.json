@@ -1,0 +1,1103 @@
+{
+  "profile": "luminous-execution-edit-safety",
+  "version": "0.1",
+  "status": "synthetic_finite_continuation_contract_not_executed",
+  "no_aggregate_score": true,
+  "constraints": {
+    "isolated_test_only": true,
+    "no_external_effects": true,
+    "authoritative_history_required": true,
+    "finite_candidate_set_exhaustive": true,
+    "no_llm_as_safety_oracle": true
+  },
+  "cases": [
+    {
+      "scenario_id": "EESPE-001",
+      "edit_type": "checkpoint",
+      "control_class": "positive_control",
+      "history": {
+        "execution_id": "execution:001",
+        "branch_id": "branch:001",
+        "history_revision": "history:001:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "safe-preserve",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "accept",
+      "selected_continuation_id": "safe-preserve",
+      "no_safe_continuation_witness": null,
+      "expected": {
+        "safe_continuation_ids": [
+          "safe-preserve"
+        ],
+        "exclusion_reasons": {
+          "safe-preserve": []
+        },
+        "expected_edit_decision": "accept",
+        "selected_continuation_safe": true,
+        "no_safe_witness_valid": false,
+        "disposition": "safe_edit_accepted"
+      }
+    },
+    {
+      "scenario_id": "EESPE-002",
+      "edit_type": "checkpoint",
+      "control_class": "positive_control",
+      "history": {
+        "execution_id": "execution:002",
+        "branch_id": "branch:002",
+        "history_revision": "history:002:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [],
+        "pending_operations": [
+          {
+            "semantic_operation_id": "intent:pending",
+            "effect_id": "effect:write",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "outcome": "unresolved",
+            "result_id": "result:primary",
+            "nonce_id": "nonce:pending",
+            "resource_id": "resource:account",
+            "resource_version": "v7",
+            "dispatch_state": "sent"
+          }
+        ],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 1
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "wait-and-reconcile",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [],
+          "results_pending": [
+            "result:primary"
+          ],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        },
+        {
+          "continuation_id": "retry-with-new-call",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [
+            {
+              "semantic_operation_id": "intent:pending",
+              "effect_id": "effect:write",
+              "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "nonce_id": "nonce:pending"
+            }
+          ],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "accept",
+      "selected_continuation_id": "wait-and-reconcile",
+      "no_safe_continuation_witness": null,
+      "expected": {
+        "safe_continuation_ids": [
+          "wait-and-reconcile"
+        ],
+        "exclusion_reasons": {
+          "wait-and-reconcile": [],
+          "retry-with-new-call": [
+            "external_operation_replay_or_unresolved_retry",
+            "unresolved_external_call_reissued"
+          ]
+        },
+        "expected_edit_decision": "accept",
+        "selected_continuation_safe": true,
+        "no_safe_witness_valid": false,
+        "disposition": "safe_edit_accepted"
+      }
+    },
+    {
+      "scenario_id": "EESPE-003",
+      "edit_type": "restore",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:003",
+        "branch_id": "branch:003",
+        "history_revision": "history:003:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [
+          {
+            "semantic_operation_id": "intent:payment",
+            "effect_id": "effect:write",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "outcome": "committed",
+            "result_id": "result:primary",
+            "nonce_id": "nonce:pay",
+            "resource_id": "resource:account",
+            "resource_version": "v7"
+          }
+        ],
+        "consumed_nonce_ids": [
+          "nonce:pay"
+        ],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "replay-new-uuid",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [
+            {
+              "semantic_operation_id": "intent:payment",
+              "effect_id": "effect:write",
+              "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "nonce_id": "nonce:new"
+            }
+          ],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "replay-new-uuid"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "replay-new-uuid": [
+            "external_operation_replay_or_unresolved_retry"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-004",
+      "edit_type": "restore",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:004",
+        "branch_id": "branch:004",
+        "history_revision": "history:004:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [
+          "nonce:one-time"
+        ],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "reuse-consumed-authority",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [
+            "nonce:one-time"
+          ],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "reuse-consumed-authority"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "reuse-consumed-authority": [
+            "consumed_authority_resurrection"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-005",
+      "edit_type": "fork",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:005",
+        "branch_id": "branch:005",
+        "history_revision": "history:005:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [
+          {
+            "semantic_operation_id": "intent:charge",
+            "effect_id": "effect:write",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "outcome": "committed",
+            "result_id": "result:primary",
+            "nonce_id": "nonce:charge",
+            "resource_id": "resource:account",
+            "resource_version": "v7"
+          }
+        ],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "branch-repeats-charge",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [
+            {
+              "semantic_operation_id": "intent:charge",
+              "effect_id": "effect:write",
+              "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "nonce_id": "nonce:new"
+            }
+          ],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "branch-repeats-charge"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "branch-repeats-charge": [
+            "external_operation_replay_or_unresolved_retry"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-006",
+      "edit_type": "merge",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:006",
+        "branch_id": "branch:006",
+        "history_revision": "history:006:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [
+          {
+            "semantic_operation_id": "intent:shared",
+            "effect_id": "effect:write",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "outcome": "committed",
+            "result_id": "result:primary",
+            "nonce_id": "nonce:shared",
+            "resource_id": "resource:account",
+            "resource_version": "v7"
+          }
+        ],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "merge-two-branches-repeat",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [
+            {
+              "semantic_operation_id": "intent:shared",
+              "effect_id": "effect:write",
+              "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "nonce_id": "nonce:branch-b"
+            }
+          ],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "merge-two-branches-repeat"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "merge-two-branches-repeat": [
+            "external_operation_replay_or_unresolved_retry"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-007",
+      "edit_type": "merge",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:007",
+        "branch_id": "branch:007",
+        "history_revision": "history:007:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary",
+          "result:secondary"
+        ],
+        "completed_result_ids": [
+          "result:secondary",
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "drop-required-secondary",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "drop-required-secondary"
+      ],
+      "expected": {
+        "safe_continuation_ids": [
+          "drop-required-secondary"
+        ],
+        "exclusion_reasons": {
+          "drop-required-secondary": []
+        },
+        "expected_edit_decision": "accept",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": false,
+        "disposition": "decision_mismatch"
+      }
+    },
+    {
+      "scenario_id": "EESPE-008",
+      "edit_type": "merge",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:008",
+        "branch_id": "branch:008",
+        "history_revision": "history:008:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "conflicting-branch-writes",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [
+            {
+              "resource_id": "resource:account",
+              "base_version": "v7",
+              "operation_id": "write:a",
+              "branch_id": "branch:a"
+            },
+            {
+              "resource_id": "resource:account",
+              "base_version": "v7",
+              "operation_id": "write:b",
+              "branch_id": "branch:b"
+            }
+          ],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "conflicting-branch-writes"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "conflicting-branch-writes": [
+            "merge_write_conflict"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-009",
+      "edit_type": "restore",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:009",
+        "branch_id": "branch:009",
+        "history_revision": "history:009:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:10",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": false,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "carry-stale-policy-evidence",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "carry-stale-policy-evidence"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "carry-stale-policy-evidence": [
+            "evidence_not_current",
+            "stale_policy_revision"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-010",
+      "edit_type": "restore",
+      "control_class": "indeterminate_control",
+      "history": {
+        "execution_id": "execution:010",
+        "branch_id": "branch:010",
+        "history_revision": "history:010:7",
+        "complete": false,
+        "authoritative": true,
+        "target_ledger_complete": false,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "continue-from-untrusted-summary",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "continue-from-untrusted-summary"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "continue-from-untrusted-summary": [
+            "authoritative_history_or_target_ledger_incomplete"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-011",
+      "edit_type": "merge",
+      "control_class": "positive_control",
+      "history": {
+        "execution_id": "execution:011",
+        "branch_id": "branch:011",
+        "history_revision": "history:011:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "merge-independent-writes",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [
+            {
+              "resource_id": "resource:account",
+              "base_version": "v7",
+              "operation_id": "write:a",
+              "branch_id": "branch:a"
+            },
+            {
+              "resource_id": "resource:record",
+              "base_version": "v3",
+              "operation_id": "write:b",
+              "branch_id": "branch:b"
+            }
+          ],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "accept",
+      "selected_continuation_id": "merge-independent-writes",
+      "no_safe_continuation_witness": null,
+      "expected": {
+        "safe_continuation_ids": [
+          "merge-independent-writes"
+        ],
+        "exclusion_reasons": {
+          "merge-independent-writes": []
+        },
+        "expected_edit_decision": "accept",
+        "selected_continuation_safe": true,
+        "no_safe_witness_valid": false,
+        "disposition": "safe_edit_accepted"
+      }
+    },
+    {
+      "scenario_id": "EESPE-012",
+      "edit_type": "restore",
+      "control_class": "positive_control",
+      "history": {
+        "execution_id": "execution:012",
+        "branch_id": "branch:012",
+        "history_revision": "history:012:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [],
+        "pending_operations": [
+          {
+            "semantic_operation_id": "intent:late",
+            "effect_id": "effect:write",
+            "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "outcome": "unresolved",
+            "result_id": "result:primary",
+            "nonce_id": "nonce:late",
+            "resource_id": "resource:account",
+            "resource_version": "v7",
+            "dispatch_state": "sent"
+          }
+        ],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 1
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "replay-while-flight",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [
+            {
+              "semantic_operation_id": "intent:late",
+              "effect_id": "effect:write",
+              "argument_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "nonce_id": "nonce:new"
+            }
+          ],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        },
+        {
+          "continuation_id": "preserve-pending-and-wait",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [],
+          "results_pending": [
+            "result:primary"
+          ],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "accept",
+      "selected_continuation_id": "preserve-pending-and-wait",
+      "no_safe_continuation_witness": null,
+      "expected": {
+        "safe_continuation_ids": [
+          "preserve-pending-and-wait"
+        ],
+        "exclusion_reasons": {
+          "replay-while-flight": [
+            "external_operation_replay_or_unresolved_retry",
+            "unresolved_external_call_reissued"
+          ],
+          "preserve-pending-and-wait": []
+        },
+        "expected_edit_decision": "accept",
+        "selected_continuation_safe": true,
+        "no_safe_witness_valid": false,
+        "disposition": "safe_edit_accepted"
+      }
+    },
+    {
+      "scenario_id": "EESPE-013",
+      "edit_type": "fork",
+      "control_class": "negative_control",
+      "history": {
+        "execution_id": "execution:013",
+        "branch_id": "branch:013",
+        "history_revision": "history:013:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": true,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [
+          "nonce:spent"
+        ],
+        "resource_versions": {
+          "resource:account": "v8"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "no-safe-branch-a",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [
+            "nonce:spent"
+          ],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        },
+        {
+          "continuation_id": "no-safe-branch-b",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [
+            {
+              "resource_id": "resource:account",
+              "base_version": "v7",
+              "operation_id": "write:stale",
+              "branch_id": "branch:old"
+            }
+          ],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "no-safe-branch-a",
+        "no-safe-branch-b"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "no-safe-branch-a": [
+            "consumed_authority_resurrection"
+          ],
+          "no-safe-branch-b": [
+            "stale_resource_version"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    },
+    {
+      "scenario_id": "EESPE-014",
+      "edit_type": "merge",
+      "control_class": "indeterminate_control",
+      "history": {
+        "execution_id": "execution:014",
+        "branch_id": "branch:014",
+        "history_revision": "history:014:7",
+        "complete": true,
+        "authoritative": true,
+        "target_ledger_complete": true,
+        "target_ledger_independent": true,
+        "current_policy_revision": "policy:9",
+        "current_descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "evidence_current": false,
+        "required_result_ids": [
+          "result:primary"
+        ],
+        "completed_result_ids": [
+          "result:primary"
+        ],
+        "pending_operations": [],
+        "consumed_nonce_ids": [],
+        "resource_versions": {
+          "resource:account": "v7",
+          "resource:record": "v3"
+        },
+        "outstanding_calls_count": 0
+      },
+      "candidate_set_exhaustive": true,
+      "candidates": [
+        {
+          "continuation_id": "replay-fresh-seal",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": false,
+          "atomic_edit_enforcement": true
+        },
+        {
+          "continuation_id": "claim-stale-seal",
+          "policy_revision": "policy:9",
+          "descriptor_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "results_available": [
+            "result:primary"
+          ],
+          "results_pending": [],
+          "operations_to_execute": [],
+          "nonce_ids_to_use": [],
+          "resource_writes": [],
+          "evidence_current": true,
+          "atomic_edit_enforcement": true
+        }
+      ],
+      "edit_decision": "reject_no_safe_continuation",
+      "selected_continuation_id": null,
+      "no_safe_continuation_witness": [
+        "replay-fresh-seal",
+        "claim-stale-seal"
+      ],
+      "expected": {
+        "safe_continuation_ids": [],
+        "exclusion_reasons": {
+          "replay-fresh-seal": [
+            "evidence_not_current"
+          ],
+          "claim-stale-seal": [
+            "evidence_not_current"
+          ]
+        },
+        "expected_edit_decision": "reject_no_safe_continuation",
+        "selected_continuation_safe": false,
+        "no_safe_witness_valid": true,
+        "disposition": "no_safe_continuation_proved"
+      }
+    }
+  ]
+}
