@@ -10,7 +10,7 @@ from typing import Any
 
 ROOT=Path(__file__).resolve().parents[2]
 BASE=ROOT/"benchmarks"/"agentic-endpoint-security-v1"
-STRATEGY_FIELDS=("mechanism_class","authority_substitution","source_to_action_route","target_effect_id","causal_chain")
+STRATEGY_FIELDS=("strategy_class","mechanism_class","authority_substitution","source_to_action_route","target_effect_id","causal_chain")
 OUTCOMES={"unauthorized_effect_observed","blocked_no_effect","authorized_effect_observed","no_redirect_no_effect","indeterminate"}
 
 
@@ -92,7 +92,7 @@ def validate_case(case:dict[str,Any],effects:dict[str,dict[str,Any]])->None:
     candidate=case["strategy_candidate"]
     if set(candidate)!={"generator_claim_id","generator_claimed_technique","candidate_fingerprint"}:raise ValueError(f"{sid}: generator provenance fields differ")
     cand=candidate["candidate_fingerprint"]
-    if set(cand)!={"id",*STRATEGY_FIELDS}:raise ValueError(f"{sid}: candidate fingerprint fields differ")
+    if set(cand)!={"id",*STRATEGY_FIELDS} or cand["strategy_class"] not in {"attack","control"}:raise ValueError(f"{sid}: candidate fingerprint fields or classification differ")
     if cand["target_effect_id"] not in effects:raise ValueError(f"{sid}: strategy target must use a CAPC effect identity")
     attribution=case["blind_attribution"]
     if attribution["method"]!="blind_posthoc_two_reviewer_causal_attribution" or attribution["generator_metadata_withheld_from_reviewers"] is not True or attribution["outcome_withheld_from_reviewers"] is not True:raise ValueError(f"{sid}: strategy labels must be blinded from generator and outcome data")
@@ -102,8 +102,9 @@ def validate_case(case:dict[str,Any],effects:dict[str,dict[str,Any]])->None:
     if attribution["adjudication"]=="confirmed":
       if labels[0]!=labels[1] or attribution["adjudicated_strategy_id"]!=labels[0] or attribution["adjudicated_fingerprint"] is None:raise ValueError(f"{sid}: confirmed attribution requires reviewer agreement and fingerprint")
       fingerprint=attribution["adjudicated_fingerprint"]
-      if set(fingerprint)!=set(STRATEGY_FIELDS):raise ValueError(f"{sid}: adjudicated fingerprint fields differ")
+      if set(fingerprint)!={"id",*STRATEGY_FIELDS} or fingerprint["strategy_class"] not in {"attack","control"}:raise ValueError(f"{sid}: adjudicated fingerprint fields or classification differ")
       if fingerprint["target_effect_id"] not in effects:raise ValueError(f"{sid}: unknown adjudicated target effect")
+      if fingerprint["id"]!=attribution["adjudicated_strategy_id"] or fingerprint["strategy_class"]!=cand["strategy_class"] or attribution["adjudicated_strategy_id"]!=cand["id"]:raise ValueError(f"{sid}: adjudication must bind the candidate identity and attack/control class")
     elif attribution["adjudication"]=="ambiguous":
       if labels[0]==labels[1] or attribution["adjudicated_strategy_id"] is not None or attribution["adjudicated_fingerprint"] is not None:raise ValueError(f"{sid}: ambiguity requires disagreement and no forced label")
     else:raise ValueError(f"{sid}: invalid adjudication")
@@ -143,9 +144,10 @@ def validate_suite(suite:dict[str,Any],schema:dict[str,Any])->dict[str,int]:
       if attr["adjudication"]=="confirmed":
         strat=attr["adjudicated_strategy_id"]
         sig=strategy_signature(attr["adjudicated_fingerprint"])
-        if strat in strategies and strategies[strat]!=sig:raise ValueError(f"{sid}: one strategy ID maps to different causal fingerprints")
-        strategies[strat]=sig
-        splits[strat].add(case["split"])
+        if attr["adjudicated_fingerprint"]["strategy_class"]=="attack":
+          if strat in strategies and strategies[strat]!=sig:raise ValueError(f"{sid}: one strategy ID maps to different causal fingerprints")
+          strategies[strat]=sig
+          splits[strat].add(case["split"])
     if len(by_pair)!=8:raise ValueError("expected eight matched pairs")
     for pair_id,pair in by_pair.items():
       if len(pair)!=2 or {c["modality"] for c in pair}!={"text_document","page_image"}:raise ValueError(f"{pair_id}: pair must contain one text and one page image")
