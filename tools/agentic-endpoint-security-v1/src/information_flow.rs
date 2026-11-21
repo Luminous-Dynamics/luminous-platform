@@ -7,8 +7,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Sensitivity {
+    #[default]
     Public,
     Internal,
     Confidential,
@@ -28,8 +29,9 @@ impl Sensitivity {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Integrity {
+    #[default]
     AuthenticatedTask,
     AuthenticatedConnector,
     Derived,
@@ -273,18 +275,6 @@ struct Lineage {
     valid: bool,
 }
 
-impl Default for Sensitivity {
-    fn default() -> Self {
-        Self::Public
-    }
-}
-
-impl Default for Integrity {
-    fn default() -> Self {
-        Self::AuthenticatedTask
-    }
-}
-
 impl Lineage {
     fn unknown(node_id: &str, faults: &mut Faults, cycle: bool) -> Self {
         faults.unknown_nodes.insert(node_id.to_owned());
@@ -442,9 +432,7 @@ fn derive_lineage(
             faults.declass_failure_nodes.insert(node_id.to_owned());
             value.valid = false;
         }
-        if declass_valid {
-            value.sensitivity = node.sensitivity;
-        } else if node.sensitivity.rank() > value.sensitivity.rank() {
+        if declass_valid || node.sensitivity.rank() > value.sensitivity.rank() {
             value.sensitivity = node.sensitivity;
         }
         if node.integrity.rank() > value.integrity.rank() {
