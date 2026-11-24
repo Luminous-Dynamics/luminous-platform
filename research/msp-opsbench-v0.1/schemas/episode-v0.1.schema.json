@@ -14,7 +14,9 @@
     "authority_events",
     "participant_events",
     "service_verifications",
-    "evaluator_private"
+    "evaluator_private",
+    "run_manifest",
+    "paired_baselines"
   ],
   "properties": {
     "schema_version": {
@@ -50,9 +52,9 @@
           "minLength": 1
         },
         "seed": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 18446744073709552000
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "Unsigned 64-bit PRNG seed encoded as a decimal string; validator must enforce the u64 upper bound."
         },
         "scenario_schedule_digest": {
           "$ref": "#/$defs/digest"
@@ -196,7 +198,20 @@
             "$ref": "#/$defs/digest"
           }
         }
-      }
+      },
+      "minItems": 1,
+      "contains": {
+        "type": "object",
+        "properties": {
+          "baseline_class": {
+            "const": "no_action"
+          }
+        },
+        "required": [
+          "baseline_class"
+        ]
+      },
+      "minContains": 1
     },
     "evaluator_private": {
       "type": "object",
@@ -231,6 +246,70 @@
     },
     "bundle_signature_digest": {
       "$ref": "#/$defs/digest"
+    },
+    "run_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_class",
+        "model_provider",
+        "model_id",
+        "model_version",
+        "prompt_digest",
+        "memory_digest",
+        "policy_digest",
+        "tool_manifest_digest",
+        "action_budget",
+        "wall_clock_budget_ms"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_class": {
+          "enum": [
+            "agent",
+            "runbook",
+            "autoscaler",
+            "human",
+            "no_action"
+          ]
+        },
+        "model_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "memory_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "tool_manifest_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "action_budget": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wall_clock_budget_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
     }
   },
   "$defs": {
