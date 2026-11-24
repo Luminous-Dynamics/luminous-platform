@@ -31,7 +31,7 @@ This programme extends rather than replaces existing Luminous research:
 
 - **Continuous OpsBench v0.1** remains the generic evaluator for paired no-action controls, per-fault correlation, service/artifact localization, sustained recovery, false repair claims, intervention safety, duplicate and unauthorized effects, and workload-conditioned degraded request-time.
 - **Agent Effect Gate** supplies the act-bound authorization and effect-finality direction.
-- **Nixward** remains the authoritative transaction and recovery system for NixOS hosts.
+- **Nixward** remains the authoritative transaction and recovery system for NixOS hosts. Its new [MSP Read-Only Observation Contract v0.1](https://github.com/Luminous-Dynamics/nixward/blob/main/docs/MSP_OBSERVATION_CONTRACT_V0_1.md) describes an isolated, tenant-scoped read-only observation surface; it is not a live fleet exporter yet.
 - **Symthaea** supplies cognition, causal reasoning, telemetry interpretation, ticket/incident reasoning and action proposals.
 - **Symthaea logparse and scan** supply early Windows-event/syslog and inventory inputs; both require further validation before production claims.
 - **Xenia** is a future consent-based remote-support transport, not a prerequisite for the first benchmark.
