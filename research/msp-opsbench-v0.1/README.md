@@ -41,6 +41,14 @@ Do not duplicate Continuous OpsBench's fault-truth separation, paired scenario i
 
 ## 3. Evaluation boundaries
 
+### Typed episode bundle
+
+The initial strict JSON Schema is published at [`schemas/episode-v0.1.schema.json`](schemas/episode-v0.1.schema.json). It binds the pairing block, scenario/workload digests, candidate model/prompt/memory/policy/tool manifest, tenant-scoped agent inputs, agent reports/proposals, authorization events, participant attempt/effect events and independent service-verification records.
+
+The schema deliberately keeps an `agent_input` plane separate from `evaluator_private` fault truth and scoring digests. A candidate receives only the filtered `agent_input` object; the evaluator-only object must never be passed through model context, tools, retrieval or candidate-visible logs. Each completed episode must also include a no-action baseline from the same pairing block.
+
+JSON Schema validation only establishes shape and basic field constraints. It does **not** authenticate the source, verify a digest/signature, establish observer independence, prove atomic one-use authorization consumption, or establish that a service is actually healthy. Those checks belong to authenticated adapters and participant/observer conformance tests.
+
 Every episode must have separately recorded planes:
 
 | Plane | Owner | Agent visibility | Required evidence |
