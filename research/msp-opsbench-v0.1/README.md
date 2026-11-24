@@ -264,7 +264,42 @@ Publish per-scenario results, failures, exclusions and uncertainty. Do not repor
 - Explicit production adapter security review.
 - Publish source, fixtures, run manifests, raw metrics and known limitations.
 
-## 10. Qualification rule
+
+## 11. Industry reference set and differentiation
+
+The first competitive mistake would be to compare Symthaea only with a chatbot. Established MSP platforms already cover substantial operational surface area:
+
+- **NinjaOne RMM** describes multi-tenant device management, real-time monitoring/alerting, Windows/macOS/Linux patching, third-party application patching, remote access, endpoint automation, auto-remediation, MDM and documentation. Its product page is a vendor capability statement, not an independent performance result: https://www.ninjaone.com/msp/rmm/
+- **Atera** describes an IT suite combining RMM, PSA, remote access and AI Copilot; its FAQ distinguishes technician-facing Copilot from the separately purchased Robin autonomous agent, which resolves only approved requests and hands off out-of-scope tasks. This is a useful model for explicit scope and handoff: https://www.atera.com/FAQ/ and https://www.atera.com/roadmap/
+- **N-able N-central** describes EDR/Managed EDR integrations, vulnerability management, patching, Microsoft cloud management, backup, AI-assisted troubleshooting and automation; its documentation also describes multi-instance management and network topology mapping: https://www.n-able.com/products/n-central-rmm/features-summary and https://documentation.n-able.com/N-central/userguide/Content/Introduction-GettingStarted/Features-and-functionality.htm
+- A current 2026 market comparison also lists Datto, Acronis, ConnectWise and ManageEngine alongside NinjaOne, Atera and N-able, with materially different PSA, backup, EDR and AI packaging: https://expertinsights.com/it-management/the-top-rmm-solutions-for-msps
+
+These sources establish feature competition, not independent evidence that every advertised feature performs as described. For a fair comparison, record product edition, connector, license, region, policy configuration, operator role and tested scenario.
+
+### What not to compete on
+
+Do not spend the first product cycle rebuilding commodity endpoint polling, remote terminal, patch deployment, ticketing UI, backup storage or every vendor connector. Integrate mature systems through least-privilege adapters. Build only the control-plane and cognition capabilities that our evidence shows are missing.
+
+### Proposed differentiation
+
+1. **Evidence-native operations:** every diagnosis, proposed act, committed effect and recovery claim is linked to provenance and independent observations.
+2. **Cross-tool causal model:** combine topology, identity, asset, change, service and security evidence in one tenant-scoped temporal graph.
+3. **Act-bound authority:** approvals authorize one exact action at one exact participant; no generic AI admin role.
+4. **Verified recovery:** measure customer service and workload outcomes after the action, not just process exit or dashboard state.
+5. **Privacy-preserving federation:** transfer only purpose-limited, reviewed knowledge; local-only is the default.
+6. **Vendor-neutral orchestration:** use RMM/PSA/EDR/backup systems as execution and observation providers while preserving a common evidence model.
+
+### SOTA comparison discipline
+
+The Microsoft AIOpsLab maintainer leaderboard lists OpsAgent (GPT-4) at 78.75 average with detection 100, localization 60, diagnosis 83.34 and mitigation 66.67; it lists FLASH (GPT-4) at 59.27. The original AIOpsLab paper reports FLASH at 59.32 overall. The headline and subtask weighting differ, and the leaderboard's OpsAgent entry has no linked paper. Reproduce the exact harness and report each task category before using these figures as a baseline.
+
+Sources:
+- AIOpsLab maintainer leaderboard: https://microsoft.github.io/AIOpsLab/pages/leaderboard/
+- AIOpsLab paper: https://proceedings.mlsys.org/paper_files/paper/2025/hash/d1f9e4a9f109b6e8b75ed362736f22ec-Abstract-Conference.html
+
+Do not compare an MSP OpsBench aggregate directly to the AIOpsLab aggregate. To claim improvement, reproduce the same task suite, scenario versions, agent/tool budgets and scoring, then separately demonstrate the additional MSP properties: tenant isolation, authority finality, SLA handling, backup/restore integrity and sustained service recovery.
+
+## 12. Qualification rule
 
 The benchmark has two separate conclusions:
 
