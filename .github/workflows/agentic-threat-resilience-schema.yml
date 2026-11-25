@@ -1,0 +1,101 @@
+name: Agentic Threat Resilience schema contracts
+
+on:
+  pull_request:
+    paths:
+      - "research/agentic-threat-resilience-v0.1/**"
+      - ".github/workflows/agentic-threat-resilience-schema.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  schema-validation:
+    name: Draft 2020-12 schema and fixture validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact pull request revision
+        uses: actions/checkout@v4
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned schema validator
+        run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0"
+
+      - name: Validate catalogue schema and all 33 scenarios
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/scenario-catalog-v0.1.schema.json").read_text())
+          catalog = json.loads((root / "scenarios/scenarios-v0.1.json").read_text())
+
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          errors = sorted(validator.iter_errors(catalog), key=lambda e: list(e.absolute_path))
+          if errors:
+              for error in errors:
+                  location = "/".join(str(part) for part in error.absolute_path)
+                  print(f"{location}: {error.message}")
+              raise SystemExit(f"{len(errors)} catalogue validation error(s)")
+
+          ids = [scenario["scenario_id"] for scenario in catalog["scenarios"]]
+          if len(ids) != len(set(ids)):
+              raise SystemExit("duplicate scenario_id")
+          if len(ids) != 33:
+              raise SystemExit(f"expected 33 scenarios, found {len(ids)}")
+          if sum(s["episode_class"] == "adversarial" for s in catalog["scenarios"]) != 28:
+              raise SystemExit("expected 28 adversarial scenarios")
+          if sum(s["episode_class"] == "benign" for s in catalog["scenarios"]) != 5:
+              raise SystemExit("expected 5 benign controls")
+          print("catalogue schema valid; 33 unique scenarios (28 adversarial, 5 benign)")
+          PY
+
+      - name: Validate episode-result schema and example
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
+          example = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+
+          Draft202012Validator.check_schema(schema)
+          errors = sorted(Draft202012Validator(schema).iter_errors(example), key=lambda e: list(e.absolute_path))
+          if errors:
+              for error in errors:
+                  location = "/".join(str(part) for part in error.absolute_path)
+                  print(f"{location}: {error.message}")
+              raise SystemExit(f"{len(errors)} episode-result validation error(s)")
+          print("episode-result schema and example valid")
+          PY
+
+      - name: Enforce candidate/evaluator separation and SUT profile declaration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
+          example = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          manifest_required = schema["properties"]["manifest"]["required"]
+          if "sut_profile" not in manifest_required:
+              raise SystemExit("sut_profile must be required in every run manifest")
+          profile = example["manifest"]["sut_profile"]
+          if profile["evaluator_isolation"] != "separate-process-credentials-storage":
+              raise SystemExit("example must declare isolated evaluator storage/credentials/process")
+          if set(profile["included_components"]) & set(profile["excluded_components"]):
+              raise SystemExit("SUT profile includes a component that it also excludes")
+          print("SUT profile and candidate/evaluator separation contract present")
+          PY
