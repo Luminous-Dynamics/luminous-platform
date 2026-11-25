@@ -220,11 +220,11 @@ Every episode result also requires a machine-readable `sut_profile`: declared in
 6. Symthaea with read-only observation.
 7. Symthaea with bounded, pre-authorized action in a disposable lab.
 8. Ablations without causal correlation, asset graph, provenance binding or independent observer.
-9. OpenShell 0.1.x as an external supervised-sandbox runtime baseline, pinned to an exact release/commit and matched policy/task profile.
+9. OpenShell v0.1.10 as an external supervised-sandbox runtime baseline, pinned to tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92` and matched policy/task profile.
 
 All arms use the same frozen scenario schedule, tenant fixtures, telemetry, workload, policy, tools, model version and resource budgets. The evaluator keeps the ground-truth event plane private.
 
-OpenShell is included as a ninth baseline arm. This should be a pinned OpenShell 0.1.x release/commit with the exact runtime/backend/policy manifest recorded. It is a genuine runtime control baseline; unlike the current Nixward contract PR, it documents workload network isolation and supervisor-mediated access. Do not compare until the same model, tool/task schedule, scenario fixtures, resource envelope and task profile are run in both systems.
+OpenShell is included as a ninth baseline arm, pinned to stable v0.1.10 (tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92`, released 24 Nov 2026). Pin and record gateway, supervisor and sandbox image digests alongside the exact runtime/backend/policy manifest. It is a genuine runtime control baseline; unlike the current Nixward contract PR, it documents a separate supervisor/workload boundary and mediated workload access. Do not compare until the same model, tool/task schedule, scenario fixtures, resource envelope and task profile are run in both systems.
 
 
 ### Hard acceptance gates
@@ -266,7 +266,7 @@ Run prompt-injection, supply-chain substitution, untrusted-output, stale-scope, 
 
 ### OpenShell comparator and design lessons
 
-OpenShell 0.1.x is now the most relevant external runtime reference arm for this programme. Its current public architecture describes a separate supervisor and workload, an authenticated private control channel, a workload network fence with mediated TCP/DNS, non-root execution, seccomp and Landlock controls, binary identity derived from trusted process observations, credential placeholders resolved only for allowed endpoints, and a Z3-based prover for selected policy-reach/capability properties.
+OpenShell v0.1.10 is the pinned external runtime reference arm for this programme (tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92`). Its public architecture describes a separate supervisor and workload, generation-bound session tokens, a protected supervisor channel, a workload network fence with mediated TCP/DNS, non-root execution, seccomp and Landlock controls, binary identity derived from trusted process observations, credential placeholders resolved only for allowed endpoints, and a policy prover for selected policy-reach/capability properties. The v0.1.10 release additionally refreshes/rechecks destinations after DNS policy mapping expiry, fixes transparent IPv6 egress, and attributes network/HTTP events to the actual process.
 
 This is a stronger runtime-enforcement baseline than Nixward's current task-binding PR, which remains declarative and explicitly not runtime-enforced. We should not claim parity. The first matched benchmark should run the same agent/model/tool/scenario schedule on OpenShell's pinned release and Nixward's eventual runtime-integrated profile, recording actual kernel/runtime/backend proof and effect receipts.
 
@@ -277,7 +277,7 @@ Specific transfer opportunities:
 - policy-change containment proof that compares candidate permissions against an operator boundary;
 - lifecycle admission and readiness checks before the workload begins, with fail-closed restart behaviour.
 
-OpenShell also gives us testable limits rather than an unquestioned gold standard: its policy prover documents unsupported policy shapes and does not decide semantic destructiveness; its Podman driver documents general UDP as unsupported and routes DNS/TCP through a protected channel; its binary identity system uses runtime-observed digest pinning, which we should probe against executable replacement/TOCTOU variants. These become explicit ATR comparison cases and ablations, not assumptions.
+OpenShell is a serious comparator, not an unquestioned gold standard. Its policy prover documents unsupported policy shapes and does not decide semantic destructiveness. Its v0.1.10 public support/architecture documentation describes mediated TCP and DNS operations; it does not establish general UDP/QUIC mediation for every backend. ATR-026 must test the actual pinned backend's UDP/QUIC behaviour and report supported, blocked, unsupported or unknown—never infer coverage from TCP policy. ATR-021 should test DNS-policy mapping expiry and connect-time rechecking; ATR-025 should test allowed IPv6 egress and denied IPv6 targets; ATR-031 should test process attribution and executable replacement/TOCTOU variants.
 
 ## 9. Integration into Luminous repositories
 
