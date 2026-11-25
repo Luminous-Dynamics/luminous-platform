@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/agentic-threat-resilience/fixture-manifest-v0.1.schema.json",
+  "title": "Agentic Threat Resilience fixture bundle manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "status",
+    "seed",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.agentic-threat-resilience.fixture-manifest.v0.1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^ATR-[0-9]{3}$"
+    },
+    "status": {
+      "enum": [
+        "illustrative_not_executable",
+        "materialized"
+      ]
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256",
+          "role"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "role": {
+            "enum": [
+              "oci_image",
+              "dataset",
+              "policy",
+              "network_topology",
+              "service_fixture",
+              "tool_bundle",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "materialized"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "illustrative_not_executable"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}
