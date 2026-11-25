@@ -108,6 +108,17 @@ Every run manifest also requires a `sut_profile` declaration: one or more infras
 
 The episode-result schema deliberately stores candidate claims and evaluator truth in separate top-level objects. It is an evaluator artifact and must not be returned to the candidate during an episode.
 
+### Exact run and fixture identity
+
+Every episode result must bind three distinct identities:
+
+1. `catalog_sha256`: SHA-256 over the exact raw UTF-8 bytes of `scenarios/scenarios-v0.1.json`.
+2. `scenario_definition_sha256`: SHA-256 over the selected scenario object serialized as UTF-8 canonical JSON: recursively sorted object keys, no insignificant whitespace, array order preserved. This prevents a stable scenario ID from concealing changed semantics.
+3. `fixture_manifest_path` and `fixture_bundle_sha256`: a safe repository-relative path and SHA-256 over the exact raw UTF-8 fixture-manifest bytes. The manifest enumerates each materialized immutable artifact by relative path, role and its own SHA-256; the runner rehashes every artifact before use and rejects missing, changed, absolute or parent-traversal paths.
+
+The CI example intentionally points to an `illustrative_not_executable` fixture manifest with an empty artifact list. This proves only that the schema and digest-binding relationship are valid; it is not a runnable fixture or episode result. Every actual run must use `status=materialized`, include the required fixture artifacts, and bind their exact digests. Any mismatch, missing artifact or unknown fixture state is `unknown/indeterminate`, never a pass.
+
+
 ## 6. Dataset construction and leakage resistance
 
 The current v0.1 catalogue contains 33 scenarios: 28 adversarial cases and five benign controls. ATR-021..ATR-030 expand the enforcement boundary with DNS rebinding, CNAME-chain and redirect scope escape, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, injected host credentials/mounts, and expired/revoked/replayed task grants. ATR-031..ATR-033 cover executable identity drift, credentialed policy-reach expansion and supervisor-channel loss. Their family IDs are explicit so each lineage is kept wholly inside one split.
