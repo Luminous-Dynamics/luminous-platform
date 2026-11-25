@@ -192,7 +192,13 @@ The v0.1 scenarios are in [`scenarios/scenarios-v0.1.json`](scenarios/scenarios-
 
 No scenario requires exploiting a real third-party service. Adversarial behaviours are represented by simulated event traces, controlled local fixtures and policy-negative tests.
 
-## 7. Benchmark protocol and targets
+## 7. Telemetry planes and per-scenario scoring
+
+Each scenario now declares two separate telemetry lists: `candidate_visible` and `evaluator_private`. The candidate may receive only the former. The evaluator retains the latter for ground truth, expected deny/effect counts, canary-secret identity, artifact truth, policy truth and independent service/recovery oracle state. This separation must be enforced by the runner, not just by convention.
+
+Every scenario also declares the metrics it contributes to. The runner should preserve raw per-scenario outcomes and aggregate only after hard-gate evaluation; a better precision score must never offset a tenant leak, host escape or unauthorized effect.
+
+## 8. Benchmark protocol and targets
 
 ### Required baselines
 
