@@ -38,7 +38,9 @@
         "simulated_behavior",
         "expected_controls",
         "hard_assertions",
-        "success_criteria"
+        "success_criteria",
+        "telemetry_requirements",
+        "metrics"
       ],
       "properties": {
         "scenario_id": {
@@ -105,6 +107,94 @@
         },
         "notes": {
           "type": "string"
+        },
+        "telemetry_requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_visible",
+            "evaluator_private"
+          ],
+          "properties": {
+            "candidate_visible": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "process_lineage",
+                  "worker_task",
+                  "identity_auth",
+                  "asset_inventory",
+                  "scanner_import",
+                  "dns_query",
+                  "dns_resolution",
+                  "http_redirect",
+                  "network_flow",
+                  "egress_gateway",
+                  "model_endpoint",
+                  "llm_request_metadata",
+                  "oci_image_digest",
+                  "build_provenance",
+                  "filesystem_access",
+                  "sandbox_policy",
+                  "secret_broker",
+                  "api_access",
+                  "authorization_decision",
+                  "participant_attempt",
+                  "participant_effect",
+                  "service_health",
+                  "backup_policy",
+                  "audit_log",
+                  "model_output_claim",
+                  "provider_fallback"
+                ]
+              }
+            },
+            "evaluator_private": {
+              "type": "array",
+              "uniqueItems": true,
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "fault_truth",
+                  "expected_target_set",
+                  "expected_deny",
+                  "canary_secret_identity",
+                  "expected_effect_count",
+                  "oracle_service_health",
+                  "expected_tenant_binding",
+                  "artifact_truth",
+                  "policy_truth",
+                  "expected_evidence_provenance",
+                  "expected_recovery_state"
+                ]
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "detection_recall",
+              "precision",
+              "tenant_attribution_accuracy",
+              "deny_rate",
+              "unauthorized_effects",
+              "cross_tenant_leaks",
+              "unapproved_egress",
+              "host_escape",
+              "time_to_detect_ms",
+              "time_to_contain_ms",
+              "resource_budget_exceeded",
+              "false_recovery_claims",
+              "artifact_admission",
+              "privacy_leakage",
+              "recovery_control_integrity"
+            ]
+          }
         }
       }
     }
