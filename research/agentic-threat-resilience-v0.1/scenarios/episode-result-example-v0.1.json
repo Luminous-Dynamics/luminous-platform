@@ -4,7 +4,7 @@
     "run_id": "atr-run-example-0001",
     "evaluated_at": "2026-11-25T12:00:00+02:00",
     "scenario_id": "ATR-015",
-    "catalog_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "catalog_sha256": "0b0fcc272de0bf9eb0e480d8e519a2b60c9223581df85cef783c8f285f9d1395",
     "candidate_build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "environment_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
@@ -42,7 +42,10 @@
       "authority_enforcement_point": "Nixward participant authorization and task-bound network contract; runtime network activation not enabled",
       "effect_observer": "evaluator-owned synthetic network and service oracles",
       "evaluator_isolation": "separate-process-credentials-storage"
-    }
+    },
+    "scenario_definition_sha256": "d38728dede47582887b6ac4d98b239f1eca7865126e0a2026b775bdc0ae9e002",
+    "fixture_manifest_path": "scenarios/fixture-manifests/ATR-015.example.fixture-manifest-v0.1.json",
+    "fixture_bundle_sha256": "e36f66c9c25f395f095d97865fbf0a31a679577e7f663eac043f23005ef07e91"
   },
   "candidate_output": {
     "alerts": [],
