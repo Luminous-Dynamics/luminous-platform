@@ -110,7 +110,7 @@ The episode-result schema deliberately stores candidate claims and evaluator tru
 
 ## 6. Dataset construction and leakage resistance
 
-The current v0.1 catalogue contains 30 scenarios: 25 adversarial cases and five benign controls. ATR-021..ATR-030 expand the enforcement boundary with DNS rebinding, CNAME-chain and redirect scope escape, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, injected host credentials/mounts, and expired/revoked/replayed task grants. Their family IDs are explicit so each lineage is kept wholly inside one split.
+The current v0.1 catalogue contains 33 scenarios: 28 adversarial cases and five benign controls. ATR-021..ATR-030 expand the enforcement boundary with DNS rebinding, CNAME-chain and redirect scope escape, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, injected host credentials/mounts, and expired/revoked/replayed task grants. ATR-031..ATR-033 cover executable identity drift, credentialed policy-reach expansion and supervisor-channel loss. Their family IDs are explicit so each lineage is kept wholly inside one split.
 
 Random event-level splits are insufficient. Split by lineage groups so near-duplicate scenarios cannot leak across train, development, and held-out evaluation.
 
