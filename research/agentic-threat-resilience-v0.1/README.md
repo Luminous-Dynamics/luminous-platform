@@ -177,7 +177,7 @@ ARTEX-specific strings can be useful pivot indicators, but not detection require
 
 ## 6. Machine-readable scenario catalogue
 
-The v0.1 catalogue now contains **30 synthetic scenarios: 25 adversarial cases and five benign controls**. The additional ten adversarial cases focus on approval-to-connect drift: DNS rebinding, CNAME escape, HTTP redirects, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, inherited host credentials/mounts, and expired/revoked/replayed task grants. Each entry declares an `episode_class` and stable `scenario_family` so held-out splits can group related variants rather than leaking near-duplicates across train/test boundaries. The catalogue is in [`scenarios/scenarios-v0.1.json`](scenarios/scenarios-v0.1.json). It is defensive and designed to run only in isolated lab environments. Scenarios include:
+The v0.1 catalogue now contains **33 synthetic scenarios: 28 adversarial cases and five benign controls**. ATR-021..ATR-030 cover approval-to-connect and runtime drift: DNS rebinding, CNAME escape, HTTP redirects, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, inherited host credentials/mounts, and expired/revoked/replayed task grants. ATR-031..ATR-033 add executable identity drift, policy expansion of credentialed reach, and loss of the trusted supervisor channel. Each entry declares an `episode_class` and stable `scenario_family` so held-out splits can group related variants rather than leaking near-duplicates across train/test boundaries. The catalogue is in [`scenarios/scenarios-v0.1.json`](scenarios/scenarios-v0.1.json). It is defensive and designed to run only in isolated lab environments. Scenarios include:
 - trojanized image and tag/digest substitution;
 - exposed management console and weak privileged authentication;
 - scope drift and cross-tenant target confusion;
@@ -193,6 +193,7 @@ The v0.1 catalogue now contains **30 synthetic scenarios: 25 adversarial cases a
 - direct proxy bypass / alternate resolver; IPv6 fallback; UDP/QUIC transport fallback;
 - process cgroup migration; declared-vs-effective runtime namespace drift; inherited host credentials or mounts;
 - expired, revoked or replayed task grants.
+- executable identity change after endpoint authorization;\n- a candidate policy adding credentialed reach or new capabilities before owner approval;\n- supervisor/control-channel loss while the agent is active.
 - benign authorized red-team activity, scheduled fleet inventory, approved provider failover, within-quota worker concurrency and isolated recovery drills.
 
 The proposed scoring protocol is in [`METHODOLOGY_AND_SCORING_V0_1.md`](METHODOLOGY_AND_SCORING_V0_1.md). The strict evaluator-side result contract is [`schemas/episode-result-v0.1.schema.json`](schemas/episode-result-v0.1.schema.json), with an illustrative false-recovery fixture at [`scenarios/episode-result-example-v0.1.json`](scenarios/episode-result-example-v0.1.json). The result artifact separates candidate claims from evaluator-private truth; the private object must never be exposed to the candidate.
@@ -222,6 +223,9 @@ Every episode result also requires a machine-readable `sut_profile`: declared in
 9. OpenShell 0.1.x as an external supervised-sandbox runtime baseline, pinned to an exact release/commit and matched policy/task profile.
 
 All arms use the same frozen scenario schedule, tenant fixtures, telemetry, workload, policy, tools, model version and resource budgets. The evaluator keeps the ground-truth event plane private.
+
+OpenShell is included as a ninth baseline arm. This should be a pinned OpenShell 0.1.x release/commit with the exact runtime/backend/policy manifest recorded. It is a genuine runtime control baseline; unlike the current Nixward contract PR, it documents workload network isolation and supervisor-mediated access. Do not compare until the same model, tool/task schedule, scenario fixtures, resource envelope and task profile are run in both systems.
+
 
 ### Hard acceptance gates
 
