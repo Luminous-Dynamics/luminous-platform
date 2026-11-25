@@ -307,7 +307,15 @@ Sources:
 
 Do not compare an MSP OpsBench aggregate directly to the AIOpsLab aggregate. To claim improvement, reproduce the same task suite, scenario versions, agent/tool budgets and scoring, then separately demonstrate the additional MSP properties: tenant isolation, authority finality, SLA handling, backup/restore integrity and sustained service recovery.
 
-## 12. Qualification rule
+## 12. Agentic-adversary resilience complement
+
+MSP OpsBench measures operational capability and managed-service outcomes. It does not by itself qualify resistance to an autonomous offensive agent or to a compromised agent runtime.
+
+Use the related [Agentic Threat Resilience Bench v0.1](https://github.com/Luminous-Dynamics/luminous-platform/tree/research/agentic-threat-resilience-v0.1-2026-11-25/research/agentic-threat-resilience-v0.1) for isolated defensive scenarios covering supply-chain substitution, management-plane exposure, scope drift, DNS/redirect changes, prompt injection, model-endpoint leakage, cross-tenant confusion, runtime escape, resource amplification, data access, unapproved egress, recovery tampering and false recovery claims.
+
+The two programmes share tenant, observation, act, participant-effect and independent-verification concepts. Do not merge their scores: MSP OpsBench measures whether managed operations are correct and recover service; the agentic-resilience suite measures whether adversarial agent behaviours are prevented or detected. Any real red-team exercise must use written authorization and isolated/customer-approved scope.
+
+## 13. Qualification rule
 
 The benchmark has two separate conclusions:
 
