@@ -224,6 +224,8 @@ Every episode result also requires a machine-readable `sut_profile`: declared in
 
 All arms use the same frozen scenario schedule, tenant fixtures, telemetry, workload, policy, tools, model version and resource budgets. The evaluator keeps the ground-truth event plane private.
 
+Every episode result binds the exact catalogue bytes, the canonical digest of the selected scenario definition, and a per-scenario fixture-manifest path/digest. The fixture manifest lists each materialized artifact and its SHA-256; a runner must rehash each artifact before use. The checked-in ATR-015 fixture manifest is explicitly an illustrative schema example with no executable artifacts, not a benchmark run.
+
 OpenShell is included as a ninth baseline arm, pinned to stable v0.1.10 (tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92`, released 24 Nov 2026). Pin and record gateway, supervisor and sandbox image digests alongside the exact runtime/backend/policy manifest. It is a genuine runtime control baseline; unlike the current Nixward contract PR, it documents a separate supervisor/workload boundary and mediated workload access. Do not compare until the same model, tool/task schedule, scenario fixtures, resource envelope and task profile are run in both systems.
 
 
