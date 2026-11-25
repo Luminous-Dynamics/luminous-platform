@@ -142,17 +142,21 @@ The ablations determine whether any claimed improvement comes from HDC/CfC reaso
 
 ## 8. External benchmark crosswalk
 
-Use external benchmarks as complementary lenses, not as interchangeable scores:
+Use external benchmarks as complementary lenses, not as interchangeable scores. Always declare the exact system-under-test boundary, infrastructure profile, scenario profile, model/tool configuration and evaluation version with each result.
 
-| External work | What it measures | ATR integration |
+| External work | What it measures | ATR integration and comparison discipline |
 |---|---|---|
-| MITRE ATT&CK Evaluations Enterprise 2026 | Unified detection/protection quality, speed, alert quality, false positives, and source-of-action transparency | Map ATR alerts to technique-level detection quality; map participant enforcement to protection quality; retain an explicit automation/human source-of-action field |
-| Microsoft CTI-REALM (2026) | End-to-end conversion of CTI into validated Sigma/KQL detections across Linux, AKS, and Azure scenarios | Add detection-engineering episodes: report → technique mapping → telemetry selection → rule/query → replay against held-out attack and benign data |
-| AgentDojo, InjecAgent, Agent Security Bench, CyberSecEval | Tool-using agent and indirect-injection risks | Use as source suites for prompt/tool misuse, but add independent effect verification and task-completion outcomes |
-| Kaizen published benchmark harness (vendor-reported) | Runtime agent behaviour and egress checks; its site reports 1,066 cases and 95.7% detection with 1.3% FPR in its 27 Jun 2026 run | Treat as a useful published comparison point, not an independently verified head-to-head SOTA result; reproduce the relevant corpus and publish our own raw counts |
-| IETF Internet-Draft `draft-han-bmwg-agent-security-benchmark-00` (work in progress) | Four top-level dimensions and 55 second-level metrics across agent lifecycle risk | Use as a metric inventory/crosswalk only; it is an informational draft, not a final standard |
+| MITRE ATT&CK Evaluations Enterprise 2026 | Detection and protection quality, speed, alert quality, false positives and source-of-action transparency | Map ATR alerts to technique-level detection quality; map participant enforcement to protection quality; retain an explicit automation/human source-of-action field. Compare only the same evaluation version and configuration. |
+| OASB-1 v1.0.0 / OASB Eval v0.4.0 (OpenA2A) | 46 security controls across 10 categories and a 223-scenario evaluation suite; OASB-2 behavioural governance remains draft | Cross-map identity/provenance, capabilities, supply chain, credential protection, memory/context integrity, operations and monitoring. Important methodological caution: OASB withdrew its F1 and false-positive figures after discovering its benign labels were partly derived from its own scanner; the pinned 10 Oct 2026 run reports 192/270 (71.1%) recall on fixtures authored by the benchmark maintainers, and makes no comparative claim while it remeasures on independent corpora. Treat this as a useful control inventory, not an independently verified SOTA score. |
+| Google Cloud Semantic Governance Policies on AgentDojo (vendor-reported) | Reports attack success rate falling from 48.7% to 0.9%, with benign utility moving from 72.7% to 70.1% (2.6 percentage-point cost) in its Intent-only evaluation | Add a reproducible AgentDojo comparison. Our matched-benchmark stretch target is ASR ≤ 0.9% with utility loss ≤ 2.6 percentage points, while separately requiring zero unauthorized effects at the participant/network boundary. Do not transfer the vendor result to other agents, tools or domains. |
+| AgentDojo, InjecAgent, Agent Security Bench, CyberSecEval | Tool-using agent and indirect-injection risks | Use as source suites for prompt/tool misuse, but add independent effect verification, safe-completion and safe-abandonment outcomes, and model/task-feasibility reporting. |
+| Microsoft CTI-REALM (2026) | End-to-end conversion of CTI into validated Sigma/KQL detections across Linux, AKS and Azure scenarios | Add detection-engineering episodes: report → technique mapping → telemetry selection → rule/query → replay against held-out attack and independently labelled benign data. |
+| Kaizen published benchmark harness (vendor-reported) | Runtime agent behaviour and egress checks; its site reports 1,066 cases and 95.7% detection with 1.3% FPR in its 27 Jun 2026 run | Treat as a published comparison point, not an independently verified head-to-head SOTA result; reproduce relevant cases and publish raw counts before comparison. |
+| IETF Internet-Draft `draft-hcf-bpm-agent-security-benchmark-profiles-00` (23 Oct 2026, work in progress) | Defines infrastructure and scenario profiles; metrics are interpretable only when the SUT boundary and scenario are declared | Add a machine-readable boundary/profile declaration to every run manifest. The profile draft is informational work in progress, not a final standard. |
+| IETF Internet-Draft `draft-han-bmwg-agent-security-benchmark-00` (5 Jul 2026, work in progress) | Four top-level dimensions and 55 second-level metrics across agent lifecycle risk | Use as a metric inventory/crosswalk only; it is informational, not a final standard. |
+| 2026 peer-reviewed AgentDojo replication study | Reports attack outcomes, benign utility, operational effects and two replications across several model/defence combinations; notes low-frequency outcomes and statistical uncertainty | Require paired runs, goal-feasibility checks, run-to-run variation and multiplicity correction. A low observed ASR on a model/task combination is not proof that a defence generalizes. |
 
-Do not claim “better than SOTA” by comparing different case counts, model versions, attack distributions, or scoring rules. A valid claim requires same-version matched evaluations, public manifests, paired cases, confidence intervals, independent reproduction, and negative results.
+Do not claim “better than SOTA” by comparing different case counts, model versions, attack distributions, task feasibility or scoring rules. A valid claim requires same-version matched evaluations, public manifests, paired cases, confidence intervals, independent reproduction, a genuinely independent benign corpus, and disclosure of all negative results. The OASB correction is a concrete warning against deriving ground truth from the detector being scored.
 
 ## 9. Initial qualification targets
 
@@ -191,6 +195,10 @@ The defensible SOTA claim is not a single higher percentage. It is a system that
 ## 11. References
 
 - MITRE ATT&CK Evaluations Enterprise 2026: https://attackevals.mitre.org/enterprise/er8
+- OASB-1 / OASB Eval methodology and withdrawn-metric notice: https://oasb.ai/
+- Google Cloud Semantic Governance Policy adversarial benchmarking: https://docs.cloud.google.com/gemini-enterprise-agent-platform/govern/policies/adversarial-benchmarking
+- IETF draft profiles: https://datatracker.ietf.org/doc/html/draft-hcf-bpm-agent-security-benchmark-profiles-00
+- Replication study, Khan et al. (31 Aug 2026): https://www.mdpi.com/2073-431X/15/9/570
 - Microsoft CTI-REALM, 20 Mar 2026: https://www.microsoft.com/en-us/security/blog/2026/03/20/cti-realm-a-new-benchmark-for-end-to-end-detection-rule-generation-with-ai-agents/
 - Kaizen benchmark methodology and published results (vendor-reported, run dated 27 Jun 2026): https://docs.getkaizen.io/benchmarks/
 - *Ignored, Not Refused: What Low Prompt-Injection Success Rates Hide in Small Tool-Using Agents*, arXiv:2610.23254, 16 Oct 2026: https://arxiv.org/abs/2610.23254
