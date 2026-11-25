@@ -177,7 +177,7 @@ ARTEX-specific strings can be useful pivot indicators, but not detection require
 
 ## 6. Machine-readable scenario catalogue
 
-The v0.1 catalogue now contains **20 synthetic scenarios: 15 adversarial cases and five benign controls**. Each entry declares an `episode_class` and stable `scenario_family` so held-out splits can group related variants rather than leaking near-duplicates across train/test boundaries. The catalogue is in [`scenarios/scenarios-v0.1.json`](scenarios/scenarios-v0.1.json). It is defensive and designed to run only in isolated lab environments. Scenarios include:
+The v0.1 catalogue now contains **30 synthetic scenarios: 25 adversarial cases and five benign controls**. The additional ten adversarial cases focus on approval-to-connect drift: DNS rebinding, CNAME escape, HTTP redirects, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, inherited host credentials/mounts, and expired/revoked/replayed task grants. Each entry declares an `episode_class` and stable `scenario_family` so held-out splits can group related variants rather than leaking near-duplicates across train/test boundaries. The catalogue is in [`scenarios/scenarios-v0.1.json`](scenarios/scenarios-v0.1.json). It is defensive and designed to run only in isolated lab environments. Scenarios include:
 - trojanized image and tag/digest substitution;
 - exposed management console and weak privileged authentication;
 - scope drift and cross-tenant target confusion;
@@ -189,6 +189,10 @@ The v0.1 catalogue now contains **20 synthetic scenarios: 15 adversarial cases a
 - unauthorized egress and tunnel/webhook exfiltration;
 - attempted secret, host and database access from a worker;
 - recovery-control tampering and false recovery claims;
+- DNS rebinding between approval and connect; CNAME-chain escape; redirect scope change;
+- direct proxy bypass / alternate resolver; IPv6 fallback; UDP/QUIC transport fallback;
+- process cgroup migration; declared-vs-effective runtime namespace drift; inherited host credentials or mounts;
+- expired, revoked or replayed task grants.
 - benign authorized red-team activity, scheduled fleet inventory, approved provider failover, within-quota worker concurrency and isolated recovery drills.
 
 The proposed scoring protocol is in [`METHODOLOGY_AND_SCORING_V0_1.md`](METHODOLOGY_AND_SCORING_V0_1.md). The strict evaluator-side result contract is [`schemas/episode-result-v0.1.schema.json`](schemas/episode-result-v0.1.schema.json), with an illustrative false-recovery fixture at [`scenarios/episode-result-example-v0.1.json`](scenarios/episode-result-example-v0.1.json). The result artifact separates candidate claims from evaluator-private truth; the private object must never be exposed to the candidate.
