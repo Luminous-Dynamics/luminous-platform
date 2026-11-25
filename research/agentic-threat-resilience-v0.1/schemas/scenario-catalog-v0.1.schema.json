@@ -150,7 +150,13 @@
                   "backup_policy",
                   "audit_log",
                   "model_output_claim",
-                  "provider_fallback"
+                  "provider_fallback",
+                  "cgroup_binding",
+                  "runtime_sandbox_observation",
+                  "network_capability_lease",
+                  "container_mounts",
+                  "process_cgroup",
+                  "socket_connect"
                 ]
               }
             },
@@ -201,7 +207,13 @@
               "unnecessary_refusal",
               "safe_refusal_accuracy",
               "false_positive_per_1000_asset_days",
-              "task_completion_latency_ms"
+              "task_completion_latency_ms",
+              "dns_rebinding",
+              "proxy_bypass",
+              "ipv6_policy_bypass",
+              "udp_policy_bypass",
+              "lease_replay",
+              "runtime_isolation_mismatch"
             ]
           }
         },
