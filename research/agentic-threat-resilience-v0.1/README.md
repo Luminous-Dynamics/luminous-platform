@@ -219,6 +219,7 @@ Every episode result also requires a machine-readable `sut_profile`: declared in
 6. Symthaea with read-only observation.
 7. Symthaea with bounded, pre-authorized action in a disposable lab.
 8. Ablations without causal correlation, asset graph, provenance binding or independent observer.
+9. OpenShell 0.1.x as an external supervised-sandbox runtime baseline, pinned to an exact release/commit and matched policy/task profile.
 
 All arms use the same frozen scenario schedule, tenant fixtures, telemetry, workload, policy, tools, model version and resource budgets. The evaluator keeps the ground-truth event plane private.
 
@@ -256,6 +257,23 @@ These are goals, not achieved performance. Publish confidence intervals, per-sce
 ### Adversarial resilience
 
 Run prompt-injection, supply-chain substitution, untrusted-output, stale-scope, DNS/redirect, replay, revoked-credential, worker-spawn and egress-bypass negatives. The evaluator must verify the effect at the network or participant boundary; a model saying “blocked” is not evidence.
+
+
+
+### OpenShell comparator and design lessons
+
+OpenShell 0.1.x is now the most relevant external runtime reference arm for this programme. Its current public architecture describes a separate supervisor and workload, an authenticated private control channel, a workload network fence with mediated TCP/DNS, non-root execution, seccomp and Landlock controls, binary identity derived from trusted process observations, credential placeholders resolved only for allowed endpoints, and a Z3-based prover for selected policy-reach/capability properties.
+
+This is a stronger runtime-enforcement baseline than Nixward's current task-binding PR, which remains declarative and explicitly not runtime-enforced. We should not claim parity. The first matched benchmark should run the same agent/model/tool/scenario schedule on OpenShell's pinned release and Nixward's eventual runtime-integrated profile, recording actual kernel/runtime/backend proof and effect receipts.
+
+Specific transfer opportunities:
+- supervisor outside the workload; workload egress limited to a protected control channel;
+- process/binary identity bound to each network request, not merely task-level intent;
+- provider credentials represented as placeholders and injected only at approved destinations;
+- policy-change containment proof that compares candidate permissions against an operator boundary;
+- lifecycle admission and readiness checks before the workload begins, with fail-closed restart behaviour.
+
+OpenShell also gives us testable limits rather than an unquestioned gold standard: its policy prover documents unsupported policy shapes and does not decide semantic destructiveness; its Podman driver documents general UDP as unsupported and routes DNS/TCP through a protected channel; its binary identity system uses runtime-observed digest pinning, which we should probe against executable replacement/TOCTOU variants. These become explicit ATR comparison cases and ablations, not assumptions.
 
 ## 9. Integration into Luminous repositories
 
