@@ -63,14 +63,23 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          from pathlib import Path
+          from pathlib import Path, PurePosixPath
           from jsonschema import Draft202012Validator
 
           root = Path("research/agentic-threat-resilience-v0.1")
           episode_schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
           episode = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
           fixture_schema = json.loads((root / "schemas/fixture-manifest-v0.1.schema.json").read_text())
-          fixture = json.loads((root / episode["manifest"]["fixture_manifest_path"]).read_text())
+
+          fixture_relative = PurePosixPath(episode["manifest"]["fixture_manifest_path"])
+          if fixture_relative.is_absolute() or any(part in (".", "..") for part in fixture_relative.parts):
+              raise SystemExit("fixture_manifest_path must be a safe repository-relative path")
+          if fixture_relative.parts[:2] != ("scenarios", "fixture-manifests"):
+              raise SystemExit("fixture_manifest_path must remain under scenarios/fixture-manifests")
+          fixture_path = root.joinpath(*fixture_relative.parts)
+          if not fixture_path.resolve().is_relative_to(root.resolve()):
+              raise SystemExit("fixture_manifest_path resolves outside benchmark root")
+          fixture = json.loads(fixture_path.read_text())
 
           for schema in (episode_schema, fixture_schema):
               Draft202012Validator.check_schema(schema)
@@ -118,7 +127,11 @@ jobs:
           fixture_relative = PurePosixPath(manifest["fixture_manifest_path"])
           if fixture_relative.is_absolute() or any(part in (".", "..") for part in fixture_relative.parts):
               raise SystemExit("fixture_manifest_path must be a safe repository-relative path")
+          if fixture_relative.parts[:2] != ("scenarios", "fixture-manifests"):
+              raise SystemExit("fixture_manifest_path must remain under scenarios/fixture-manifests")
           fixture_path = root.joinpath(*fixture_relative.parts)
+          if not fixture_path.resolve().is_relative_to(root.resolve()):
+              raise SystemExit("fixture_manifest_path resolves outside benchmark root")
           fixture_bytes = fixture_path.read_bytes()
           fixture_sha256 = hashlib.sha256(fixture_bytes).hexdigest()
           if manifest["fixture_bundle_sha256"] != fixture_sha256:
@@ -129,7 +142,22 @@ jobs:
               raise SystemExit("fixture manifest scenario or seed differs from the episode manifest")
           if fixture["status"] != "illustrative_not_executable" or fixture["artifacts"]:
               raise SystemExit("example fixture manifest must remain explicitly non-executable and artifact-free")
-          print("catalogue bytes, selected scenario definition and illustrative fixture manifest are digest-bound")
+
+          artifact_paths = set()
+          repository_root = Path(".").resolve()
+          for artifact in fixture["artifacts"]:
+              relative = PurePosixPath(artifact["path"])
+              if relative.is_absolute() or any(part in (".", "..") for part in relative.parts):
+                  raise SystemExit("fixture artifact path must be safe and repository-relative")
+              if artifact["path"] in artifact_paths:
+                  raise SystemExit("fixture manifest contains duplicate artifact paths")
+              artifact_paths.add(artifact["path"])
+              artifact_path = repository_root.joinpath(*relative.parts)
+              if not artifact_path.resolve().is_relative_to(repository_root):
+                  raise SystemExit("fixture artifact resolves outside repository")
+              if hashlib.sha256(artifact_path.read_bytes()).hexdigest() != artifact["sha256"]:
+                  raise SystemExit(f"fixture artifact digest mismatch: {artifact['path']}")
+          print("catalogue bytes, selected scenario definition and fixture manifest are digest-bound; every listed artifact was rehashed")
           PY
 
       - name: Enforce candidate/evaluator separation and SUT profile declaration
