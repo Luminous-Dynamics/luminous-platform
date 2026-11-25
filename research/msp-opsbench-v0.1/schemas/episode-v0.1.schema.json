@@ -1,0 +1,770 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/msp-opsbench/episode-v0.1.schema.json",
+  "title": "Luminous MSP OpsBench completed episode bundle",
+  "description": "Research schema for a completed, reproducible MSP operations episode. The agent_input plane is the only plane that may be delivered to a candidate. evaluator_private must remain evaluator-side.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "episode_id",
+    "pairing",
+    "agent_input",
+    "agent_outputs",
+    "authority_events",
+    "participant_events",
+    "service_verifications",
+    "evaluator_private",
+    "run_manifest",
+    "paired_baselines"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.msp.opsbench.episode.v0.1"
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "pairing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pairing_block_id",
+        "scenario_id",
+        "arm_id",
+        "seed",
+        "scenario_schedule_digest",
+        "workload_profile_digest"
+      ],
+      "properties": {
+        "pairing_block_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "description": "Unsigned 64-bit PRNG seed encoded as a decimal string; validator must enforce the u64 upper bound."
+        },
+        "scenario_schedule_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "workload_profile_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "agent_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tenant",
+        "workload",
+        "observations",
+        "tool_manifest_digest"
+      ],
+      "properties": {
+        "tenant": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tenant_ref",
+            "policy_profile_digest"
+          ],
+          "properties": {
+            "tenant_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "policy_profile_digest": {
+              "$ref": "#/$defs/digest"
+            }
+          }
+        },
+        "workload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile_id",
+            "profile_digest",
+            "offered_demand_digest"
+          ],
+          "properties": {
+            "profile_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "profile_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "offered_demand_digest": {
+              "$ref": "#/$defs/digest"
+            }
+          }
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observation"
+          }
+        },
+        "tool_manifest_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "runbook_manifest_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "agent_outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incident_reports",
+        "action_proposals"
+      ],
+      "properties": {
+        "incident_reports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/incidentReport"
+          }
+        },
+        "action_proposals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/actionProposal"
+          }
+        }
+      }
+    },
+    "authority_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/authorityEvent"
+      }
+    },
+    "participant_events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/participantEvent"
+      }
+    },
+    "service_verifications": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/serviceVerification"
+      }
+    },
+    "paired_baselines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "baseline_id",
+          "baseline_class",
+          "same_pairing_block"
+        ],
+        "properties": {
+          "baseline_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "baseline_class": {
+            "enum": [
+              "no_action",
+              "deterministic_runbook",
+              "rmm_psa_workflow",
+              "classical_aiops",
+              "human_operator",
+              "competing_agent"
+            ]
+          },
+          "same_pairing_block": {
+            "const": true
+          },
+          "trace_digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      },
+      "minItems": 1,
+      "contains": {
+        "type": "object",
+        "properties": {
+          "baseline_class": {
+            "const": "no_action"
+          }
+        },
+        "required": [
+          "baseline_class"
+        ]
+      },
+      "minContains": 1
+    },
+    "evaluator_private": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Evaluator-only data. Never serialize this object into candidate context, tools, retrieval or agent-visible logs.",
+      "required": [
+        "truth_bundle_digest",
+        "truth_access_class",
+        "faults",
+        "scoring_manifest_digest"
+      ],
+      "properties": {
+        "truth_bundle_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "truth_access_class": {
+          "const": "evaluator_only"
+        },
+        "faults": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/faultTruth"
+          }
+        },
+        "scoring_manifest_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "label_provenance_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "bundle_signature_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "run_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_class",
+        "model_provider",
+        "model_id",
+        "model_version",
+        "prompt_digest",
+        "memory_digest",
+        "policy_digest",
+        "tool_manifest_digest",
+        "action_budget",
+        "wall_clock_budget_ms"
+      ],
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_class": {
+          "enum": [
+            "agent",
+            "runbook",
+            "autoscaler",
+            "human",
+            "no_action"
+          ]
+        },
+        "model_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "memory_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "tool_manifest_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "action_budget": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "wall_clock_budget_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^(blake3|sha256):[0-9a-f]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "tenant_ref",
+        "source_id",
+        "source_epoch",
+        "sequence",
+        "schema_id",
+        "observed_at",
+        "ingested_at",
+        "status",
+        "payload_digest"
+      ],
+      "properties": {
+        "observation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "ingested_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "valid_until": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "derived",
+            "unknown",
+            "stale",
+            "unavailable",
+            "permission_denied",
+            "invalid"
+          ]
+        },
+        "payload_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_signature_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "incidentReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incident_id",
+        "tenant_ref",
+        "reported_at",
+        "severity",
+        "evidence_refs",
+        "status"
+      ],
+      "properties": {
+        "incident_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reported_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "severity": {
+          "enum": [
+            "informational",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "affected_asset_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "affected_service_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hypotheses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "cause_ref",
+              "evidence_refs"
+            ],
+            "properties": {
+              "cause_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "evidence_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "enum": [
+            "open",
+            "investigating",
+            "mitigating",
+            "monitoring",
+            "resolved",
+            "escalated",
+            "abstained"
+          ]
+        }
+      }
+    },
+    "actionProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "tenant_ref",
+        "target_ref",
+        "operation_type",
+        "plan_digest",
+        "risk_class",
+        "precondition_digest",
+        "expected_postcondition_digest"
+      ],
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plan_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "risk_class": {
+          "enum": [
+            "read_only",
+            "low",
+            "moderate",
+            "high",
+            "critical"
+          ]
+        },
+        "precondition_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "expected_postcondition_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "recovery_plan_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "authorityEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorization_id",
+        "tenant_ref",
+        "principal_ref",
+        "participant_ref",
+        "target_ref",
+        "plan_digest",
+        "policy_epoch",
+        "decision",
+        "observed_at"
+      ],
+      "properties": {
+        "authorization_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plan_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decision": {
+          "enum": [
+            "approved",
+            "denied",
+            "expired",
+            "revoked",
+            "replayed",
+            "mismatched",
+            "unknown"
+          ]
+        },
+        "one_use_handle_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "receipt_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "participantEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "participant_ref",
+        "tenant_ref",
+        "target_ref",
+        "attempt_id",
+        "idempotency_key_digest",
+        "plan_digest",
+        "outcome",
+        "observed_at"
+      ],
+      "properties": {
+        "participant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "plan_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "outcome": {
+          "enum": [
+            "rejected",
+            "attempted",
+            "committed",
+            "not_committed",
+            "unknown",
+            "reconciled"
+          ]
+        },
+        "effect_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorization_consumed_atomically": {
+          "type": "boolean"
+        },
+        "observed_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "receipt_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "serviceVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observer_id",
+        "tenant_ref",
+        "service_ref",
+        "workload_profile_digest",
+        "window_start",
+        "window_end",
+        "result",
+        "evidence_digest"
+      ],
+      "properties": {
+        "observer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workload_profile_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "window_start": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "window_end": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "result": {
+          "enum": [
+            "healthy",
+            "degraded",
+            "unhealthy",
+            "unknown"
+          ]
+        },
+        "availability_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "p95_latency_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "error_rate_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "observer_signature_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "faultTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fault_id",
+        "fault_class",
+        "target_refs",
+        "active_from",
+        "truth_digest"
+      ],
+      "properties": {
+        "fault_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fault_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "active_from": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "reverted_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "truth_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "label_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
