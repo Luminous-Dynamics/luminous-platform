@@ -29,7 +29,10 @@
         "toolchain_sha256",
         "model",
         "seed",
-        "sut_profile"
+        "sut_profile",
+        "scenario_definition_sha256",
+        "fixture_manifest_path",
+        "fixture_bundle_sha256"
       ],
       "properties": {
         "run_id": {
@@ -46,7 +49,8 @@
         },
         "catalog_sha256": {
           "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 of the exact raw UTF-8 bytes of scenarios/scenarios-v0.1.json for this run."
         },
         "candidate_build_sha256": {
           "type": "string",
@@ -171,6 +175,23 @@
               "const": "separate-process-credentials-storage"
             }
           }
+        },
+        "scenario_definition_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 of the selected scenario object serialized as UTF-8 canonical JSON (sorted object keys, no insignificant whitespace, arrays kept in source order)."
+        },
+        "fixture_manifest_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^scenarios/fixture-manifests/[A-Za-z0-9._/-]+\\.json$",
+          "description": "Repository-relative path to the immutable per-scenario fixture manifest. The evaluator must reject absolute paths and parent-directory traversal."
+        },
+        "fixture_bundle_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 of the exact raw UTF-8 fixture-manifest bytes. The manifest must enumerate every materialized fixture artifact with its own SHA-256; the runner must rehash each artifact before use."
         }
       }
     },
