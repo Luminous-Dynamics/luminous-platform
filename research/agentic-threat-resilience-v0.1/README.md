@@ -245,7 +245,7 @@ These are goals, not achieved performance. Publish confidence intervals, per-sce
 
 Run prompt-injection, supply-chain substitution, untrusted-output, stale-scope, DNS/redirect, replay, revoked-credential, worker-spawn and egress-bypass negatives. The evaluator must verify the effect at the network or participant boundary; a model saying “blocked” is not evidence.
 
-## 8. Integration into Luminous repositories
+## 9. Integration into Luminous repositories
 
 | Repository | Role |
 |---|---|
@@ -258,7 +258,7 @@ Run prompt-injection, supply-chain substitution, untrusted-output, stale-scope, 
 
 The existing MSP OpsBench should remain focused on managed operations and recovery. This new benchmark adds an agentic-adversary resilience suite; it must reuse the common episode/evidence contracts rather than become a duplicate evaluator.
 
-## 9. Immediate engineering sequence
+## 10. Immediate engineering sequence
 
 ### P0 — supply-chain and exposure assurance
 - Pin images by immutable digest and verify signature/provenance before start.
@@ -284,7 +284,7 @@ The existing MSP OpsBench should remain focused on managed operations and recove
 - Run the synthetic catalogue against rules, endpoint/network/identity baselines, analyst workflow and Symthaea.
 - Publish a reproducible defensive report and known limitations.
 
-## 10. What we are not claiming
+## 11. What we are not claiming
 
 - We have not installed or run ARTEX.
 - We have not exercised any fork against real systems.
