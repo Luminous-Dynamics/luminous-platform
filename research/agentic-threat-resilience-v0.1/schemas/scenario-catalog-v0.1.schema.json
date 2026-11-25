@@ -156,7 +156,11 @@
                   "network_capability_lease",
                   "container_mounts",
                   "process_cgroup",
-                  "socket_connect"
+                  "socket_connect",
+                  "binary_identity",
+                  "policy_delta",
+                  "credential_provider",
+                  "supervisor_channel"
                 ]
               }
             },
@@ -213,7 +217,11 @@
               "ipv6_policy_bypass",
               "udp_policy_bypass",
               "lease_replay",
-              "runtime_isolation_mismatch"
+              "runtime_isolation_mismatch",
+              "binary_identity_drift",
+              "credential_reach_expansion",
+              "supervisor_disconnect_fail_closed",
+              "policy_containment"
             ]
           }
         },
