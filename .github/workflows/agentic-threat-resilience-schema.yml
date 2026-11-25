@@ -59,7 +59,7 @@ jobs:
           print("catalogue schema valid; 33 unique scenarios (28 adversarial, 5 benign)")
           PY
 
-      - name: Validate episode-result schema and example
+      - name: Validate episode and fixture-manifest schemas and examples
         run: |
           python - <<'PY'
           import json
@@ -67,17 +67,69 @@ jobs:
           from jsonschema import Draft202012Validator
 
           root = Path("research/agentic-threat-resilience-v0.1")
-          schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
-          example = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          episode_schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
+          episode = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          fixture_schema = json.loads((root / "schemas/fixture-manifest-v0.1.schema.json").read_text())
+          fixture = json.loads((root / episode["manifest"]["fixture_manifest_path"]).read_text())
 
-          Draft202012Validator.check_schema(schema)
-          errors = sorted(Draft202012Validator(schema).iter_errors(example), key=lambda e: list(e.absolute_path))
-          if errors:
-              for error in errors:
-                  location = "/".join(str(part) for part in error.absolute_path)
-                  print(f"{location}: {error.message}")
-              raise SystemExit(f"{len(errors)} episode-result validation error(s)")
-          print("episode-result schema and example valid")
+          for schema in (episode_schema, fixture_schema):
+              Draft202012Validator.check_schema(schema)
+
+          for schema, instance, label in (
+              (episode_schema, episode, "episode-result"),
+              (fixture_schema, fixture, "fixture-manifest"),
+          ):
+              errors = sorted(Draft202012Validator(schema).iter_errors(instance), key=lambda e: list(e.absolute_path))
+              if errors:
+                  for error in errors:
+                      location = "/".join(str(part) for part in error.absolute_path)
+                      print(f"{label} {location}: {error.message}")
+                  raise SystemExit(f"{len(errors)} {label} validation error(s)")
+          print("episode-result and fixture-manifest schemas/examples valid")
+          PY
+
+      - name: Verify exact catalogue, scenario and fixture-manifest digest binding
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path, PurePosixPath
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          catalog_path = root / "scenarios/scenarios-v0.1.json"
+          episode = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          manifest = episode["manifest"]
+
+          catalog_bytes = catalog_path.read_bytes()
+          catalog_sha256 = hashlib.sha256(catalog_bytes).hexdigest()
+          if manifest["catalog_sha256"] != catalog_sha256:
+              raise SystemExit("episode manifest catalog_sha256 does not match exact catalogue bytes")
+          catalog = json.loads(catalog_bytes)
+          selected = next((s for s in catalog["scenarios"] if s["scenario_id"] == manifest["scenario_id"]), None)
+          if selected is None:
+              raise SystemExit("episode scenario_id is absent from the exact catalogue")
+          canonical_scenario = json.dumps(
+              selected, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+          ).encode("utf-8")
+          scenario_sha256 = hashlib.sha256(canonical_scenario).hexdigest()
+          if manifest["scenario_definition_sha256"] != scenario_sha256:
+              raise SystemExit("episode manifest scenario_definition_sha256 does not match selected scenario")
+
+          fixture_relative = PurePosixPath(manifest["fixture_manifest_path"])
+          if fixture_relative.is_absolute() or any(part in (".", "..") for part in fixture_relative.parts):
+              raise SystemExit("fixture_manifest_path must be a safe repository-relative path")
+          fixture_path = root.joinpath(*fixture_relative.parts)
+          fixture_bytes = fixture_path.read_bytes()
+          fixture_sha256 = hashlib.sha256(fixture_bytes).hexdigest()
+          if manifest["fixture_bundle_sha256"] != fixture_sha256:
+              raise SystemExit("episode manifest fixture_bundle_sha256 does not match exact fixture manifest bytes")
+
+          fixture = json.loads(fixture_bytes)
+          if fixture["scenario_id"] != manifest["scenario_id"] or fixture["seed"] != manifest["seed"]:
+              raise SystemExit("fixture manifest scenario or seed differs from the episode manifest")
+          if fixture["status"] != "illustrative_not_executable" or fixture["artifacts"]:
+              raise SystemExit("example fixture manifest must remain explicitly non-executable and artifact-free")
+          print("catalogue bytes, selected scenario definition and illustrative fixture manifest are digest-bound")
           PY
 
       - name: Enforce candidate/evaluator separation and SUT profile declaration
@@ -90,6 +142,9 @@ jobs:
           schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
           example = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
           manifest_required = schema["properties"]["manifest"]["required"]
+          required_digests = {"catalog_sha256", "scenario_definition_sha256", "fixture_manifest_path", "fixture_bundle_sha256"}
+          if not required_digests.issubset(set(manifest_required)):
+              raise SystemExit("every episode manifest must bind catalogue, scenario definition and fixture bundle")
           if "sut_profile" not in manifest_required:
               raise SystemExit("sut_profile must be required in every run manifest")
           profile = example["manifest"]["sut_profile"]
@@ -97,5 +152,5 @@ jobs:
               raise SystemExit("example must declare isolated evaluator storage/credentials/process")
           if set(profile["included_components"]) & set(profile["excluded_components"]):
               raise SystemExit("SUT profile includes a component that it also excludes")
-          print("SUT profile and candidate/evaluator separation contract present")
+          print("digest binding, SUT profile and candidate/evaluator separation contract present")
           PY
