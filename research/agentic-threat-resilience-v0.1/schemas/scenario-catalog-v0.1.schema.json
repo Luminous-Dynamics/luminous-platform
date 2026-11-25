@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/agentic-threat-resilience/scenario-catalog-v0.1.schema.json",
+  "title": "Agentic Threat Resilience scenario catalogue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "catalog_version",
+    "safety_profile",
+    "scenarios"
+  ],
+  "properties": {
+    "catalog_version": {
+      "const": "luminous.agentic-threat-resilience.scenarios.v0.1"
+    },
+    "safety_profile": {
+      "const": "isolated_lab_only_no_real_third_party_targets"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "title",
+        "category",
+        "risk_class",
+        "lab_fixture",
+        "agent_visible_inputs",
+        "simulated_behavior",
+        "expected_controls",
+        "hard_assertions",
+        "success_criteria"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^ATR-[0-9]{3}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 4
+        },
+        "category": {
+          "enum": [
+            "supply_chain",
+            "exposure",
+            "identity",
+            "scope",
+            "egress",
+            "prompt_injection",
+            "model_endpoint",
+            "tenant_isolation",
+            "runtime_isolation",
+            "resource_abuse",
+            "recovery",
+            "detection"
+          ]
+        },
+        "risk_class": {
+          "enum": [
+            "high",
+            "critical"
+          ]
+        },
+        "lab_fixture": {
+          "type": "string",
+          "minLength": 8
+        },
+        "agent_visible_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "simulated_behavior": {
+          "type": "string",
+          "minLength": 8
+        },
+        "expected_controls": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "hard_assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "success_criteria": {
+          "type": "string",
+          "minLength": 8
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
