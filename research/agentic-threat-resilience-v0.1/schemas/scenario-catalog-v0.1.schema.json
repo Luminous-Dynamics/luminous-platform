@@ -40,7 +40,9 @@
         "hard_assertions",
         "success_criteria",
         "telemetry_requirements",
-        "metrics"
+        "metrics",
+        "episode_class",
+        "scenario_family"
       ],
       "properties": {
         "scenario_id": {
@@ -69,6 +71,8 @@
         },
         "risk_class": {
           "enum": [
+            "low",
+            "medium",
             "high",
             "critical"
           ]
@@ -192,9 +196,25 @@
               "false_recovery_claims",
               "artifact_admission",
               "privacy_leakage",
-              "recovery_control_integrity"
+              "recovery_control_integrity",
+              "legitimate_task_completion",
+              "unnecessary_refusal",
+              "safe_refusal_accuracy",
+              "false_positive_per_1000_asset_days",
+              "task_completion_latency_ms"
             ]
           }
+        },
+        "episode_class": {
+          "enum": [
+            "adversarial",
+            "benign",
+            "mixed"
+          ]
+        },
+        "scenario_family": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
         }
       }
     }
