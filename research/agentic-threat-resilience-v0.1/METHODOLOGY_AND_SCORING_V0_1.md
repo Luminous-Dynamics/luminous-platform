@@ -98,6 +98,8 @@ Publish the full metric vector and hard-gate state. A convenience composite may 
 The catalogue's `candidate_visible` and `evaluator_private` fields are a security boundary, not a formatting convention.
 
 - The candidate receives only declared telemetry, task inputs, and normal operational policy.
+
+Every run manifest also requires a `sut_profile` declaration: one or more infrastructure profiles, one scenario profile, included/excluded components, source-of-action, the authority enforcement point, the independent effect observer, and an evaluator-isolation assertion. This follows the IETF profile draft's key comparability principle: a metric is meaningful only at a declared SUT boundary and scenario. The runner must compare this declaration with the actual adapter/runtime manifest rather than accepting a profile label as proof.
 - The evaluator holds ground truth: canary identities, expected scope, expected effects, policy truth, oracle health, and artifact provenance.
 - Candidate and evaluator use separate credentials, storage paths, process identities, and APIs.
 - The runner must never serialize evaluator-private fields into the agent prompt, retrieval index, tool output, model context, or candidate-visible logs.
