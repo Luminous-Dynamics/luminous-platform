@@ -141,7 +141,7 @@ Required arms:
 6. Symthaea read-only observer;
 7. Symthaea with pre-authorized, bounded actions in a disposable lab;
 8. ablations: no causal correlation, no asset graph, no provenance binding, and no independent observer.
-9. OpenShell 0.1.x supervised-sandbox runtime, pinned to exact release/commit and configured with the same task/profile.
+9. OpenShell v0.1.10 supervised-sandbox runtime, pinned to tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92`, with exact image digests, backend, policy and task profile recorded.
 
 The ablations determine whether any claimed improvement comes from HDC/CfC reasoning, temporal/causal correlation, evidence architecture, or simply additional telemetry and rules. Model versions and all configuration digests must be frozen across relevant arms.
 
@@ -156,7 +156,7 @@ Use external benchmarks as complementary lenses, not as interchangeable scores. 
 | Google Cloud Semantic Governance Policies on AgentDojo (vendor-reported) | Reports attack success rate falling from 48.7% to 0.9%, with benign utility moving from 72.7% to 70.1% (2.6 percentage-point cost) in its Intent-only evaluation | Add a reproducible AgentDojo comparison. Our matched-benchmark stretch target is ASR ≤ 0.9% with utility loss ≤ 2.6 percentage points, while separately requiring zero unauthorized effects at the participant/network boundary. Do not transfer the vendor result to other agents, tools or domains. |
 | AgentDojo, InjecAgent, Agent Security Bench, CyberSecEval | Tool-using agent and indirect-injection risks | Use as source suites for prompt/tool misuse, but add independent effect verification, safe-completion and safe-abandonment outcomes, and model/task-feasibility reporting. |
 | Microsoft CTI-REALM (2026) | End-to-end conversion of CTI into validated Sigma/KQL detections across Linux, AKS and Azure scenarios | Add detection-engineering episodes: report → technique mapping → telemetry selection → rule/query → replay against held-out attack and independently labelled benign data. |
-| NVIDIA OpenShell 0.1.x (open-source secure runtime) | Separate workload/supervisor boundary, kernel-level filesystem and process control, mediated TCP/DNS, outer network fence, credential placeholders, binary identity and Z3 policy containment checks | Add an OpenShell runtime arm, pinned to a specific release/commit and identical agent/model/task/scenario inputs. Verify the deployment's actual backend, CNI/runtime and policy; do not infer runtime activation from a policy document. Compare Nixward's declarative task binding and owner/effect receipts against OpenShell's stronger supervisor/network-isolation path. |
+| NVIDIA OpenShell v0.1.10 (open-source secure runtime; tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92`) | Separate supervisor/workload boundary, generation-bound session tokens, workload network fence, supervisor-mediated TCP/DNS, credential brokering, process identity telemetry and policy-prover controls. The v0.1.10 release also refreshes/rechecks destinations after DNS policy mapping expiry, fixes transparent IPv6 egress, and attributes network/HTTP events to the actual process. | Pin the release tag and gateway/supervisor/sandbox image digests; run identical agent/model/task/scenario inputs. Record actual backend, kernel prerequisites, CNI/runtime, policy and observed events. Add explicit tests for DNS mapping expiry, IPv6 egress and process attribution. Treat UDP/QUIC mediation as unproven until the selected backend demonstrates it; the current public support matrix describes mediated TCP/DNS, not general UDP proxying. Compare Nixward's declarative task binding and owner/effect receipts against OpenShell's stronger supervisor/runtime boundary without claiming parity. |
 | Kaizen published benchmark harness (vendor-reported) | Runtime agent behaviour and egress checks; its site reports 1,066 cases and 95.7% detection with 1.3% FPR in its 27 Jun 2026 run | Treat as a published comparison point, not an independently verified head-to-head SOTA result; reproduce relevant cases and publish raw counts before comparison. |
 | IETF Internet-Draft `draft-hcf-bpm-agent-security-benchmark-profiles-00` (23 Oct 2026, work in progress) | Defines infrastructure and scenario profiles; metrics are interpretable only when the SUT boundary and scenario are declared | Add a machine-readable boundary/profile declaration to every run manifest. The profile draft is informational work in progress, not a final standard. |
 | IETF Internet-Draft `draft-han-bmwg-agent-security-benchmark-00` (5 Jul 2026, work in progress) | Four top-level dimensions and 55 second-level metrics across agent lifecycle risk | Use as a metric inventory/crosswalk only; it is informational, not a final standard. |
@@ -199,6 +199,10 @@ The differentiated contribution should be a reproducible **agentic security cont
 The defensible SOTA claim is not a single higher percentage. It is a system that performs at least as well on matched public suites, improves the safety/utility frontier, and independently demonstrates zero observed boundary violations over a preregistered, reproducible evaluation—while showing the uncertainty honestly.
 
 ## 11. References
+
+- NVIDIA OpenShell v0.1.10 release (tag commit `152c59d3178039e3fbb4a5595f9fff7216a6be92`, 24 Nov 2026): https://github.com/ai-openshell/openshell/releases/tag/v0.1.10
+- NVIDIA OpenShell v0.1.10 architecture: https://docs.nvidia.com/openshell/v0.1.10/about/architecture
+- NVIDIA OpenShell v0.1.10 support matrix: https://docs.nvidia.com/openshell/v0.1.10/about/support-matrix
 
 - MITRE ATT&CK Evaluations Enterprise 2026: https://attackevals.mitre.org/enterprise/er8
 - OASB-1 / OASB Eval methodology and withdrawn-metric notice: https://oasb.ai/
