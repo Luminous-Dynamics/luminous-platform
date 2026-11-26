@@ -168,7 +168,9 @@
                   "observer_boot_epoch",
                   "observer_checkpoint_state",
                   "observer_witness_receipt",
-                  "observer_witness_tree_head"
+                  "observer_witness_tree_head",
+                  "observer_witness_gossip",
+                  "observer_witness_merkle_proof"
                 ]
               }
             },
@@ -196,7 +198,10 @@
                   "expected_key_revocation",
                   "expected_checkpoint_state",
                   "expected_witness_quorum",
-                  "expected_witness_tree_head"
+                  "expected_witness_tree_head",
+                  "expected_witness_view",
+                  "expected_merkle_leaf",
+                  "expected_previous_tree_root"
                 ]
               }
             }
@@ -244,7 +249,10 @@
               "evidence_freshness_ms",
               "observer_witness_reconciliation",
               "observer_witness_quorum",
-              "observer_witness_equivocation"
+              "observer_witness_equivocation",
+              "witness_gossip_equivocation_detection",
+              "witness_inclusion_proof_validity",
+              "witness_consistency_proof_validity"
             ]
           }
         },
