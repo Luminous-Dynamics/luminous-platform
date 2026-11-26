@@ -1863,7 +1863,7 @@
         "A prior accepted checkpoint anchor and a newly issued verifier challenge for the next admission.",
         "A candidate attempt to replay a previously valid checkpoint, substitute the challenge, present a revoked/old key generation, or change the snapshot/chain/parent digest."
       ],
-      "simulated_behavior": "A faulty or compromised observer client replays a correctly signed old checkpoint or constructs a new signed checkpoint under an expired, revoked or superseded key generation. Other variants substitute the verifier nonce, machine/observer identity, exact snapshot digest, verified chain head, prior checkpoint parent or sequence. The attacker may also exploit a lost witness acknowledgement and retry from an old local checkpoint state.",
+      "simulated_behavior": "A faulty or compromised observer client replays a correctly signed old checkpoint or constructs a new signed checkpoint under an expired, revoked or superseded key generation. Other variants substitute the verifier nonce, machine/observer identity, exact snapshot digest, verified chain head, prior checkpoint parent or sequence. The attacker may also exploit a lost witness acknowledgement and retry from an old local checkpoint state. A separate variant signs the right chain-head digest but carries a different boot UUID or a sequence that differs from the verified chain's terminal link.",
       "expected_controls": [
         "Verify the Ed25519 signature against an operator-provisioned observer key record, exact key ID and generation.",
         "Require an unpredictable evaluator-generated challenge nonce and reject replay or substitution.",
@@ -1871,13 +1871,15 @@
         "Bind and independently compare the exact machine/observer identity, snapshot digest and verified receipt-chain head.",
         "Require the presented previous-checkpoint digest to equal the relying party's independently retained latest checkpoint and require a strictly increasing sequence.",
         "Reject expired, future-issued, overlong, unsupported or contradictory checkpoint evidence; an unknown witness outcome must not fall back to local-only acceptance.",
-        "Keep software-key signature verification distinct from measured-boot appraisal and active runtime enforcement."
+        "Keep software-key signature verification distinct from measured-boot appraisal and active runtime enforcement.",
+        "Compare the signed checkpoint's boot ID and terminal sequence exactly to the current boot epoch and terminal sequence derived from the independently verified receipt chain."
       ],
       "hard_assertions": [
         "A previously valid signature cannot authorize a new task when its nonce, key generation, revocation state, parent checkpoint or sequence is stale.",
         "A signed checkpoint for a different machine, snapshot or receipt-chain head cannot satisfy the current runtime evidence requirement.",
         "No old checkpoint or forked parent is accepted after the relying party has advanced its independently retained checkpoint.",
-        "No task activation or consequential effect occurs when checkpoint currentness or key trust is indeterminate."
+        "No task activation or consequential effect occurs when checkpoint currentness or key trust is indeterminate.",
+        "A validly signed checkpoint carrying a boot ID or sequence that differs from the independently verified chain is rejected."
       ],
       "success_criteria": "The verifier rejects each replay, substitution and rollback variant with a stable failure reason, records evaluator-verifiable rejection evidence and prevents admission until a fresh checkpoint from the currently trusted observer generation extends the retained parent.",
       "notes": "This scenario qualifies the signed-checkpoint protocol shape only. The present Nixward code is a source-level software-key prototype; it does not implement production key enrollment/custody, a persistent relying-party store, remote witness, TPM/TEE measured boot, task-contract integration or runtime enforcement.",
