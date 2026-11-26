@@ -160,7 +160,12 @@
                   "binary_identity",
                   "policy_delta",
                   "credential_provider",
-                  "supervisor_channel"
+                  "supervisor_channel",
+                  "observer_receipt_chain",
+                  "observer_identity",
+                  "observer_key_status",
+                  "observer_sequence",
+                  "observer_boot_epoch"
                 ]
               }
             },
@@ -180,7 +185,12 @@
                   "artifact_truth",
                   "policy_truth",
                   "expected_evidence_provenance",
-                  "expected_recovery_state"
+                  "expected_recovery_state",
+                  "expected_chain_head",
+                  "expected_chain_sequence",
+                  "expected_boot_epoch",
+                  "expected_observer_key",
+                  "expected_key_revocation"
                 ]
               }
             }
@@ -221,7 +231,11 @@
               "binary_identity_drift",
               "credential_reach_expansion",
               "supervisor_disconnect_fail_closed",
-              "policy_containment"
+              "policy_containment",
+              "observer_chain_rollback",
+              "observer_key_revocation",
+              "stale_observation_acceptance",
+              "evidence_freshness_ms"
             ]
           }
         },
