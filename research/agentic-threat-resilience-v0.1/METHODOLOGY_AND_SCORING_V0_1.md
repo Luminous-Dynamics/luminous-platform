@@ -121,7 +121,7 @@ The CI example intentionally points to an `illustrative_not_executable` fixture 
 
 ## 6. Dataset construction and leakage resistance
 
-The current v0.1 catalogue contains 39 scenarios: 34 adversarial cases and five benign controls. ATR-021..ATR-030 expand the enforcement boundary with DNS rebinding, CNAME-chain and redirect scope escape, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, injected host credentials/mounts, and expired/revoked/replayed task grants. ATR-031..ATR-033 cover executable identity drift, credentialed policy-reach expansion and supervisor-channel loss. ATR-034..ATR-036 cover observer TOCTOU/PID reuse, stale proof replay after policy mutation, and source-discordant runtime receipts. ATR-037..ATR-038 add receipt-chain rollback/truncation/reordering and revoked/expired observer-key replay. ATR-039 tests boot-epoch aliases, consecutive transitions and reuse of previously seen boot IDs after candidate-side link-digest recomputation. These scenarios require independently anchored chain heads and evaluator-owned key-revocation truth; they do not presume those mechanisms are implemented. Their family IDs are explicit so each lineage is kept wholly inside one split.
+The current v0.1 catalogue contains 40 scenarios: 35 adversarial cases and five benign controls. ATR-021..ATR-030 expand the enforcement boundary with DNS rebinding, CNAME-chain and redirect scope escape, proxy bypass, IPv6 and UDP/QUIC fallback, cgroup migration, runtime namespace drift, injected host credentials/mounts, and expired/revoked/replayed task grants. ATR-031..ATR-033 cover executable identity drift, credentialed policy-reach expansion and supervisor-channel loss. ATR-034..ATR-036 cover observer TOCTOU/PID reuse, stale proof replay after policy mutation, and source-discordant runtime receipts. ATR-037..ATR-038 add receipt-chain rollback/truncation/reordering and revoked/expired observer-key replay. ATR-039 tests boot-epoch aliases, consecutive transitions and reuse of previously seen boot IDs after candidate-side link-digest recomputation. ATR-040 adds strict receipt-envelope and payload deserialization, rejecting unknown extension fields not covered by a receipt digest. These scenarios require independently anchored chain heads and evaluator-owned key-revocation truth; they do not presume those mechanisms are implemented. Their family IDs are explicit so each lineage is kept wholly inside one split.
 
 Random event-level splits are insufficient. Split by lineage groups so near-duplicate scenarios cannot leak across train, development, and held-out evaluation.
 
@@ -226,7 +226,7 @@ The defensible SOTA claim is not a single higher percentage. It is a system that
 - IETF Internet-Draft `draft-han-bmwg-agent-security-benchmark-00`, 5 Jul 2026; work in progress, expires 6 Jan 2027: https://test.nic.funet.fi/pub/doc/netinfo/internet-drafts/draft-han-bmwg-agent-security-benchmark-00.html
 ## Evidence lifecycle metrics and targets
 
-The 39-scenario benchmark now distinguishes a trustworthy current observation from a historically valid artifact:
+The 40-scenario benchmark now distinguishes a trustworthy current observation from a historically valid artifact:
 
 | Metric | Definition | Proposed target |
 |---|---|---:|
@@ -235,5 +235,5 @@ The 39-scenario benchmark now distinguishes a trustworthy current observation fr
 | `stale_observation_acceptance` | High-impact admissions/effects accepted with stale or identity-mismatched evidence | 0 |
 | `evidence_freshness_ms` | Age of the newest required source observation at authorization/effect | p95 ≤ 5,000 ms in the v0.1 lab profile |
 
-The freshness target is not a substitute for event-driven invalidation: a change to process, namespace, cgroup, mount, executable, policy, observer key or boot epoch must invalidate dependent evidence immediately. The current receipt-chain module is an in-memory prototype without signatures, persistent anti-rollback storage or an external anchor. ATR-037/038 are qualification scenarios for mechanisms that still need implementation; ATR-039 specifically qualifies chain state-machine integrity, not authentication or external anchoring. No results are claimed.
+The freshness target is not a substitute for event-driven invalidation: a change to process, namespace, cgroup, mount, executable, policy, observer key or boot epoch must invalidate dependent evidence immediately. The current receipt-chain module is an in-memory prototype without signatures, persistent anti-rollback storage or an external anchor. ATR-037/038 are qualification scenarios for mechanisms that still need implementation; ATR-039 specifically qualifies chain state-machine integrity, not authentication or external anchoring; ATR-040 qualifies strict receipt parsing, not authenticity or durability. No results are claimed.
 
