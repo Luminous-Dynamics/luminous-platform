@@ -4,7 +4,7 @@
     "run_id": "atr-run-example-0001",
     "evaluated_at": "2026-11-25T12:00:00+02:00",
     "scenario_id": "ATR-015",
-    "catalog_sha256": "6c529e598cb561a3cc55e1652c8cfd1d7c06085ce07038f11a739cb8197e36b3",
+    "catalog_sha256": "939139f531fea3e3ae30251dec4238aa98bbe2961d04ee2f865a9bd586bdbad2",
     "candidate_build_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "environment_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "policy_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
