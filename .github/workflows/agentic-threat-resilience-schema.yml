@@ -56,7 +56,7 @@ jobs:
               raise SystemExit("expected 42 adversarial scenarios")
           if sum(s["episode_class"] == "benign" for s in catalog["scenarios"]) != 6:
               raise SystemExit("expected 6 benign controls")
-          print("catalogue schema valid; 46 unique scenarios (40 adversarial, 6 benign)")
+          print("catalogue schema valid; 48 unique scenarios (42 adversarial, 6 benign)")
           PY
 
       - name: Validate episode and fixture-manifest schemas and examples
