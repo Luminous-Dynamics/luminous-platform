@@ -27,7 +27,7 @@ jobs:
       - name: Install pinned schema validator
         run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0"
 
-      - name: Validate catalogue schema and all 48 scenarios
+      - name: Validate catalogue schema and all 50 scenarios
         run: |
           python - <<'PY'
           import json
@@ -50,13 +50,13 @@ jobs:
           ids = [scenario["scenario_id"] for scenario in catalog["scenarios"]]
           if len(ids) != len(set(ids)):
               raise SystemExit("duplicate scenario_id")
-          if len(ids) != 48:
-              raise SystemExit(f"expected 48 scenarios, found {len(ids)}")
-          if sum(s["episode_class"] == "adversarial" for s in catalog["scenarios"]) != 42:
-              raise SystemExit("expected 42 adversarial scenarios")
+          if len(ids) != 50:
+              raise SystemExit(f"expected 50 scenarios, found {len(ids)}")
+          if sum(s["episode_class"] == "adversarial" for s in catalog["scenarios"]) != 44:
+              raise SystemExit("expected 44 adversarial scenarios")
           if sum(s["episode_class"] == "benign" for s in catalog["scenarios"]) != 6:
               raise SystemExit("expected 6 benign controls")
-          print("catalogue schema valid; 48 unique scenarios (42 adversarial, 6 benign)")
+          print("catalogue schema valid; 50 unique scenarios (44 adversarial, 6 benign)")
           PY
 
       - name: Validate episode and fixture-manifest schemas and examples
