@@ -52,7 +52,7 @@ jobs:
               raise SystemExit("duplicate scenario_id")
           if len(ids) != 38:
               raise SystemExit(f"expected 38 scenarios, found {len(ids)}")
-          if sum(s["episode_class"] == "adversarial" for s in catalog["scenarios"]) != 31:
+          if sum(s["episode_class"] == "adversarial" for s in catalog["scenarios"]) != 33:
               raise SystemExit("expected 33 adversarial scenarios")
           if sum(s["episode_class"] == "benign" for s in catalog["scenarios"]) != 5:
               raise SystemExit("expected 5 benign controls")
