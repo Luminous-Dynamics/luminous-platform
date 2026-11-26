@@ -2194,7 +2194,7 @@
         "unauthorized_effects"
       ],
       "episode_class": "benign",
-      "scenario_family": "observer-witness-single-outage-benign"
+      "scenario_family": "observer-witness-availability"
     },
     {
       "scenario_id": "ATR-047",
