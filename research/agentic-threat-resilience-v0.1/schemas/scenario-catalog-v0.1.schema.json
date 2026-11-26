@@ -170,7 +170,8 @@
                   "observer_witness_receipt",
                   "observer_witness_tree_head",
                   "observer_witness_gossip",
-                  "observer_witness_merkle_proof"
+                  "observer_witness_merkle_proof",
+                  "observer_witness_quorum"
                 ]
               }
             },
@@ -201,7 +202,11 @@
                   "expected_witness_tree_head",
                   "expected_witness_view",
                   "expected_merkle_leaf",
-                  "expected_previous_tree_root"
+                  "expected_previous_tree_root",
+                  "expected_quorum_intersection",
+                  "expected_byzantine_witness",
+                  "expected_honest_witness_intersection",
+                  "expected_witness_key_fingerprint"
                 ]
               }
             }
@@ -252,7 +257,10 @@
               "observer_witness_equivocation",
               "witness_gossip_equivocation_detection",
               "witness_inclusion_proof_validity",
-              "witness_consistency_proof_validity"
+              "witness_consistency_proof_validity",
+              "observer_quorum_intersection_safety",
+              "observer_byzantine_fault_tolerance",
+              "observer_key_fingerprint_mismatch"
             ]
           }
         },
