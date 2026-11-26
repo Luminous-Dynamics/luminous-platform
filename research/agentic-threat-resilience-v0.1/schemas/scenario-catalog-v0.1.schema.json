@@ -165,7 +165,10 @@
                   "observer_identity",
                   "observer_key_status",
                   "observer_sequence",
-                  "observer_boot_epoch"
+                  "observer_boot_epoch",
+                  "observer_checkpoint_state",
+                  "observer_witness_receipt",
+                  "observer_witness_tree_head"
                 ]
               }
             },
@@ -190,7 +193,10 @@
                   "expected_chain_sequence",
                   "expected_boot_epoch",
                   "expected_observer_key",
-                  "expected_key_revocation"
+                  "expected_key_revocation",
+                  "expected_checkpoint_state",
+                  "expected_witness_quorum",
+                  "expected_witness_tree_head"
                 ]
               }
             }
@@ -235,7 +241,10 @@
               "observer_chain_rollback",
               "observer_key_revocation",
               "stale_observation_acceptance",
-              "evidence_freshness_ms"
+              "evidence_freshness_ms",
+              "observer_witness_reconciliation",
+              "observer_witness_quorum",
+              "observer_witness_equivocation"
             ]
           }
         },
