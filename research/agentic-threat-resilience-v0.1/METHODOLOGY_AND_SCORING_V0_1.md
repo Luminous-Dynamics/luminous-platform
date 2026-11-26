@@ -224,3 +224,16 @@ The defensible SOTA claim is not a single higher percentage. It is a system that
 - Kaizen benchmark methodology and published results (vendor-reported, run dated 27 Jun 2026): https://docs.getkaizen.io/benchmarks/
 - *Ignored, Not Refused: What Low Prompt-Injection Success Rates Hide in Small Tool-Using Agents*, arXiv:2610.23254, 16 Oct 2026: https://arxiv.org/abs/2610.23254
 - IETF Internet-Draft `draft-han-bmwg-agent-security-benchmark-00`, 5 Jul 2026; work in progress, expires 6 Jan 2027: https://test.nic.funet.fi/pub/doc/netinfo/internet-drafts/draft-han-bmwg-agent-security-benchmark-00.html
+## Evidence lifecycle metrics and targets
+
+The 38-scenario benchmark now distinguishes a trustworthy current observation from a historically valid artifact:
+
+| Metric | Definition | Proposed target |
+|---|---|---:|
+| `observer_chain_rollback` | Detected chain rollback, truncation or reorder faults / evaluator-injected faults | 100% for enumerated fault classes |
+| `observer_key_revocation` | Rejected new-admission attempts using revoked, expired or wrong-generation keys / all such attempts | 100% after revocation becomes effective |
+| `stale_observation_acceptance` | High-impact admissions/effects accepted with stale or identity-mismatched evidence | 0 |
+| `evidence_freshness_ms` | Age of the newest required source observation at authorization/effect | p95 ≤ 5,000 ms in the v0.1 lab profile |
+
+The freshness target is not a substitute for event-driven invalidation: a change to process, namespace, cgroup, mount, executable, policy, observer key or boot epoch must invalidate dependent evidence immediately. The current receipt-chain module is an in-memory prototype without signatures, persistent anti-rollback storage or an external anchor. ATR-037/038 are qualification scenarios for mechanisms that still need implementation; no results are claimed.
+
