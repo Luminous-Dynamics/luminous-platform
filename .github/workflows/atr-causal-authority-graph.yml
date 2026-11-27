@@ -32,6 +32,7 @@ jobs:
       - name: Validate source policy, delegation lineage, root reanchoring, taint and utility fixtures
         run: |
           python - <<'PY'
+          import copy
           import hashlib
           import json
           from collections import defaultdict, deque
@@ -256,8 +257,30 @@ jobs:
               # Recompute each invocation digest from the exact actor, tenant, resource and action fields.
               calls = [node for node in nodes if node["kind"] == "tool_call"]
               for call in calls:
-                  if call["attributes"]["request_digest"] != canonical_act_digest(call):
+                  original_digest = canonical_act_digest(call)
+                  if call["attributes"]["request_digest"] != original_digest:
                       raise SystemExit(f"{label}: tool call {call['id']} request digest does not commit to its exact invocation")
+                  mutation_fields = (
+                      "actor_digest", "arguments_digest", "branch_assignment_digest",
+                      "capability_digest", "consent_state", "operation", "plan_digest",
+                      "resource_digest", "revocation_epoch", "root_plan_digest",
+                      "root_task_digest", "source_policy_digest", "task_digest", "task_id",
+                  )
+                  for field in mutation_fields:
+                      mutated = copy.deepcopy(call)
+                      value = mutated["attributes"][field]
+                      if isinstance(value, int):
+                          mutated["attributes"][field] = value + 1
+                      elif value is None:
+                          mutated["attributes"][field] = "f" * 64
+                      else:
+                          mutated["attributes"][field] = str(value) + "-mutated"
+                      if canonical_act_digest(mutated) == original_digest:
+                          raise SystemExit(f"{label}: changing {field} did not change the canonical action digest")
+                  mutated_tenant = copy.deepcopy(call)
+                  mutated_tenant["tenant_digest"] = "f" * 64
+                  if canonical_act_digest(mutated_tenant) == original_digest:
+                      raise SystemExit(f"{label}: changing tenant did not change the canonical action digest")
 
               committed_effects = [node for node in nodes if node["kind"] == "effect" and node["attributes"].get("effect_status") == "committed"]
               for effect in (node for node in nodes if node["kind"] == "effect" and node["attributes"].get("effect_status") in ("committed", "absent")):
