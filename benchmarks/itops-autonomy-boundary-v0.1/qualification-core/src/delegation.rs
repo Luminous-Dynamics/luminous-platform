@@ -801,8 +801,15 @@ mod tests {
         assert!(errors.contains(&AttenuationViolation::ChildTaskPlanPairNotAllowed));
         // The old independent digest memberships still pass. Exact pairing is
         // therefore the control that rejects this cross-paired descendant.
-        assert!(parent.allowed_child_task_digests.contains(&child.task_digest));
-        assert!(parent.allowed_child_plan_digests.contains(&child.plan_digest));
+        assert!(
+            parent
+                .allowed_child_task_digests
+                .contains(&child.task_digest)
+        );
+        assert!(
+            parent
+                .allowed_child_plan_digests
+                .contains(&child.plan_digest)
+        );
     }
-
 }
