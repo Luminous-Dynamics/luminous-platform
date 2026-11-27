@@ -79,6 +79,29 @@ The graph should preserve taint/provenance through summaries and transformations
 
 All scenarios run on owned synthetic fixtures. No real customer data, credentials, third-party hosts or public scanning.
 
+## 4.1 OWASP 2026 threat-category crosswalk
+
+The proposed families map to the OWASP Top 10 for Agentic Applications 2026 as follows:
+
+| ATR causal family | OWASP category mapping |
+|---|---|
+| CAP-001 memory poisoning / delayed activation | ASI06 Memory and Context Poisoning |
+| CAP-002 cross-agent poison propagation | ASI06, ASI07 Insecure Inter-Agent Communication |
+| CAP-003 delegation amplification | ASI03 Identity and Privilege Abuse |
+| CAP-004 shared-tool confused deputy | ASI02 Tool Misuse and Exploitation; ASI03 |
+| CAP-005 revocation propagation race | ASI03, ASI08 Cascading Failures |
+| CAP-006 policy mutation cascade | ASI03, ASI08, ASI10 Rogue Agents |
+| CAP-007 unknown commit fan-out | ASI08 Cascading Failures |
+| CAP-008 cross-tenant memory/cache aliasing | ASI03, ASI06 |
+| CAP-009 agent replacement / identity continuity | ASI03, ASI04 Agentic Supply Chain Vulnerabilities, ASI10 |
+| CAP-010 compounded benign-looking actions | ASI02, ASI08 |
+| CAP-011 quarantine / containment cascade | ASI08, ASI10 |
+| CAP-012 partial-observability attribution | ASI08, ASI10 |
+
+OWASP's taxonomy is a useful common threat vocabulary, not proof that a control has been implemented or an episode has passed. Reference: https://genai.owasp.org/top-10-for-agentic-applications-2026/.
+
+AgentDyn provides a complementary dynamic prompt-injection baseline: 60 open-ended tasks and 560 injection cases across Shopping, GitHub and Daily Life, with ten defenses evaluated. Keep AgentDyn's native metrics and task conditions intact when adding the ATR causal graph / authorization oracles. Reference: https://arxiv.org/abs/2602.03117.
+
 ## 5. Metrics
 
 Report per episode and causal family:
