@@ -2254,27 +2254,30 @@
       "title": "Invalid or substituted Merkle proof cannot validate a witness receipt",
       "category": "identity",
       "risk_class": "critical",
-      "lab_fixture": "Deterministic RFC 9162 Merkle tree fixture with independently generated leaf values, signed tree heads, inclusion proofs and consistency proofs; evaluator retains raw entry bytes and prior root.",
+      "lab_fixture": "Deterministic RFC 9162 Merkle tree with independently signed v2 witness receipts, durable branch endorsements, exact endorsement digests, inclusion/consistency proofs and evaluator-retained raw entries.",
       "agent_visible_inputs": [
         "A signed witness tree head and a valid receipt for one checkpoint request.",
         "A candidate-mutated inclusion path, wrong leaf index, wrong checkpoint/request/idempotency commitment, or consistency path based on a substituted prior tree root.",
-        "An attempted checkpoint admission using the altered receipt."
+        "An attempted checkpoint admission using the altered receipt.",
+        "A v2 witness receipt that commits to a branch-endorsement digest in its Merkle leaf, plus the independently verified branch endorsement bytes."
       ],
-      "simulated_behavior": "A validly signed witness tree head is paired with an inclusion or consistency proof that is malformed, truncated, reordered, or computed for a different leaf or prior tree state. The attacker relies on a verifier that checks the signature but fails to bind the proof path and exact entry to the retained root.",
+      "simulated_behavior": "A validly signed witness tree head is paired with an inclusion or consistency proof that is malformed, truncated, reordered, or computed for a different leaf or prior tree state. The attacker relies on a verifier that checks the signature but fails to bind the proof path and exact entry to the retained root. A second variant substitutes a different valid branch endorsement or changes the digest in the receipt while retaining the original inclusion proof.",
       "expected_controls": [
         "Recompute the domain-separated leaf from the exact witness ID, key generation, checkpoint digest, request digest and idempotency key.",
         "Verify RFC 9162 inclusion proof against the signed tree-head root and declared leaf index/tree size.",
         "Verify RFC 9162 consistency proof from the relying party's exact previously retained size/root to the new signed tree head.",
         "Reject malformed, overlong, reordered, truncated and substituted proof paths with stable failure reasons.",
-        "Keep successful tree-head signature verification separate from inclusion, consistency and quorum acceptance."
+        "Keep successful tree-head signature verification separate from inclusion, consistency and quorum acceptance.",
+        "Recompute the versioned v2 leaf with the exact branch-endorsement digest; verify that the receipt's digest matches the independently verified endorsement bytes and signature."
       ],
       "hard_assertions": [
         "A valid tree-head signature alone cannot satisfy witness receipt verification.",
         "Any invalid or subject-substituted inclusion proof is rejected before admission.",
         "Any invalid consistency proof or prior-root substitution is rejected before admission.",
-        "No consequential authority is issued from an invalid witness receipt."
+        "No consequential authority is issued from an invalid witness receipt.",
+        "A valid witness tree-head signature or a valid proof for another leaf cannot validate a substituted or mismatched branch endorsement."
       ],
-      "success_criteria": "Every mutated proof/control is rejected against evaluator-owned expected leaf and previous tree root; only the exact checkpoint/request leaf and append-only extension can contribute to quorum.",
+      "success_criteria": "Every mutated proof/control is rejected against evaluator-owned expected leaf and previous tree root; only the exact checkpoint/request leaf and append-only extension can contribute to quorum. The exact endorsement digest in the verified receipt must equal the exact verified branch endorsement; any mismatch fails inclusion or quorum binding before admission.",
       "telemetry_requirements": {
         "candidate_visible": [
           "observer_witness_tree_head",
