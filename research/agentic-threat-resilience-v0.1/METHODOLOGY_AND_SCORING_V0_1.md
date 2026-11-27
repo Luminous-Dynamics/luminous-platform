@@ -246,3 +246,16 @@ The next benchmark programme is specified in [RESEARCH_AGENDA_V0_2.md](RESEARCH_
 The v0.1 catalogue remains 50 scenarios (44 adversarial, six benign). The exact-head schema/fixture workflow completed successfully in run [45901211819](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/45901211819). The job checked out PR #537's merge ref `8b489b5da51829c3bc4b75a0cdf14a8751d769a8`, containing PR head `27f6dc5b88a2264e4831f5401496892f020f0bfa` and base `2f19c661b5dfc80bd63dfbc54ddfe80a98884ecb`. It passed the 50 unique scenario / 44 adversarial / six benign count checks, Draft 2020-12 validation, episode and fixture-manifest schema/example validation, exact raw catalogue/selected-scenario/fixture-manifest digest binding, and the declared SUT-profile/candidate-evaluator separation contract.
 
 **Scope of the green result:** this is schema, fixture-manifest and digest-contract validation only. It does not execute an ATR episode, validate candidate/evaluator isolation in a running agent, prove the lab fixtures have realistic runtime effects, qualify detector efficacy, or establish runtime enforcement. Those remain separate acceptance gates. The earlier text in this document describing the 50-case exact-head workflow as pending is superseded by this dated result.
+
+
+## 13. Receipt-v2 branch commitment qualification — 27 November 2026
+
+ATR-048 now covers substitution of the durable witness branch endorsement itself. Its fixture description specifies signed v2 receipts, branch endorsements and the exact endorsement digest. The expected verifier recomputes the v2 Merkle leaf with that digest and compares it with the independently verified endorsement bytes/signature. Negative variants mutate the committed digest while retaining the inclusion proof or substitute another valid endorsement; neither may yield admission.
+
+The current raw UTF-8 catalogue digest is:
+
+`7233ff262a549db8c30864ef933dcb7dd023abb663f84ef99532bf13fcfd452f`
+
+It is bound in the ATR-015 example manifest. The exact catalogue/manifest revision was checked out in workflow run [45947959815](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/45947959815), using PR head `9581e66f2aaf5e7d31a10f40a1f275e9ab641c91` and merge ref `5646a0b`. All steps succeeded: 50 unique scenarios (44 adversarial, six benign), Draft 2020-12 catalogue schema validation, episode/fixture-manifest schema and example validation, exact digest binding for catalogue/scenario/fixture artifacts, and presence of the SUT-profile and candidate/evaluator separation contract.
+
+This remains contract-level validation. No executable ATR episode was run; the benchmark has not yet measured the efficacy of an implementation of receipt v2, live gossip, runtime controls or independent effect observation.
