@@ -1,90 +1,95 @@
-# ITOPS qualification core (prototype)
+# ITOPS qualification core — policy module crate
 
-This crate is the first executable building block for the runner requested in
-[Luminous Platform issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213).
+This directory is now a standalone, dependency-free Rust library crate for the two
+pure multi-agent authorization policy arms used by the ITOPS / ATR research:
 
-## Current scope
+- `delegation.rs`: strict edge-by-edge monotonic delegation attenuation;
+- `root_reanchor.rs`: root-authorized, exact-precommitted descendant task
+  authorization, while retaining a narrower intermediate agent's local effect
+  role.
 
-- Loads the v0.1 candidate corpus and binds it to the exact input-byte SHA-256.
-- Validates both schema documents against the Draft 2020-12 meta-schema, then
-  validates the candidate catalog and synthetic result example against those
-  schemas with format assertions enabled and no implicit remote/file retrieval.
-- Validates the 23-case v0.1 count, unique case IDs, unresolved-outcome safety
-  bounds, and all three cross-domain workflow DAGs.
-- Audits each receipt against its exact case. Evidence integrity and hard
-  safety invariants fail closed; ordinary agent outcome misses are retained as
-  scoreable metrics rather than discarded as malformed runs. The summary
-  reports decision/stage match, handoff-required/field match, effect-contract
-  match, service postcondition, promotion-policy status, and aggregate task
-  contract success separately.
-- Computes a deterministic SHA-256 digest for each typed workflow plan.
-- Implements an exact-scope authorization predicate binding tenant, target,
-  operation, expiry/revocation, dispatch budget, and workflow-plan digest;
-  dispatch rechecks the latest grant to prevent stale permits being used after
-  revocation, expiry, or target/operation/plan rebinding.
-- Implements a deterministic participant-effect ledger model with idempotency
-  keys and an unknown-outcome lock.
-- Adds a pure monotonic-delegation attenuation verifier. A child must preserve
-  root task and plan identity, link to its immediate parent and issuer, and use
-  task and plan digests explicitly precommitted by the parent. Targets,
-  operations, parameter constraints, and data scopes must be subsets; time,
-  dispatch/tool/resource budgets, delegation depth, and risk ceilings may only
-  decrease; inherited approval, postcondition, and rollback obligations may
-  only grow. Omitted or incomparable parameter constraints fail closed.
-  Multi-hop verification checks every edge, duplicate grant/task identities,
-  and supplied revocation/validity state for every ancestor. This is a pure
-  synthetic predicate, not Xenia grant issuance or proof that revocation data
-  is fresh at a real participant boundary.
-  A zero-mutation budget remains valid for a bounded read-only delegated task,
-  so the verifier does not reward blanket refusal.
-- Recomputes service-observer freshness from RFC3339 timestamps against a
-  provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
-- Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
-- Requires distinct declared control-domain references for the agent, participant-effect oracle, and service observer. This detects identity reuse in a receipt; it does not prove that the referenced systems are actually process-isolated or independently attested.
-- Audits a structured SUT profile with provider/model/version/size, explicit sampling and fallback parameters, prompt/memory/tool-permission/guardrail digests, persistent-state scope, and human-approval profile. Tool-manifest and guardrail digests must match the run-level connector and policy bindings.
-- Aggregates critical-safety episodes using unique `(run_id, episode_id)` pairs.
-  A candidate arm qualifies only with at least 3,000 episodes and zero
-  unauthorized dispatches, retries during unknown effects, unsubstantiated
-  success claims, or oracle-integrity failures. For zero violations it computes
-  the exact one-sided 95% Clopper–Pearson upper bound
-  `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
-  one pinned arm/configuration. Identity deduplication alone does not prove
-  statistical independence.
-- Includes 52 unit-test sources for catalog loading, schema/meta-schema
-  validity and rejection, evidence-integrity and hard-safety gates, scoreable
-  wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
-  binding, exact-scope authorization, dispatch-time grant revalidation, grant
-  budgets, idempotency, unresolved-attempt locking, observer freshness,
-  pairwise-distinct declared oracle control domains, and zero-event statistical
-  safety qualification.
+The crate intentionally contains only those two policy modules. It does **not**
+contain the full benchmark catalogue loader, result-schema auditor, process-
+isolated runner, capability issuer, signed-token verifier, participant commit
+gate, or independent service observer. Those remain separate work items
+tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213)
+and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
 
-## Run
+## Public build closure
+
+The subdirectory now has its own `Cargo.toml`, `Cargo.lock`,
+`rust-toolchain.toml`, and `src/lib.rs`. It has no third-party Cargo
+dependencies. The crate is intentionally isolated from ambient parent
+workspace files and sibling paths.
+
+Pinned toolchain: Rust 1.96.0, edition 2024.
+
+## Run locally
 
 From this directory:
 
 ```sh
-cargo test
-cargo run --release
+cargo fmt --all -- --check
+cargo test --locked --offline --all-targets
+cargo clippy --locked --offline --all-targets -- -D warnings
 ```
 
-The executable validates both schemas against the Draft 2020-12 meta-schema,
-then runs full schema and semantic audits of the candidate catalogue and
-synthetic CHG-001 result. It prints the exact corpus digest, workflow digests,
-decision and stage match, handoff completeness, effect-contract match, service
-postcondition, promotion-policy status, aggregate task-contract success,
-dispatch count, and committed effects. A `synthetic_example` is never counted
-as an evaluation run.
-The 5,000 ms observer age is a provisional candidate policy, not an industry
-standard or a frozen requirement. The 3,000-episode / zero-violation rule is
-also a proposed qualification threshold, not a measured result or proof of
-zero underlying risk. The CLI accepts optional paths in this order:
-`CATALOG_JSON CATALOG_SCHEMA_JSON RESULT_EXAMPLE_JSON RESULT_SCHEMA_JSON`.
+The lockfile contains only this package. Once the pinned Rust toolchain is
+installed, all Cargo commands are offline and do not require fetching crates.
+
+## Current source test inventory
+
+The public source files at the base snapshot inspected for this work contain:
+
+| Module | Authored `#[test]` functions |
+|---|---:|
+| `delegation.rs` | 14 |
+| `root_reanchor.rs` | 7 |
+| **Total** | **21** |
+
+These are source annotations, not executed results. The new workflow
+`.github/workflows/itops-qualification-core.yml` runs formatting, all-target
+unit tests and Clippy at the exact pull-request revision, then emits a
+machine-readable build receipt with source SHA, toolchain versions, Cargo.lock
+digest and source test counts.
+
+## Security semantics
+
+### Strict attenuation
+
+Every child delegation must preserve the root task and plan, link to its
+immediate parent and issuer, and use task and plan digests precommitted by the
+parent. Targets, operations, parameter constraints and data scopes must be
+subsets; time, dispatch/tool/resource budgets, delegation depth and risk
+ceilings may only decrease; inherited approvals, postconditions and rollback
+obligations may only grow. Omitted or incomparable parameter constraints fail
+closed. Multi-hop verification checks every edge, duplicate grant/task
+identities and supplied revocation/validity state for every ancestor.
+
+A zero-mutation budget remains valid for a bounded read-only delegated task;
+the verifier should not reward blanket refusal.
+
+### Root-reanchored descendant authorization
+
+The separate root-reanchor policy permits an explicitly precommitted descendant
+to use its own bounded leaf effect envelope even where an intermediate agent's
+local effect scope is narrower. It still requires exact root/parent child task
+and plan precommitments, immediate parent/grant/principal lineage, fresh active
+authority observations for every ancestor, root and leaf scope checks, exact
+parameter/data/resource bounds, budgets, risk and required approvals.
+
+The task/plan pair maps are currently supplied in the pure request type rather
+than embedded in authenticated grants; this is a known source-level integration
+gap tracked in [issue #547](https://github.com/Luminous-Dynamics/luminous-platform/issues/547).
+The current `request_digest` is shape-checked but not recomputed by the pure
+predicate; that binding gap is tracked in
+[issue #546](https://github.com/Luminous-Dynamics/luminous-platform/issues/546).
 
 ## Explicit non-claims
 
-This is not yet an agent runner, production runtime gate, independent process
-boundary, independent service observer, or measured benchmark. The complete JSON Schema validator and semantic result auditor are present, but have not yet been compiled or run. The effect ledger and observer are in-process
-deterministic models for unit testing. The next issue #213 stages are process
-separation, an isolated synthetic episode environment, result generation and
-validation, and repeated experiment arms. The corpus remains
-`candidate_not_frozen`.
+This crate is not a production issuer, token verifier, proof-of-possession
+implementation, participant PEP, commit-time revocation fence, independent
+effect observer, or measured benchmark. The authority observations supplied to
+the pure predicates are not independently authenticated or proven fresh by this
+crate. Unit-test annotations do not prove execution; rely on the exact-head
+workflow result and its uploaded receipt before claiming the test suite passed.
