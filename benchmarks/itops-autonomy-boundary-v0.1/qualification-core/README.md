@@ -43,9 +43,9 @@ The public source files at the base snapshot inspected for this work contain:
 
 | Module | Authored `#[test]` functions |
 |---|---:|
-| `delegation.rs` | 14 |
-| `root_reanchor.rs` | 7 |
-| **Total** | **21** |
+| `delegation.rs` | 15 |
+| `root_reanchor.rs` | 9 |
+| **Total** | **24** |
 
 These are source annotations, not executed results. The new workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, all-target
@@ -70,6 +70,13 @@ A zero-mutation budget remains valid for a bounded read-only delegated task;
 the verifier should not reward blanket refusal.
 
 ### Root-reanchored descendant authorization
+The exact descendant task/plan pair is now stored in each grant as
+`allowed_child_task_plan_bindings`, not just as two independent digest sets.
+Strict attenuation and root-reanchoring require the exact pair on the immediate
+parent grant; root-reanchoring also requires the pair in the root grant's
+descendant manifest. The maps on `PendingEffectRequest` remain consistency
+cross-checks only and cannot authorize a pair absent from the grants.
+
 
 The separate root-reanchor policy permits an explicitly precommitted descendant
 to use its own bounded leaf effect envelope even where an intermediate agent's
