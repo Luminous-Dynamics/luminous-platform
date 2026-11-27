@@ -187,6 +187,30 @@ For runtime comparisons, pin the exact product release, backend, configuration, 
 - https://github.com/ai-openshell/openshell/releases
 - https://github.com/NVIDIA/product-security/blob/main/2026/5929/5929.md
 
+## 9. Runtime-baseline regression corpus: OpenShell
+
+The current public OpenShell release page lists stable v0.1.10, tag commit 152c59d, released 24 November 2026: https://github.com/ai-openshell/openshell/releases
+
+NVIDIA published an OpenShell security bulletin on 17 November 2026. It documents vulnerabilities across multiple older product/version tracks and identifies patched package versions. The bulletin's findings are valuable regression families for ATR, but its package table does not by itself establish the vulnerability status of every v0.1.10 artifact or every backend. Pin the exact binary / image / chart digest, backend, policy and kernel; reproduce the affected behavior only in an isolated synthetic lab; and confirm the expected fixed behavior on the exact candidate artifact.
+
+| Bulletin finding | Assurance property to test |
+|---|---|
+| CVE-2026-100971: path traversal in L7 path allowlist | Canonical path containment; argument and path normalization |
+| CVE-2026-100972: resource-level CRUD authorization gap | Object / tenant / operation authorization at the protected resource |
+| CVE-2026-100975 and CVE-2026-100974: cross-sandbox SSH secret exposure/reuse | Credential isolation, sandbox identity and tenant separation |
+| CVE-2026-100980: double-shell command injection in diagnostics | Typed argument handling; no shell reinterpretation across hops |
+| CVE-2026-100977 and CVE-2026-100981: HTTP parser / h2c / request-smuggling policy bypass | Proxy parser agreement, protocol downgrade and complete mediation |
+| CVE-2026-100973: nonstandard HTTP methods bypass CONNECT restrictions | Method normalization and enforcement coverage |
+| CVE-2026-100970: existing L7 tunnels continue under a stale policy after reload | Policy-generation binding, in-flight invalidation and revocation-to-denial latency |
+| CVE-2026-100976: process attribution confusion in Kubernetes network policy | Process/workload attribution and source identity binding |
+| CVE-2026-100979: unvalidated sandbox metadata influences proxy destination | Target binding and destination authorization; SSRF containment |
+| CVE-2026-100978: gateway transport does not verify SSH host keys | Peer identity authentication and transport integrity |
+| CVE-2026-100982: unbounded chunked request parsing | Resource budgets, bounded parsing and fail-safe behavior |
+
+Official advisory: https://github.com/NVIDIA/product-security/blob/main/2026/5929/5929.md
+
+The desired comparison is paired: vulnerable and fixed artifacts where available, exact same fixture and evaluator, and the current stable artifact pinned by immutable digest. Record whether the case is a regression reproduction, a negative-control verification, or a property that is out of scope for a given backend. Do not claim that the v0.1.10 tag fixes a particular advisory item without direct release / source evidence, and do not claim an OpenShell finding exists in Nixward merely because the same property is tested.
+
 ## 9. Proposed acceptance gates
 
 - The machine-readable record validates against the versioned schema and rejects unknown critical fields.
