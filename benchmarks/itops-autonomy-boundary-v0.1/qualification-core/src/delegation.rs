@@ -59,9 +59,8 @@ pub struct DelegatedAuthorityGrant {
     pub required_postconditions: BTreeSet<String>,
     pub rollback_obligations: BTreeSet<String>,
 
-    /// The parent explicitly commits to the exact child task digests it may delegate.
-    /// Exact child task/plan bindings committed by this grant. Separate digest
-    /// sets are retained as coarse compatibility/index fields, but never
+    /// Exact child task/plan bindings committed by this grant. Separate
+    /// digest sets remain coarse compatibility/index constraints and never
     /// authorize a child without this exact pair being present.
     pub allowed_child_task_plan_bindings: BTreeSet<(String, String)>,
     pub allowed_child_task_digests: BTreeSet<String>,
