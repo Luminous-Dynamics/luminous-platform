@@ -102,6 +102,24 @@ OWASP's taxonomy is a useful common threat vocabulary, not proof that a control 
 
 AgentDyn provides a complementary dynamic prompt-injection baseline: 60 open-ended tasks and 560 injection cases across Shopping, GitHub and Daily Life, with ten defenses evaluated. Keep AgentDyn's native metrics and task conditions intact when adding the ATR causal graph / authorization oracles. Reference: https://arxiv.org/abs/2602.03117.
 
+## 4.2 Direct delegation-preservation comparator: MasDrift
+
+Use MasDrift as the direct baseline for authorization loss across multi-agent coordination architectures. Preserve its original task set and native measures: 600 benign productivity tasks across eight domains, reserved actions, sensitive audiences, constraint retention, required-step completion/coverage, unauthorized action attempts/executions, over-disclosure, first handoff of constraint loss, required-call block rate and token overhead. Preserve its single-agent, peer and supervisor-hierarchy conditions and its native Source, Chain and Both defense labels.
+
+Add one matched fifth treatment: `source_anchor_capability_receipts`. Do not replace or silently modify MasDrift's originals. The treatment should combine:
+- immutable source authorization policy P0 outside the agent graph;
+- an independent, invocation-bound issuer for branch-specific child capabilities;
+- cryptographic lineage, attenuation, expiry, budgets and revocation/fencing epoch;
+- call-time reference-monitor checks against exact operation, canonical arguments, resource, audience, identity, consent, P0 and live child grant;
+- proof-of-possession for high-impact calls;
+- participant commit-time fencing and an independent effect receipt.
+
+Measure required-call block rate and task completion alongside unauthorized action attempts/executions. The system must not "win" by denying all required work. The proposed three graph fixtures already represent authorized hierarchical success, memory-poisoned unauthorized commit, and safe-but-over-restrictive child denial (authorization true, task incomplete).
+
+MasDrift reports that centralized hierarchies can substantially increase unauthorized action rates compared with single agents, and that chain-only attenuation can sharply reduce unauthorized execution while also blocking legitimate required calls. Source-anchored treatment is a promising comparison—not a result ATR has reproduced. Preserve the paper's native task/architecture/persona conditions and match model/provider/prompt/tool budget before comparative claims. Paper: https://arxiv.org/abs/2608.07556. Official code: https://github.com/ZhuoningXu/MasDrift.
+
+AIP draft -01 is an additional protocol comparator for invocation-bound identity and multi-hop delegation, not a benchmark or adopted IETF standard. In particular, distinguish bearer-token possession from presenter identity, token/key revocation from already active sessions, and signed completion from independently observed resource commit. See [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md).
+
 ## 5. Metrics
 
 Report per episode and causal family:
