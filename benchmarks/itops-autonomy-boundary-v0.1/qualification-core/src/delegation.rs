@@ -677,9 +677,11 @@ mod tests {
         let parent = parent_grant();
         let mut child = child_grant();
         child.task_digest = digest('e');
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ChildTaskDigestNotAllowed
-        ));
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildTaskDigestNotAllowed)
+        );
     }
 
     #[test]
@@ -687,9 +689,11 @@ mod tests {
         let parent = parent_grant();
         let mut child = child_grant();
         child.plan_digest = digest('e');
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ChildPlanDigestNotAllowed
-        ));
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildPlanDigestNotAllowed)
+        );
     }
 
     #[test]
@@ -698,9 +702,11 @@ mod tests {
         let child = child_grant();
         parent.delegable = false;
         parent.remaining_delegation_depth = 0;
-        assert!(check_attenuation(&parent, &child).unwrap_err().contains(
-            &AttenuationViolation::ParentCannotDelegate
-        ));
+        assert!(
+            check_attenuation(&parent, &child)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentCannotDelegate)
+        );
     }
 
     #[test]
@@ -708,23 +714,31 @@ mod tests {
         let mut parent = parent_grant();
         let child = child_grant();
         parent.revoked = true;
-        assert!(verify_delegation_at(&parent, &child, 150).unwrap_err().contains(
-            &AttenuationViolation::ParentRevoked
-        ));
+        assert!(
+            verify_delegation_at(&parent, &child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentRevoked)
+        );
 
         parent.revoked = false;
-        assert!(verify_delegation_at(&parent, &child, 500).unwrap_err().contains(
-            &AttenuationViolation::ParentExpired
-        ));
-        assert!(verify_delegation_at(&parent, &child, 300).unwrap_err().contains(
-            &AttenuationViolation::ChildExpired
-        ));
+        assert!(
+            verify_delegation_at(&parent, &child, 500)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ParentExpired)
+        );
+        assert!(
+            verify_delegation_at(&parent, &child, 300)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildExpired)
+        );
 
         let mut revoked_child = child;
         revoked_child.revoked = true;
-        assert!(verify_delegation_at(&parent, &revoked_child, 150).unwrap_err().contains(
-            &AttenuationViolation::ChildRevoked
-        ));
+        assert!(
+            verify_delegation_at(&parent, &revoked_child, 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::ChildRevoked)
+        );
     }
 
     fn grandchild_grant(parent: &DelegatedAuthorityGrant) -> DelegatedAuthorityGrant {
@@ -782,9 +796,11 @@ mod tests {
 
         let mut duplicate = grandchild;
         duplicate.grant_id = child.grant_id.clone();
-        assert!(verify_delegation_chain_at(&[root, child, duplicate], 150)
-            .unwrap_err()
-            .contains(&AttenuationViolation::DuplicateGrantInChain));
+        assert!(
+            verify_delegation_chain_at(&[root, child, duplicate], 150)
+                .unwrap_err()
+                .contains(&AttenuationViolation::DuplicateGrantInChain)
+        );
     }
 
     #[test]
