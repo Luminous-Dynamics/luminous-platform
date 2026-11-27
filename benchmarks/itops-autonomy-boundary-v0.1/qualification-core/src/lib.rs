@@ -7,5 +7,7 @@
 //! enforce a live participant commit boundary, or provide an independent
 //! service observer. Those are separate integration and qualification layers.
 
+#![forbid(unsafe_code)]
+
 pub mod delegation;
 pub mod root_reanchor;
