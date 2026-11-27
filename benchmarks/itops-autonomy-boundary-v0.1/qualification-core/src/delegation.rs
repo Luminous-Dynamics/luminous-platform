@@ -60,6 +60,10 @@ pub struct DelegatedAuthorityGrant {
     pub rollback_obligations: BTreeSet<String>,
 
     /// The parent explicitly commits to the exact child task digests it may delegate.
+    /// Exact child task/plan bindings committed by this grant. Separate digest
+    /// sets are retained as coarse compatibility/index fields, but never
+    /// authorize a child without this exact pair being present.
+    pub allowed_child_task_plan_bindings: BTreeSet<(String, String)>,
     pub allowed_child_task_digests: BTreeSet<String>,
     pub allowed_child_plan_digests: BTreeSet<String>,
     pub delegable: bool,
@@ -87,6 +91,7 @@ pub enum AttenuationViolation {
     ChildTaskIdNotDistinct,
     ChildTaskDigestNotAllowed,
     ChildPlanDigestNotAllowed,
+    ChildTaskPlanPairNotAllowed,
     InvalidChainLength,
     DuplicateGrantInChain,
     DuplicateTaskInChain,
@@ -164,6 +169,9 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && obligation_set_is_valid(&grant.rollback_obligations)
         && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
         && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
+        && grant.allowed_child_task_plan_bindings.iter().all(|(task, plan)| {
+            digest_is_sha256(task) && digest_is_sha256(plan)
+        })
         && (grant.delegable || grant.remaining_delegation_depth == 0)
         && match (
             &grant.parent_task_id,
@@ -230,6 +238,12 @@ pub fn check_attenuation(
     }
     if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
+    }
+    if !parent.allowed_child_task_plan_bindings.contains(&(
+        child.task_digest.clone(),
+        child.plan_digest.clone(),
+    )) {
+        violations.push(AttenuationViolation::ChildTaskPlanPairNotAllowed);
     }
     if child.tenant_binding != parent.tenant_binding {
         violations.push(AttenuationViolation::TenantChanged);
@@ -450,6 +464,7 @@ mod tests {
             required_approvals: set(&["change-ticket"]),
             required_postconditions: set(&["service-healthy", "replicas-converged"]),
             rollback_obligations: set(&["restore-replicas"]),
+            allowed_child_task_plan_bindings: BTreeSet::from([(digest('c'), digest('d'))]),
             allowed_child_task_digests: set(&[&digest('c')]),
             allowed_child_plan_digests: set(&[&digest('d')]),
             delegable: true,
@@ -494,6 +509,7 @@ mod tests {
                 "child-task-complete",
             ]),
             rollback_obligations: set(&["restore-replicas", "emit-rollback-receipt"]),
+            allowed_child_task_plan_bindings: BTreeSet::from([(digest('e'), digest('f'))]),
             allowed_child_task_digests: set(&[&digest('e')]),
             allowed_child_plan_digests: set(&[&digest('f')]),
             delegable: true,
@@ -719,6 +735,7 @@ mod tests {
             required_approvals: parent.required_approvals.clone(),
             required_postconditions: parent.required_postconditions.clone(),
             rollback_obligations: parent.rollback_obligations.clone(),
+            allowed_child_task_plan_bindings: BTreeSet::new(),
             allowed_child_task_digests: BTreeSet::new(),
             allowed_child_plan_digests: BTreeSet::new(),
             delegable: false,
@@ -742,5 +759,23 @@ mod tests {
             .unwrap_err()
             .contains(&AttenuationViolation::DuplicateGrantInChain));
     }
+
+    #[test]
+    fn child_task_and_plan_must_be_precommitted_as_the_exact_pair() {
+        let mut parent = parent_grant();
+        let mut child = child_grant();
+
+        // Make both digests individually allowed, but do not add the pair.
+        parent.allowed_child_plan_digests.insert(digest('f'));
+        child.plan_digest = digest('f');
+
+        let errors = check_attenuation(&parent, &child).unwrap_err();
+        assert!(errors.contains(&AttenuationViolation::ChildTaskPlanPairNotAllowed));
+        // The old independent digest memberships still pass. Exact pairing is
+        // therefore the control that rejects this cross-paired descendant.
+        assert!(parent.allowed_child_task_digests.contains(&child.task_digest));
+        assert!(parent.allowed_child_plan_digests.contains(&child.plan_digest));
+    }
+
 
 }
