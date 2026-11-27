@@ -148,6 +148,45 @@ jobs:
                           if key not in attrs:
                               raise SystemExit(f"{label}: tool call {node['id']} lacks {key}")
 
+              # Declared control domains must be distinct for candidate, issuer,
+              # participant-effect enforcement and observer. This is a graph
+              # consistency assertion, not proof of real process isolation.
+              expected_domains = {
+                  "principal": "issuer",
+                  "policy": "issuer",
+                  "delegation_grant": "issuer",
+                  "agent_instance": "candidate",
+                  "task": "candidate",
+                  "untrusted_input": "candidate",
+                  "memory_item": "candidate",
+                  "tool_call": "candidate",
+                  "tool": "candidate",
+                  "policy_decision": "participant",
+                  "enforcement_point": "participant",
+                  "resource": "participant",
+                  "effect": "participant",
+                  "observer": "observer",
+                  "effect_receipt": "observer",
+              }
+              control_domains = {role: set() for role in ("candidate", "issuer", "participant", "observer")}
+              for node in nodes:
+                  role = expected_domains.get(node["kind"])
+                  if role is None:
+                      continue
+                  attrs = node["attributes"]
+                  if attrs.get("control_domain_role") != role or not attrs.get("control_domain_digest"):
+                      raise SystemExit(f"{label}: node {node['id']} lacks its declared {role} control domain")
+                  control_domains[role].add(attrs["control_domain_digest"])
+              for left, right in (
+                  ("candidate", "issuer"), ("candidate", "participant"),
+                  ("candidate", "observer"), ("issuer", "participant"),
+                  ("issuer", "observer"), ("participant", "observer")
+              ):
+                  if control_domains[left] & control_domains[right]:
+                      raise SystemExit(f"{label}: {left} and {right} reuse a declared control domain")
+              if any(not values for values in control_domains.values()):
+                  raise SystemExit(f"{label}: all four control-domain roles must be represented")
+
               # Taint cannot disappear merely because content was summarized or derived.
               for edge in edges:
                   if edge["edge_type"] not in ("stored_as", "summarized_into", "derived_into"):
