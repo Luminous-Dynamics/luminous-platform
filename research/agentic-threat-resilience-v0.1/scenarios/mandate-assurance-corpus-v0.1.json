@@ -1,0 +1,1166 @@
+{
+  "profile": "luminous-cross-domain-agent-mandate-assurance-v0.1",
+  "source_draft": "draft-hulea-wimse-agent-mandate-01",
+  "source_url": "https://datatracker.ietf.org/doc/html/draft-hulea-wimse-agent-mandate-01",
+  "status": "synthetic-research-corpus-not-protocol-conformance",
+  "cases": [
+    {
+      "case_id": "MND-001",
+      "family": "positive",
+      "description": "Independent authority-source and mandate-issuer evidence supports the exact request.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "valid",
+        "authorization": "allow",
+        "codes": []
+      }
+    },
+    {
+      "case_id": "MND-002",
+      "family": "authority-scope",
+      "description": "The delegator may delegate read but the mandate includes write.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "authority_insufficient"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-003",
+      "family": "issuer-role",
+      "description": "The authority assertion signature is reported under the mandate_issuer trust-anchor role.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "mandate_issuer",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "authority_role_mismatch"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-004",
+      "family": "status-unknown",
+      "description": "The required Authority Assertion status cannot be resolved within the profile freshness bound.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "unknown",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "indeterminate",
+        "authorization": "deny",
+        "codes": [
+          "authority_status_unresolved"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-005",
+      "family": "revocation",
+      "description": "The root mandate is revoked before request authorization.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "revoked",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "mandate_revoked"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-006",
+      "family": "delegation-widening",
+      "description": "The child adds a write permission absent from the parent mandate.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        },
+        {
+          "id": "mandate-child",
+          "issuer": "agent-a",
+          "issuer_role": "holder_key",
+          "signing_key_jkt": "jkt-agent-a",
+          "subject": "agent-b",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "agent-a",
+            "scheme": "urn:luminous:agent"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": "mandate-root",
+          "authority_refs": [],
+          "max_depth": 0,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-b",
+          "not_before": 960,
+          "expires_at": 1800
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-b",
+        "presenter_jkt": "jkt-agent-b",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "delegation_not_attenuated"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-007",
+      "family": "proof-of-possession",
+      "description": "The agent presents a different key from the one bound in the leaf mandate.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-attacker",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "pop_binding_mismatch"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-008",
+      "family": "audience",
+      "description": "A valid mandate is presented to a relying party outside its audience.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-payroll",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "audience_mismatch"
+        ]
+      }
+    },
+    {
+      "case_id": "MND-009",
+      "family": "principal-entitlement",
+      "description": "Mandate validation succeeds, but the principal no longer has the requested entitlement.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": false,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "valid",
+        "authorization": "deny",
+        "codes": []
+      }
+    },
+    {
+      "case_id": "MND-010",
+      "family": "execution-obligation",
+      "description": "Mandate validation succeeds, but action-specific approval has not been discharged.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": false
+      },
+      "expected": {
+        "validation": "valid",
+        "authorization": "deny",
+        "codes": []
+      }
+    },
+    {
+      "case_id": "MND-011",
+      "family": "subdelegation",
+      "description": "A two-hop child chain follows exact issuer/key lineage, preserves principal identity and narrows scope.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "mandate_issuer",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 2,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        },
+        {
+          "id": "mandate-child-a",
+          "issuer": "agent-a",
+          "issuer_role": "holder_key",
+          "signing_key_jkt": "jkt-agent-a",
+          "subject": "agent-b",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "agent-a",
+            "scheme": "urn:luminous:agent"
+          },
+          "permissions": [
+            "payments:read@invoice-42"
+          ],
+          "parent_id": "mandate-root",
+          "authority_refs": [],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-b",
+          "not_before": 960,
+          "expires_at": 1800
+        },
+        {
+          "id": "mandate-child-b",
+          "issuer": "agent-b",
+          "issuer_role": "holder_key",
+          "signing_key_jkt": "jkt-agent-b",
+          "subject": "agent-c",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "agent-b",
+            "scheme": "urn:luminous:agent"
+          },
+          "permissions": [
+            "payments:read@invoice-42"
+          ],
+          "parent_id": "mandate-child-a",
+          "authority_refs": [],
+          "max_depth": 0,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-c",
+          "not_before": 970,
+          "expires_at": 1700
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-c",
+        "presenter_jkt": "jkt-agent-c",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "valid",
+        "authorization": "allow",
+        "codes": []
+      }
+    },
+    {
+      "case_id": "MND-012",
+      "family": "mandate-issuer-role",
+      "description": "The root JWS is not attributable to a trusted mandate_issuer role.",
+      "principal": {
+        "id": "principal-7",
+        "scheme": "urn:luminous:principal"
+      },
+      "delegator": {
+        "id": "org-admin-3",
+        "scheme": "urn:luminous:organization-actor"
+      },
+      "authority_assertions": [
+        {
+          "id": "authority-1",
+          "issuer": "authority.example",
+          "issuer_role": "authority_source",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "powers": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "max_depth": 2,
+          "status": "active",
+          "signature_state": "valid",
+          "not_before": 900,
+          "expires_at": 2100
+        }
+      ],
+      "chain": [
+        {
+          "id": "mandate-root",
+          "issuer": "mandate-issuer.example",
+          "issuer_role": "authority_source",
+          "signing_key_jkt": "issuer-key-1",
+          "subject": "agent-a",
+          "principal": {
+            "id": "principal-7",
+            "scheme": "urn:luminous:principal"
+          },
+          "delegator": {
+            "id": "org-admin-3",
+            "scheme": "urn:luminous:organization-actor"
+          },
+          "permissions": [
+            "payments:read@invoice-42",
+            "payments:write@invoice-42"
+          ],
+          "parent_id": null,
+          "authority_refs": [
+            "authority-1"
+          ],
+          "max_depth": 1,
+          "audiences": [
+            "rp-finance"
+          ],
+          "status": "active",
+          "signature_state": "valid",
+          "cnf_jkt": "jkt-agent-a",
+          "not_before": 950,
+          "expires_at": 1900
+        }
+      ],
+      "request": {
+        "relying_party": "rp-finance",
+        "audience": "rp-finance",
+        "presenter": "agent-a",
+        "presenter_jkt": "jkt-agent-a",
+        "requested_scope": "payments:read@invoice-42",
+        "pop_state": "valid",
+        "current_time": 1200,
+        "principal_entitled": true,
+        "rp_policy": "allow",
+        "obligations_discharged": true
+      },
+      "expected": {
+        "validation": "invalid",
+        "authorization": "deny",
+        "codes": [
+          "mandate_issuer_role_mismatch"
+        ]
+      }
+    }
+  ]
+}
