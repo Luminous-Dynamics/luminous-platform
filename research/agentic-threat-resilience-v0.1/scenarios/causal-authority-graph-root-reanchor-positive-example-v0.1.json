@@ -257,7 +257,10 @@
         "plan_digest": "7777777777777777777777777777777777777777777777777777777777777777",
         "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
         "root_plan_digest": "3333333333333333333333333333333333333333333333333333333333333333",
-        "branch_assignment_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "branch_assignment_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "actor_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+        "revocation_epoch": 4,
+        "request_digest": "64b1cbcb7616ef9e6906c7451c1a628206a05c8a35a1855c15871e68446775ad"
       }
     },
     {
@@ -320,7 +323,19 @@
         "operation": "draft_batch",
         "arguments_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "state_revision": "rev-root-reanchored-04",
-        "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actor_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+        "branch_assignment_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capability_digest": "8888888888888888888888888888888888888888888888888888888888888888",
+        "consent_state": "not_required",
+        "plan_digest": "7777777777777777777777777777777777777777777777777777777777777777",
+        "request_digest": "64b1cbcb7616ef9e6906c7451c1a628206a05c8a35a1855c15871e68446775ad",
+        "revocation_epoch": 4,
+        "root_plan_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+        "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+        "source_policy_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "task_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+        "task_id": "leaf_task"
       }
     },
     {
@@ -348,7 +363,19 @@
         "observer_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "resource_digest": "9999999999999999999999999999999999999999999999999999999999999999",
         "operation": "draft_batch",
-        "arguments_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        "arguments_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "actor_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+        "branch_assignment_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "capability_digest": "8888888888888888888888888888888888888888888888888888888888888888",
+        "consent_state": "not_required",
+        "plan_digest": "7777777777777777777777777777777777777777777777777777777777777777",
+        "request_digest": "64b1cbcb7616ef9e6906c7451c1a628206a05c8a35a1855c15871e68446775ad",
+        "revocation_epoch": 4,
+        "root_plan_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+        "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+        "source_policy_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "task_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+        "task_id": "leaf_task"
       }
     }
   ],
