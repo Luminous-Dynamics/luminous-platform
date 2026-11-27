@@ -183,6 +183,10 @@ Recommended first adapters:
 
 The new profile should not replace native metrics, nor claim that a simulator's state oracle is a production deployment observation. Report the environment and trust boundary per adapter.
 
+The AgentDyn 2026 benchmark is an important additional baseline: its paper describes 60 challenging open-ended tasks and 560 injection test cases across Shopping, GitHub and Daily Life, and evaluates ten defenses. It was designed to address static-task and simplistic-user-task limitations. ATR adapters should preserve its native task and attack outcomes while adding independent authorization/effect evidence; do not flatten dynamic task utility, injection success and effect attribution into one scalar. Source: https://arxiv.org/abs/2602.03117.
+
+Map the causal track to the OWASP Top 10 for Agentic Applications 2026 taxonomy: ASI03 Identity and Privilege Abuse, ASI06 Memory and Context Poisoning, ASI07 Insecure Inter-Agent Communication, ASI08 Cascading Failures and ASI10 Rogue Agents. OWASP is a threat taxonomy, not an execution benchmark or assurance certificate. Source: https://genai.owasp.org/top-10-for-agentic-applications-2026/.
+
 For runtime comparisons, pin the exact product release, backend, configuration, kernel prerequisites and policy semantics. The public OpenShell release page currently lists v0.1.10 (tag commit 152c59d). Compare against the exact stable artifact and include its current security fixes. The November 2026 NVIDIA security bulletin documents multiple OpenShell vulnerabilities and updated versions, a reminder that the benchmark must include versioned regression cases and must not treat a product label as a security guarantee:
 - https://github.com/ai-openshell/openshell/releases
 - https://github.com/NVIDIA/product-security/blob/main/2026/5929/5929.md
