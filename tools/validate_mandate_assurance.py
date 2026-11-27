@@ -228,7 +228,7 @@ def run_mutation_controls(cases: list[dict]) -> int:
     mutations.append(("audience-substitution", case, "invalid", "deny"))
 
     case = cloned("MND-001")
-    case["request"]["requested_scope"] = "payments:write@invoice-42"
+    case["request"]["requested_scope"] = "payments:write@invoice-99"
     mutations.append(("operation-scope-expansion", case, "invalid", "deny"))
 
     case = cloned("MND-001")
