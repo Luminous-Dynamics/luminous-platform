@@ -9,6 +9,7 @@
     "episode_id",
     "scenario_family",
     "manifest",
+    "coordination",
     "root_authority_digest",
     "nodes",
     "edges",
@@ -391,7 +392,13 @@
         "overdisclosure_count",
         "attribution_complete",
         "critical_violations",
-        "decision"
+        "decision",
+        "required_call_count",
+        "required_call_block_count",
+        "reserved_call_attempt_count",
+        "reserved_call_commit_count",
+        "constraint_loss_first_handoff",
+        "token_overhead_ratio"
       ],
       "properties": {
         "state_correct": {
@@ -448,8 +455,47 @@
         "decision": {
           "enum": [
             "pass",
-            "fail",
+            "fail_security",
+            "fail_utility",
             "unknown_reconciliation_required"
+          ]
+        },
+        "required_call_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_call_block_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved_call_attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved_call_commit_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "constraint_loss_first_handoff": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "token_overhead_ratio": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       }
@@ -458,6 +504,60 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/identifier"
+      }
+    },
+    "coordination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "architecture",
+        "agent_count",
+        "hierarchy_depth",
+        "peer_width",
+        "handoff_count",
+        "persona_mode",
+        "defense_treatment"
+      ],
+      "properties": {
+        "architecture": {
+          "enum": [
+            "single",
+            "centralized",
+            "decentralized"
+          ]
+        },
+        "agent_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hierarchy_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peer_width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "handoff_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "persona_mode": {
+          "enum": [
+            "generic",
+            "typed",
+            "mixed"
+          ]
+        },
+        "defense_treatment": {
+          "enum": [
+            "none",
+            "source_anchor",
+            "chain_attenuation",
+            "source_plus_chain",
+            "source_anchor_capability_receipts"
+          ]
+        }
       }
     }
   }
