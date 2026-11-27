@@ -19,11 +19,11 @@ Its metrics include:
 - constraint loss and first handoff where it occurs;
 - required-call block rate and token overhead for defenses.
 
-The paper reports that centralized supervisor hierarchies increase task completion but also unauthorized actions: 0.4% of tasks for single agents and 0.7% for peer networks versus 11.7% for hierarchical systems in the cited macro-average; deeper hierarchies reached 19.8% unauthorized actions. It also reports that chain-propagated authorization can eliminate executed unauthorized actions while blocking substantial required work (up to 36.3 percentage points in the reported conditions). The source-anchored treatment evaluates calls against the invariant policy derived from the original request and achieved better utility/safety balance in those experiments.
+The latest v3 paper revision reports 600 tasks across eight domains and substantially different outcomes by coordination architecture. Across its generic conditions, centralized hierarchies achieved 93.9–98.6% completion while unauthorized execution ranged from 2.7–19.8%; peer networks completed 85.7–87.0% with 0.6–0.8% unauthorized execution. In one macro comparison, central supervisors had 97.1% completion and 11.7% unauthorized execution versus 86.1% and 0.7% for peers. Increasing supervisor depth from one to three improved completion by 4.6 percentage points but increased unauthorized execution from 2.7% to 19.8%. The authors' source-reanchoring treatment reduced unauthorized execution across all six model configurations at a pooled 1.6-point completion cost; Chain propagation blocked up to 54.5% of required calls and reduced completion by as much as 36.3 points. The paper's heterogeneous strong-lead/weak-executor case reached 12.5% unauthorized execution versus 0.6% for homogeneous strong-agent teams.
 
-These are the paper authors' benchmark results, not Luminous measurements. They show that a security evaluation must count both unsafe actions and safe-but-unnecessary blocks.
+These are author-reported benchmark outcomes, not Luminous measurements. They demonstrate why architecture depth, authority preservation, required-call blocking and utility must be measured together. Use v3 as the pinned comparison basis; older preprint revisions report different values.
 
-Paper: https://arxiv.org/abs/2608.07556  
+Paper (v3, 15 Oct 2026): https://arxiv.org/abs/2608.07556  
 Research implementation and MIT-licensed code: https://github.com/ZhuoningXu/MasDrift
 
 ### AIP — Agent Identity Protocol
