@@ -19,7 +19,9 @@
       "source_digest": "2222222222222222222222222222222222222222222222222222222222222222",
       "attributes": {
         "trust_label": "untrusted",
-        "taint_source_digest": "8888888888888888888888888888888888888888888888888888888888888888"
+        "taint_source_digest": "8888888888888888888888888888888888888888888888888888888888888888",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -31,7 +33,9 @@
       "source_digest": "3333333333333333333333333333333333333333333333333333333333333333",
       "attributes": {
         "trust_label": "tainted",
-        "taint_source_digest": "8888888888888888888888888888888888888888888888888888888888888888"
+        "taint_source_digest": "8888888888888888888888888888888888888888888888888888888888888888",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -43,7 +47,9 @@
       "source_digest": "4444444444444444444444444444444444444444444444444444444444444444",
       "attributes": {
         "principal_digest": "2222222222222222222222222222222222222222222222222222222222222222",
-        "actor_digest": "3333333333333333333333333333333333333333333333333333333333333333"
+        "actor_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -55,7 +61,9 @@
       "source_digest": "5555555555555555555555555555555555555555555555555555555555555555",
       "attributes": {
         "task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
-        "plan_digest": "3333333333333333333333333333333333333333333333333333333333333333"
+        "plan_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -74,7 +82,9 @@
         "reserved_actions": [
           "issue_payment",
           "post_ledger"
-        ]
+        ],
+        "control_domain_role": "issuer",
+        "control_domain_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
       }
     },
     {
@@ -113,7 +123,9 @@
         ],
         "authority_state": "active",
         "authority_checked_at_ms": 1060,
-        "max_authority_age_ms": 10000
+        "max_authority_age_ms": 10000,
+        "control_domain_role": "issuer",
+        "control_domain_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
       }
     },
     {
@@ -147,7 +159,9 @@
         "allowed_child_bindings": [],
         "authority_state": "active",
         "authority_checked_at_ms": 1070,
-        "max_authority_age_ms": 10000
+        "max_authority_age_ms": 10000,
+        "control_domain_role": "issuer",
+        "control_domain_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
       }
     },
     {
@@ -159,7 +173,9 @@
       "source_digest": "9999999999999999999999999999999999999999999999999999999999999999",
       "attributes": {
         "trust_label": "tainted",
-        "taint_source_digest": "8888888888888888888888888888888888888888888888888888888888888888"
+        "taint_source_digest": "8888888888888888888888888888888888888888888888888888888888888888",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -171,7 +187,9 @@
       "source_digest": "1111111111111111111111111111111111111111111111111111111111111111",
       "attributes": {
         "task_digest": "3333333333333333333333333333333333333333333333333333333333333333",
-        "plan_digest": "4444444444444444444444444444444444444444444444444444444444444444"
+        "plan_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -183,7 +201,9 @@
       "source_digest": "2222222222222222222222222222222222222222222222222222222222222222",
       "attributes": {
         "principal_digest": "2222222222222222222222222222222222222222222222222222222222222222",
-        "actor_digest": "4444444444444444444444444444444444444444444444444444444444444444"
+        "actor_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -211,7 +231,9 @@
         "branch_assignment_digest": "6666666666666666666666666666666666666666666666666666666666666666",
         "actor_digest": "4444444444444444444444444444444444444444444444444444444444444444",
         "revocation_epoch": 1,
-        "request_digest": "a6ed09a63eeb7d756b09a77b53b6e299ed9acab76937cae669c6cd0692e4095a"
+        "request_digest": "a6ed09a63eeb7d756b09a77b53b6e299ed9acab76937cae669c6cd0692e4095a",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -225,7 +247,9 @@
         "source_policy_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "operation": "draft_batch",
         "arguments_digest": "8888888888888888888888888888888888888888888888888888888888888888",
-        "pdp_verdict": "allow"
+        "pdp_verdict": "allow",
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -237,7 +261,9 @@
       "source_digest": "5555555555555555555555555555555555555555555555555555555555555555",
       "attributes": {
         "pep_verdict": "enforced",
-        "enforcement_generation": 2
+        "enforcement_generation": 2,
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -247,7 +273,10 @@
       "sequence": 14,
       "observed_at_ms": 1140,
       "source_digest": "6666666666666666666666666666666666666666666666666666666666666666",
-      "attributes": {}
+      "attributes": {
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
     },
     {
       "id": "draft_resource",
@@ -257,7 +286,9 @@
       "observed_at_ms": 1150,
       "source_digest": "7777777777777777777777777777777777777777777777777777777777777777",
       "attributes": {
-        "resource_digest": "7777777777777777777777777777777777777777777777777777777777777777"
+        "resource_digest": "7777777777777777777777777777777777777777777777777777777777777777",
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -286,7 +317,9 @@
         "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
         "source_policy_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "task_digest": "3333333333333333333333333333333333333333333333333333333333333333",
-        "task_id": "child_task"
+        "task_id": "child_task",
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -298,7 +331,9 @@
       "source_digest": "9999999999999999999999999999999999999999999999999999999999999999",
       "attributes": {
         "independent_observer": true,
-        "observer_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        "observer_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "control_domain_role": "observer",
+        "control_domain_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       }
     },
     {
@@ -326,7 +361,9 @@
         "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
         "source_policy_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "task_digest": "3333333333333333333333333333333333333333333333333333333333333333",
-        "task_id": "child_task"
+        "task_id": "child_task",
+        "control_domain_role": "observer",
+        "control_domain_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       }
     },
     {
@@ -354,7 +391,9 @@
         "branch_assignment_digest": "6666666666666666666666666666666666666666666666666666666666666666",
         "actor_digest": "4444444444444444444444444444444444444444444444444444444444444444",
         "revocation_epoch": 1,
-        "request_digest": "4e3dccd1ef8b82ee4b2ccf05452b2ab1ef7123af9fd14b6f82ec889be9d00d18"
+        "request_digest": "4e3dccd1ef8b82ee4b2ccf05452b2ab1ef7123af9fd14b6f82ec889be9d00d18",
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -368,7 +407,9 @@
         "source_policy_digest": null,
         "operation": "issue_payment",
         "arguments_digest": "9999999999999999999999999999999999999999999999999999999999999999",
-        "pdp_verdict": "not_evaluated"
+        "pdp_verdict": "not_evaluated",
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -380,7 +421,9 @@
       "source_digest": "4444444444444444444444444444444444444444444444444444444444444444",
       "attributes": {
         "pep_verdict": "not_invoked",
-        "enforcement_generation": 2
+        "enforcement_generation": 2,
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -390,7 +433,10 @@
       "sequence": 22,
       "observed_at_ms": 1220,
       "source_digest": "5555555555555555555555555555555555555555555555555555555555555555",
-      "attributes": {}
+      "attributes": {
+        "control_domain_role": "candidate",
+        "control_domain_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
     },
     {
       "id": "payment_resource",
@@ -400,7 +446,9 @@
       "observed_at_ms": 1230,
       "source_digest": "6666666666666666666666666666666666666666666666666666666666666666",
       "attributes": {
-        "resource_digest": "7777777777777777777777777777777777777777777777777777777777777777"
+        "resource_digest": "7777777777777777777777777777777777777777777777777777777777777777",
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -429,7 +477,9 @@
         "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
         "source_policy_digest": null,
         "task_digest": "3333333333333333333333333333333333333333333333333333333333333333",
-        "task_id": "child_task"
+        "task_id": "child_task",
+        "control_domain_role": "participant",
+        "control_domain_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
       }
     },
     {
@@ -441,7 +491,9 @@
       "source_digest": "8888888888888888888888888888888888888888888888888888888888888888",
       "attributes": {
         "independent_observer": true,
-        "observer_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "observer_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "control_domain_role": "observer",
+        "control_domain_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       }
     },
     {
@@ -469,7 +521,9 @@
         "root_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
         "source_policy_digest": null,
         "task_digest": "3333333333333333333333333333333333333333333333333333333333333333",
-        "task_id": "child_task"
+        "task_id": "child_task",
+        "control_domain_role": "observer",
+        "control_domain_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       }
     }
   ],
