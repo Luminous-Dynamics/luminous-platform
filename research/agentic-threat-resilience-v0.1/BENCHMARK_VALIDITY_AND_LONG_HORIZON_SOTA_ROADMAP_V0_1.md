@@ -221,7 +221,7 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 
 ## 9. Immediate research issues that remain open
 
-- The Mandate Issuer's internal evidence that the delegator actually instructed issuance is a trust-framework problem; the protocol's signature alone cannot prove it.
+- The Mandate Issuer's internal evidence that the delegator actually instructed issuance is a trust-framework problem; the protocol's signature alone cannot prove it. Platform #550 tracks a profile that binds this separate instruction/approval event to the exact root mandate artifact and tests role separation.
 - Global mandate budgets across multiple relying parties need shared state or a narrower single-RP/audience design; independently validated copies can otherwise spend the same budget in parallel.
 - Revocation and status semantics need freshness bounds and commit-time enforcement, not just validation-time checks.
 - Issuer compromise, workload compromise and malicious-but-authorized actions are different threat classes. Strong provenance does not prove benevolent reasoning.
@@ -237,4 +237,4 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 - MasDrift v3: https://arxiv.org/abs/2608.07556
 - WIMSE Agent Mandates, draft-hulea-wimse-agent-mandate-01 (work in progress): https://datatracker.ietf.org/doc/draft-hulea-wimse-agent-mandate/01/
 - OWASP Top 10 for Agentic Applications 2026: https://genai.owasp.org/2026/01/05/owasp-top-10-for-agentic-applications/
-- Existing work: Platform #540–#549, PR #542, PR #548.
+- Existing work: Platform #540–#550, PR #542, PR #548.
