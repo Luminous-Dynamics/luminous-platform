@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/agentic-threat-resilience/scenario-catalog-v0.1.schema.json",
+  "title": "Agentic Threat Resilience scenario catalogue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "catalog_version",
+    "safety_profile",
+    "scenarios"
+  ],
+  "properties": {
+    "catalog_version": {
+      "const": "luminous.agentic-threat-resilience.scenarios.v0.1"
+    },
+    "safety_profile": {
+      "const": "isolated_lab_only_no_real_third_party_targets"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "title",
+        "category",
+        "risk_class",
+        "lab_fixture",
+        "agent_visible_inputs",
+        "simulated_behavior",
+        "expected_controls",
+        "hard_assertions",
+        "success_criteria",
+        "telemetry_requirements",
+        "metrics",
+        "episode_class",
+        "scenario_family"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^ATR-[0-9]{3}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 4
+        },
+        "category": {
+          "enum": [
+            "supply_chain",
+            "exposure",
+            "identity",
+            "scope",
+            "egress",
+            "prompt_injection",
+            "model_endpoint",
+            "tenant_isolation",
+            "runtime_isolation",
+            "resource_abuse",
+            "recovery",
+            "detection"
+          ]
+        },
+        "risk_class": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "lab_fixture": {
+          "type": "string",
+          "minLength": 8
+        },
+        "agent_visible_inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "simulated_behavior": {
+          "type": "string",
+          "minLength": 8
+        },
+        "expected_controls": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "hard_assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "success_criteria": {
+          "type": "string",
+          "minLength": 8
+        },
+        "notes": {
+          "type": "string"
+        },
+        "telemetry_requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_visible",
+            "evaluator_private"
+          ],
+          "properties": {
+            "candidate_visible": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "process_lineage",
+                  "worker_task",
+                  "identity_auth",
+                  "asset_inventory",
+                  "scanner_import",
+                  "dns_query",
+                  "dns_resolution",
+                  "http_redirect",
+                  "network_flow",
+                  "egress_gateway",
+                  "model_endpoint",
+                  "llm_request_metadata",
+                  "oci_image_digest",
+                  "build_provenance",
+                  "filesystem_access",
+                  "sandbox_policy",
+                  "secret_broker",
+                  "api_access",
+                  "authorization_decision",
+                  "participant_attempt",
+                  "participant_effect",
+                  "service_health",
+                  "backup_policy",
+                  "audit_log",
+                  "model_output_claim",
+                  "provider_fallback",
+                  "cgroup_binding",
+                  "runtime_sandbox_observation",
+                  "network_capability_lease",
+                  "container_mounts",
+                  "process_cgroup",
+                  "socket_connect",
+                  "binary_identity",
+                  "policy_delta",
+                  "credential_provider",
+                  "supervisor_channel",
+                  "observer_receipt_chain",
+                  "observer_identity",
+                  "observer_key_status",
+                  "observer_sequence",
+                  "observer_boot_epoch",
+                  "observer_checkpoint_state",
+                  "observer_witness_receipt",
+                  "observer_witness_tree_head",
+                  "observer_witness_gossip",
+                  "observer_witness_merkle_proof",
+                  "observer_witness_quorum"
+                ]
+              }
+            },
+            "evaluator_private": {
+              "type": "array",
+              "uniqueItems": true,
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "fault_truth",
+                  "expected_target_set",
+                  "expected_deny",
+                  "canary_secret_identity",
+                  "expected_effect_count",
+                  "oracle_service_health",
+                  "expected_tenant_binding",
+                  "artifact_truth",
+                  "policy_truth",
+                  "expected_evidence_provenance",
+                  "expected_recovery_state",
+                  "expected_chain_head",
+                  "expected_chain_sequence",
+                  "expected_boot_epoch",
+                  "expected_observer_key",
+                  "expected_key_revocation",
+                  "expected_checkpoint_state",
+                  "expected_witness_quorum",
+                  "expected_witness_tree_head",
+                  "expected_witness_view",
+                  "expected_merkle_leaf",
+                  "expected_previous_tree_root",
+                  "expected_quorum_intersection",
+                  "expected_byzantine_witness",
+                  "expected_honest_witness_intersection",
+                  "expected_witness_key_fingerprint"
+                ]
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "detection_recall",
+              "precision",
+              "tenant_attribution_accuracy",
+              "deny_rate",
+              "unauthorized_effects",
+              "cross_tenant_leaks",
+              "unapproved_egress",
+              "host_escape",
+              "time_to_detect_ms",
+              "time_to_contain_ms",
+              "resource_budget_exceeded",
+              "false_recovery_claims",
+              "artifact_admission",
+              "privacy_leakage",
+              "recovery_control_integrity",
+              "legitimate_task_completion",
+              "unnecessary_refusal",
+              "safe_refusal_accuracy",
+              "false_positive_per_1000_asset_days",
+              "task_completion_latency_ms",
+              "dns_rebinding",
+              "proxy_bypass",
+              "ipv6_policy_bypass",
+              "udp_policy_bypass",
+              "lease_replay",
+              "runtime_isolation_mismatch",
+              "binary_identity_drift",
+              "credential_reach_expansion",
+              "supervisor_disconnect_fail_closed",
+              "policy_containment",
+              "observer_chain_rollback",
+              "observer_key_revocation",
+              "stale_observation_acceptance",
+              "evidence_freshness_ms",
+              "observer_witness_reconciliation",
+              "observer_witness_quorum",
+              "observer_witness_equivocation",
+              "witness_gossip_equivocation_detection",
+              "witness_inclusion_proof_validity",
+              "witness_consistency_proof_validity",
+              "observer_quorum_intersection_safety",
+              "observer_byzantine_fault_tolerance",
+              "observer_key_fingerprint_mismatch"
+            ]
+          }
+        },
+        "episode_class": {
+          "enum": [
+            "adversarial",
+            "benign",
+            "mixed"
+          ]
+        },
+        "scenario_family": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+        }
+      }
+    }
+  }
+}

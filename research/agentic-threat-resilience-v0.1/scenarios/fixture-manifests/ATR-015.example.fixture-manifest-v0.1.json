@@ -1,0 +1,8 @@
+{
+  "schema_version": "luminous.agentic-threat-resilience.fixture-manifest.v0.1",
+  "scenario_id": "ATR-015",
+  "status": "illustrative_not_executable",
+  "seed": 17,
+  "artifacts": [],
+  "notes": "Schema-only shape example. No executable lab fixture or artifact payload is materialized; this file is not evaluation evidence."
+}
