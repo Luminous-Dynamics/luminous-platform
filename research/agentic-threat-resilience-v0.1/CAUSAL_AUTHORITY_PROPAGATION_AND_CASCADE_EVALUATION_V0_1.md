@@ -135,7 +135,9 @@ The new CAP-004 fixture exercises this exact treatment:
 - the tool call reanchors to P0 and the exact leaf capability;
 - an independent observer verifies the committed effect.
 
-The workflow must demonstrate that strict Chain would reject the leaf call due to the narrower middle role, while source-anchor capability receipts accept only the exact root+parent-precommitted descendant. CAP-003 remains the corresponding safe-but-over-restrictive failure.
+The workflow demonstrates that strict Chain rejects the leaf call because the intermediate local effect scope is narrower, while source-anchor capability receipts accept only the exact root+parent-precommitted descendant. CAP-003 remains the safe-but-over-restrictive contrast.
+
+All four graph fixtures now also carry a domain-separated canonical invocation digest. The validator recomputes it from tenant, actor, source policy, capability, root/leaf task and plan, branch assignment, target resource, operation, arguments digest, consent state and revocation epoch. The protected effect and independent receipt must bind every one of those fields to exactly one tool-call node. A valid effect ID or caller-supplied digest string alone is insufficient. This graph-level check is a benchmark evidence contract; it does not replace a participant-side verifier.
 
 The implementation is a pure synthetic predicate, not cryptographic grant issuance, proof-of-possession, authenticated authority freshness, a live participant commit gate, or an independent effect oracle. The qualification-core README explicitly states that its 52 test functions have not been compiled or run. It has no standalone public Cargo manifest or workflow at present; issue #545 tracks the build closure. The separate act-bound crypto profile v0.2 already describes the intended JWS/SPIFFE/participant finality boundaries, but says its verifier is not wired to the reference sink.
 
