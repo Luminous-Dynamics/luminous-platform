@@ -26,53 +26,30 @@ These are author-reported benchmark outcomes, not Luminous measurements. They de
 Paper (v3, 15 Oct 2026): https://arxiv.org/abs/2608.07556  
 Research implementation and MIT-licensed code: https://github.com/ZhuoningXu/MasDrift
 
-### AIP — Agent Identity Protocol
+### AIP — Agent Identity Protocol, current draft -02
 
-Prakash's *Agent Identity Protocol (AIP): Verifiable Delegation for AI Agent Systems*, draft draft-prakash-aip-01, published 19 August 2026, is an individual informational Internet-Draft that currently states an expiry of 20 February 2027. It proposes Invocation-Bound Capability Tokens (IBCTs), with compact Ed25519/JWT mode for single-hop calls and Biscuit/Datalog chained mode for multi-hop delegation.
+The current Datatracker revision is draft-prakash-aip-02, an individual submission intended for Standards Track, dated October 2026 and expiring 13 April 2027. It defines an encoding-neutral delegation chain with:
+- root issuer and key binding;
+- a signature-chain step (V1), depth limits (V3), explicit attenuation comparisons (V4), nonempty delegation context (V5), request-time tool/domain checks (V6), and a revocation freshness step (V7);
+- a compact JWT chain encoding using a cnf holder key and a Biscuit/Datalog encoding;
+- optional principal invariance and domain scopes;
+- MCP, A2A and generic HTTP bindings.
 
-Its draft specifies:
-- root identity and initial authority in block 0;
-- signed delegation blocks with attenuation of tools, budget, domains and expiry;
-- bounded delegation depth and non-empty delegation context;
-- verification of chain integrity, root binding, depth, attenuation, context, policy and revocation;
-- protocol bindings for MCP, A2A and generic HTTP;
-- completion records with different verification trust levels.
+This is a useful protocol comparator, but its own security considerations and implementation-status sections explicitly identify important gaps:
 
-The paper's earlier March 2026 version reports 600 adversarial attempts and performance figures, but those are author-reported research results, not an independent certification or proof of general deployment safety.
+1. **JWT chain truncation / proof of possession:** any prefix of a valid JWT chain remains a valid chain and can expose a wider ancestor authority. The draft says relying parties must verify proof of possession of the leaf cnf key. AIP delegates this to HTTP Message Signatures or WIMSE Workload Proof Tokens; it does not define the request-signature profile, signed components, freshness or replay protocol. The draft says no known implementation currently verifies proof of possession. The Biscuit encoding is a bearer credential and does not meet its own R4 proof-of-possession requirement.
+2. **Revocation:** V7 requires signed revocation responses, configurable maximum staleness and fail-closed behavior, but the endpoint/response format/freshness representation are not specified, so the draft itself says V7 cannot yet be implemented interoperably and no implementation performs it.
+3. **Dual-axis authorization:** AIP carries the agent's authority and the bound principal, but not the principal's own entitlements. The relying party must compose principal entitlements with agent authority; R6 is explicitly not met and is out of scope.
+4. **Execution-time human approval:** AIP does not carry or verify evidence that a human approved a high-impact action at execution time; R10 is explicitly not met.
+5. **Identity binding:** in the JWT chain, checking the holder-key chain is not enough; the verifier must also bind each cnf key to the corresponding agent identifier. Biscuit delegator identity assertions are not authenticated in the same way.
+6. **Audit completeness:** the draft removed the earlier completion blocks because they were never implemented. Signed delegation links do not prove that a protected effect committed, and JWT trailing-link removal is only detected through proof of possession.
 
-Important limitations explicitly stated by draft -01:
-- the token is a bearer credential unless separately bound to proof of possession; the draft says verification does not authenticate the presenter;
-- token-specific revocation via CRLs is deferred to v2, while key removal and short lifetimes are the current approach;
-- completion can be self-reported, counter-signed or third-party attested, so a completion block does not automatically prove a protected-resource commit.
+The draft's implementation inventory is also self-reported and author-maintained: it lists a Python reference implementation with 311 tests plus 26 cross-language tests at a stated commit, and Rust crates with 80 tests; neither implements V7, and the draft notes no independent implementations of this revision. It also describes remaining limitations in the Python JWT verifier (including missing iat/jti checks, incomplete issuer/key and cnf/subject binding) and the Rust implementation (Biscuit-only, no domains, no JWT encoding, and other conformance gaps). These are statements in the draft's own implementation-status section, not an independent audit.
 
-Draft: https://www.ietf.org/archive/id/draft-prakash-aip-01.html  
-Earlier paper: https://arxiv.org/abs/2603.24775
+Current draft: https://datatracker.ietf.org/doc/draft-prakash-aip/
 
-AIP is a useful interoperability and protocol comparator. It should be treated as work in progress, not as an adopted IETF standard.
+**Luminous integration conclusion:** reuse AIP's chain model and encoding concepts where interoperable, but do not treat a valid AIP token as complete authorization. Our relying party still needs an immutable source policy P0, participant-side identity/entitlement composition, exact request digest binding, commit-time revocation fencing, execution-time human-consent evidence and independent effect receipts. The Act-Bound profile's strict JCS + domain-separated BLAKE3 contract remains the production action-binding reference; AIP's chain signature is a separate delegation-proof concern.
 
-## 1.1 Existing Luminous prototype discovered
-
-Platform already contains a pure synthetic implementation of both relevant policy arms:
-
-- `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/delegation.rs` implements strict edge-by-edge monotonic attenuation.
-- `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/root_reanchor.rs` implements a separate root-reanchored authorization predicate.
-
-The root-reanchor predicate requires:
-- stable root task and plan identity across the chain;
-- exact parent task ID, parent task digest and parent grant linkage at every hop;
-- issuer-to-parent-subject identity continuity;
-- every parent to precommit the exact child task digest and child plan digest;
-- the root grant to precommit the complete descendant task/plan manifest;
-- fresh, active authority observations for every ancestor, including intermediates;
-- exact requested effect parameters, target, operations, data scopes, budgets and approvals within both root and acting-leaf envelopes.
-
-It deliberately does not intersect the final leaf's local effect scope through an intermediate agent's narrower operational role. It does not, however, treat a task manifest as unlimited authority: the descendant must be precommitted at root and parent, the parent must be delegable, all ancestors must remain active, and the actual effect must fit both root and leaf.
-
-Its source tests include the key differential: strict attenuation rejects a precommitted leaf operation because the intermediate role is narrower, while root-reanchor accepts the leaf under the root+leaf envelopes. Negative tests reject descendants absent from the root manifest, task/plan cross-pairings, root/leaf scope expansion, revoked intermediates, and missing/stale/unknown ancestor observations.
-
-This is a promising existing design to reuse and qualify, not a production authorization service. Its observations are supplied to a pure predicate; it does not cryptographically authenticate the authority observations, issue/sign capabilities, authenticate the request presenter, or enforce revocation at a live participant commit. The qualification-core README says its 52 test sources have not been compiled or run. There is also no public Cargo manifest or CI workflow in that subdirectory; issue #545 tracks this executable-closure blocker. The root-reanchor predicate currently validates request_digest syntax but does not recompute it from the pending effect fields; issue #546 tracks binding the permit to a verified canonical act from the act-bound profile.
-
-The existing [Act-bound crypto profile v0.2](https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/agent-effect-gate-v0.1/ACT_BOUND_CRYPTO_PROFILE_V0.2.md) already separates artifact provenance, SPIFFE workload identity, attestation, act-specific authorization handles, participant atomic finality and independent service truth. It explicitly states that no cryptographic verifier is wired into the reference sink yet. Issue #544 should integrate root-reanchor with this boundary model rather than write a parallel predicate.
 
 ## 2. The design conclusion
 
