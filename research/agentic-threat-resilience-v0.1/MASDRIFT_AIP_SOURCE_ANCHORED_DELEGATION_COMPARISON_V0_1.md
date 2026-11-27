@@ -50,6 +50,30 @@ Earlier paper: https://arxiv.org/abs/2603.24775
 
 AIP is a useful interoperability and protocol comparator. It should be treated as work in progress, not as an adopted IETF standard.
 
+## 1.1 Existing Luminous prototype discovered
+
+Platform already contains a pure synthetic implementation of both relevant policy arms:
+
+- `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/delegation.rs` implements strict edge-by-edge monotonic attenuation.
+- `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/root_reanchor.rs` implements a separate root-reanchored authorization predicate.
+
+The root-reanchor predicate requires:
+- stable root task and plan identity across the chain;
+- exact parent task ID, parent task digest and parent grant linkage at every hop;
+- issuer-to-parent-subject identity continuity;
+- every parent to precommit the exact child task digest and child plan digest;
+- the root grant to precommit the complete descendant task/plan manifest;
+- fresh, active authority observations for every ancestor, including intermediates;
+- exact requested effect parameters, target, operations, data scopes, budgets and approvals within both root and acting-leaf envelopes.
+
+It deliberately does not intersect the final leaf's local effect scope through an intermediate agent's narrower operational role. It does not, however, treat a task manifest as unlimited authority: the descendant must be precommitted at root and parent, the parent must be delegable, all ancestors must remain active, and the actual effect must fit both root and leaf.
+
+Its source tests include the key differential: strict attenuation rejects a precommitted leaf operation because the intermediate role is narrower, while root-reanchor accepts the leaf under the root+leaf envelopes. Negative tests reject descendants absent from the root manifest, task/plan cross-pairings, root/leaf scope expansion, revoked intermediates, and missing/stale/unknown ancestor observations.
+
+This is a promising existing design to reuse and qualify, not a production authorization service. Its observations are supplied to a pure predicate; it does not cryptographically authenticate the authority observations, issue/sign capabilities, authenticate the request presenter, or enforce revocation at a live participant commit. The qualification-core README says its 52 test sources have not been compiled or run. There is also no public Cargo manifest or CI workflow in that subdirectory; issue #545 tracks this executable-closure blocker.
+
+The existing [Act-bound crypto profile v0.2](https://github.com/Luminous-Dynamics/luminous-platform/blob/main/research/agent-effect-gate-v0.1/ACT_BOUND_CRYPTO_PROFILE_V0.2.md) already separates artifact provenance, SPIFFE workload identity, attestation, act-specific authorization handles, participant atomic finality and independent service truth. It explicitly states that no cryptographic verifier is wired into the reference sink yet. Issue #544 should integrate root-reanchor with this boundary model rather than write a parallel predicate.
+
 ## 2. The design conclusion
 
 The correct architecture is neither "put all authority in the source policy and ignore delegation" nor "trust every delegated policy chain to preserve the source boundary."
