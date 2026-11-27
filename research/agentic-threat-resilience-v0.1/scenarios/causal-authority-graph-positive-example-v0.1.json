@@ -125,7 +125,10 @@
             "task_digest": "3333333333333333333333333333333333333333333333333333333333333333",
             "plan_digest": "4444444444444444444444444444444444444444444444444444444444444444"
           }
-        ]
+        ],
+        "authority_state": "active",
+        "authority_checked_at_ms": 1070,
+        "max_authority_age_ms": 10000
       }
     },
     {
@@ -156,7 +159,10 @@
         "parent_task_digest": "2222222222222222222222222222222222222222222222222222222222222222",
         "branch_assignment_digest": "6666666666666666666666666666666666666666666666666666666666666666",
         "delegable": false,
-        "allowed_child_bindings": []
+        "allowed_child_bindings": [],
+        "authority_state": "active",
+        "authority_checked_at_ms": 1080,
+        "max_authority_age_ms": 10000
       }
     },
     {
