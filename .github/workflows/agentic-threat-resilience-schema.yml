@@ -1,0 +1,249 @@
+name: Agentic Threat Resilience schema contracts
+
+on:
+  pull_request:
+    paths:
+      - "research/agentic-threat-resilience-v0.1/**"
+      - ".github/workflows/agentic-threat-resilience-schema.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  schema-validation:
+    name: Draft 2020-12 schema and fixture validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact pull request revision
+        uses: actions/checkout@v4
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned schema validator
+        run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0"
+
+      - name: Validate catalogue schema and all 50 scenarios
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/scenario-catalog-v0.1.schema.json").read_text())
+          catalog = json.loads((root / "scenarios/scenarios-v0.1.json").read_text())
+
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          errors = sorted(validator.iter_errors(catalog), key=lambda e: list(e.absolute_path))
+          if errors:
+              for error in errors:
+                  location = "/".join(str(part) for part in error.absolute_path)
+                  print(f"{location}: {error.message}")
+              raise SystemExit(f"{len(errors)} catalogue validation error(s)")
+
+          ids = [scenario["scenario_id"] for scenario in catalog["scenarios"]]
+          if len(ids) != len(set(ids)):
+              raise SystemExit("duplicate scenario_id")
+          if len(ids) != 50:
+              raise SystemExit(f"expected 50 scenarios, found {len(ids)}")
+          if sum(s["episode_class"] == "adversarial" for s in catalog["scenarios"]) != 44:
+              raise SystemExit("expected 44 adversarial scenarios")
+          if sum(s["episode_class"] == "benign" for s in catalog["scenarios"]) != 6:
+              raise SystemExit("expected 6 benign controls")
+          print("catalogue schema valid; 50 unique scenarios (44 adversarial, 6 benign)")
+          PY
+
+      - name: Validate episode and fixture-manifest schemas and examples
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path, PurePosixPath
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          episode_schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
+          episode = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          fixture_schema = json.loads((root / "schemas/fixture-manifest-v0.1.schema.json").read_text())
+
+          fixture_relative = PurePosixPath(episode["manifest"]["fixture_manifest_path"])
+          if fixture_relative.is_absolute() or any(part in (".", "..") for part in fixture_relative.parts):
+              raise SystemExit("fixture_manifest_path must be a safe repository-relative path")
+          if fixture_relative.parts[:2] != ("scenarios", "fixture-manifests"):
+              raise SystemExit("fixture_manifest_path must remain under scenarios/fixture-manifests")
+          fixture_path = root.joinpath(*fixture_relative.parts)
+          if not fixture_path.resolve().is_relative_to(root.resolve()):
+              raise SystemExit("fixture_manifest_path resolves outside benchmark root")
+          fixture = json.loads(fixture_path.read_text())
+
+          for schema in (episode_schema, fixture_schema):
+              Draft202012Validator.check_schema(schema)
+
+          for schema, instance, label in (
+              (episode_schema, episode, "episode-result"),
+              (fixture_schema, fixture, "fixture-manifest"),
+          ):
+              errors = sorted(Draft202012Validator(schema).iter_errors(instance), key=lambda e: list(e.absolute_path))
+              if errors:
+                  for error in errors:
+                      location = "/".join(str(part) for part in error.absolute_path)
+                      print(f"{label} {location}: {error.message}")
+                  raise SystemExit(f"{len(errors)} {label} validation error(s)")
+          print("episode-result and fixture-manifest schemas/examples valid")
+          PY
+
+      - name: Validate claim-bound authorization evidence record
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/authorization-assurance-record-v0.1.schema.json").read_text())
+          record = json.loads((root / "scenarios/authorization-assurance-record-example-v0.1.json").read_text())
+          Draft202012Validator.check_schema(schema)
+          errors = sorted(Draft202012Validator(schema).iter_errors(record), key=lambda e: list(e.absolute_path))
+          if errors:
+              for error in errors:
+                  location = "/".join(str(part) for part in error.absolute_path)
+                  print(f"authorization record {location}: {error.message}")
+              raise SystemExit(f"{len(errors)} authorization-assurance schema error(s)")
+
+          required = set(record["claim"]["required_obligations"])
+          evidenced = set(record["appraisal"]["evidenced_obligations"])
+          residual = set(record["appraisal"]["residual_obligations"])
+          if residual != required - evidenced:
+              raise SystemExit("residual_obligations must equal required_obligations minus evidenced_obligations")
+
+          trace = record["authority_trace"]
+          sequences = [event["sequence"] for event in trace]
+          times = [event["observed_at_ms"] for event in trace]
+          if sequences != sorted(set(sequences)):
+              raise SystemExit("authority trace sequences must be strictly increasing")
+          if times != sorted(times):
+              raise SystemExit("authority trace timestamps must be monotonically increasing")
+
+          for event in trace:
+              if event["consent_required"] and event["pdp_decision"] == "allow" and event["consent_evidence_digest"] is None:
+                  raise SystemExit("an allowed operation requiring consent must bind consent evidence")
+              if event["pdp_decision"] == "allow" and event["pep_action"] == "enforced" and event["pep_identity"] is None:
+                  raise SystemExit("an enforced allow decision must identify its PEP")
+
+          if record["appraisal"]["decision"] == "pass":
+              if record["appraisal"]["state_correct"] is not True or record["appraisal"]["authorization_correct"] is not True:
+                  raise SystemExit("pass requires both state and authorization oracles to be true")
+              if residual or record["appraisal"]["hard_gate_violations"]:
+                  raise SystemExit("pass cannot contain residual obligations or hard-gate violations")
+              receipt = record["effect_receipt"]
+              if receipt is None or receipt["verdict"] != "effect_verified":
+                  raise SystemExit("pass requires an independently verified protected-effect receipt")
+              final_event = trace[-1]
+              for receipt_field, trace_field in (
+                  ("actor_digest", "actor_digest"),
+                  ("tenant_digest", "tenant_digest"),
+                  ("resource_digest", "resource_digest"),
+                  ("operation", "operation"),
+                  ("arguments_digest", "arguments_digest"),
+                  ("policy_digest", "policy_digest"),
+                  ("credential_generation", "credential_generation"),
+                  ("enforcement_generation", "pep_generation"),
+              ):
+                  if receipt[receipt_field] != final_event[trace_field]:
+                      raise SystemExit(f"effect receipt {receipt_field} is not bound to the final trace event")
+              if any(event["event_state"] == "unknown_reconciliation_required" for event in trace):
+                  raise SystemExit("an unresolved consequential event cannot be reported as pass")
+
+          print("authorization-assurance schema valid; dual-oracle, obligation-gap and effect-binding invariants hold")
+          PY
+
+      - name: Verify exact catalogue, scenario and fixture-manifest digest binding
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path, PurePosixPath
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          catalog_path = root / "scenarios/scenarios-v0.1.json"
+          episode = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          manifest = episode["manifest"]
+
+          catalog_bytes = catalog_path.read_bytes()
+          catalog_sha256 = hashlib.sha256(catalog_bytes).hexdigest()
+          if manifest["catalog_sha256"] != catalog_sha256:
+              raise SystemExit("episode manifest catalog_sha256 does not match exact catalogue bytes")
+          catalog = json.loads(catalog_bytes)
+          selected = next((s for s in catalog["scenarios"] if s["scenario_id"] == manifest["scenario_id"]), None)
+          if selected is None:
+              raise SystemExit("episode scenario_id is absent from the exact catalogue")
+          canonical_scenario = json.dumps(
+              selected, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+          ).encode("utf-8")
+          scenario_sha256 = hashlib.sha256(canonical_scenario).hexdigest()
+          if manifest["scenario_definition_sha256"] != scenario_sha256:
+              raise SystemExit("episode manifest scenario_definition_sha256 does not match selected scenario")
+
+          fixture_relative = PurePosixPath(manifest["fixture_manifest_path"])
+          if fixture_relative.is_absolute() or any(part in (".", "..") for part in fixture_relative.parts):
+              raise SystemExit("fixture_manifest_path must be a safe repository-relative path")
+          if fixture_relative.parts[:2] != ("scenarios", "fixture-manifests"):
+              raise SystemExit("fixture_manifest_path must remain under scenarios/fixture-manifests")
+          fixture_path = root.joinpath(*fixture_relative.parts)
+          if not fixture_path.resolve().is_relative_to(root.resolve()):
+              raise SystemExit("fixture_manifest_path resolves outside benchmark root")
+          fixture_bytes = fixture_path.read_bytes()
+          fixture_sha256 = hashlib.sha256(fixture_bytes).hexdigest()
+          if manifest["fixture_bundle_sha256"] != fixture_sha256:
+              raise SystemExit("episode manifest fixture_bundle_sha256 does not match exact fixture manifest bytes")
+
+          fixture = json.loads(fixture_bytes)
+          if fixture["scenario_id"] != manifest["scenario_id"] or fixture["seed"] != manifest["seed"]:
+              raise SystemExit("fixture manifest scenario or seed differs from the episode manifest")
+          if fixture["status"] != "illustrative_not_executable" or fixture["artifacts"]:
+              raise SystemExit("example fixture manifest must remain explicitly non-executable and artifact-free")
+
+          artifact_paths = set()
+          repository_root = Path(".").resolve()
+          for artifact in fixture["artifacts"]:
+              relative = PurePosixPath(artifact["path"])
+              if relative.is_absolute() or any(part in (".", "..") for part in relative.parts):
+                  raise SystemExit("fixture artifact path must be safe and repository-relative")
+              if artifact["path"] in artifact_paths:
+                  raise SystemExit("fixture manifest contains duplicate artifact paths")
+              artifact_paths.add(artifact["path"])
+              artifact_path = repository_root.joinpath(*relative.parts)
+              if not artifact_path.resolve().is_relative_to(repository_root):
+                  raise SystemExit("fixture artifact resolves outside repository")
+              if hashlib.sha256(artifact_path.read_bytes()).hexdigest() != artifact["sha256"]:
+                  raise SystemExit(f"fixture artifact digest mismatch: {artifact['path']}")
+          print("catalogue bytes, selected scenario definition and fixture manifest are digest-bound; every listed artifact was rehashed")
+          PY
+
+      - name: Enforce candidate/evaluator separation and SUT profile declaration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/episode-result-v0.1.schema.json").read_text())
+          example = json.loads((root / "scenarios/episode-result-example-v0.1.json").read_text())
+          manifest_required = schema["properties"]["manifest"]["required"]
+          required_digests = {"catalog_sha256", "scenario_definition_sha256", "fixture_manifest_path", "fixture_bundle_sha256"}
+          if not required_digests.issubset(set(manifest_required)):
+              raise SystemExit("every episode manifest must bind catalogue, scenario definition and fixture bundle")
+          if "sut_profile" not in manifest_required:
+              raise SystemExit("sut_profile must be required in every run manifest")
+          profile = example["manifest"]["sut_profile"]
+          if profile["evaluator_isolation"] != "separate-process-credentials-storage":
+              raise SystemExit("example must declare isolated evaluator storage/credentials/process")
+          if set(profile["included_components"]) & set(profile["excluded_components"]):
+              raise SystemExit("SUT profile includes a component that it also excludes")
+          print("digest binding, SUT profile and candidate/evaluator separation contract present")
+          PY
