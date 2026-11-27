@@ -116,7 +116,7 @@ fn nonempty(value: &str) -> bool {
     !value.trim().is_empty()
 }
 
-fn digest_is_sha256(value: &str) -> bool {
+pub(super) fn digest_is_sha256(value: &str) -> bool {
     value.len() == 64
         && value
             .bytes()
@@ -408,7 +408,7 @@ pub fn verify_delegation_chain_at(
     }
 }
 
-fn parameter_bound_is_subset(child: &ParameterBound, parent: &ParameterBound) -> bool {
+pub(super) fn parameter_bound_is_subset(child: &ParameterBound, parent: &ParameterBound) -> bool {
     match (child, parent) {
         (ParameterBound::ExactString(child), ParameterBound::ExactString(parent)) => {
             child == parent
