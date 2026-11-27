@@ -330,3 +330,8 @@ The existing MSP OpsBench should remain focused on managed operations and recove
 - No public IoCs or user-agent strings alone should be treated as sufficient detections.
 
 **Strategic conclusion:** ARTEX demonstrates that multi-agent planning, real tools, persistent memory and evidence-linked workflows make offensive activity more scalable. Luminous should learn from its investigation architecture while making authority, tenant isolation, egress, supply-chain provenance and independent verification hard system properties rather than instructions to the model.
+
+
+## Research programme v0.2
+
+The next proposed work is captured in [RESEARCH_AGENDA_V0_2.md](RESEARCH_AGENDA_V0_2.md). It does not change the v0.1 catalogue. The agenda extends qualification beyond prompt injection into executable authority, independently observed effects, cross-session memory poisoning, delegated-work revocation, common-cause witness failures, cross-client split views, multi-agent cascades and uncertain transaction outcomes. These are future scenario families and targets—not completed fixtures or measured results.
