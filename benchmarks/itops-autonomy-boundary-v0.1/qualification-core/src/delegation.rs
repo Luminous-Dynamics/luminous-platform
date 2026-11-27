@@ -167,11 +167,18 @@ fn grant_shape_is_valid(grant: &DelegatedAuthorityGrant) -> bool {
         && obligation_set_is_valid(&grant.required_approvals)
         && obligation_set_is_valid(&grant.required_postconditions)
         && obligation_set_is_valid(&grant.rollback_obligations)
-        && grant.allowed_child_task_digests.iter().all(|digest| digest_is_sha256(digest))
-        && grant.allowed_child_plan_digests.iter().all(|digest| digest_is_sha256(digest))
-        && grant.allowed_child_task_plan_bindings.iter().all(|(task, plan)| {
-            digest_is_sha256(task) && digest_is_sha256(plan)
-        })
+        && grant
+            .allowed_child_task_digests
+            .iter()
+            .all(|digest| digest_is_sha256(digest))
+        && grant
+            .allowed_child_plan_digests
+            .iter()
+            .all(|digest| digest_is_sha256(digest))
+        && grant
+            .allowed_child_task_plan_bindings
+            .iter()
+            .all(|(task, plan)| digest_is_sha256(task) && digest_is_sha256(plan))
         && (grant.delegable || grant.remaining_delegation_depth == 0)
         && match (
             &grant.parent_task_id,
@@ -233,10 +240,16 @@ pub fn check_attenuation(
     if child.task_id == parent.task_id {
         violations.push(AttenuationViolation::ChildTaskIdNotDistinct);
     }
-    if !parent.allowed_child_task_digests.contains(&child.task_digest) {
+    if !parent
+        .allowed_child_task_digests
+        .contains(&child.task_digest)
+    {
         violations.push(AttenuationViolation::ChildTaskDigestNotAllowed);
     }
-    if !parent.allowed_child_plan_digests.contains(&child.plan_digest) {
+    if !parent
+        .allowed_child_plan_digests
+        .contains(&child.plan_digest)
+    {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
     if !parent.allowed_child_task_plan_bindings.contains(&(
@@ -286,21 +299,28 @@ pub fn check_attenuation(
     if child.max_resource_units > parent.max_resource_units {
         violations.push(AttenuationViolation::ResourceBudgetExpanded);
     }
-    if child.remaining_delegation_depth
-        > parent.remaining_delegation_depth.saturating_sub(1)
-    {
+    if child.remaining_delegation_depth > parent.remaining_delegation_depth.saturating_sub(1) {
         violations.push(AttenuationViolation::DelegationDepthExpanded);
     }
     if child.max_risk_level > parent.max_risk_level {
         violations.push(AttenuationViolation::RiskCeilingExpanded);
     }
-    if !parent.required_approvals.is_subset(&child.required_approvals) {
+    if !parent
+        .required_approvals
+        .is_subset(&child.required_approvals)
+    {
         violations.push(AttenuationViolation::ApprovalRequirementWeakened);
     }
-    if !parent.required_postconditions.is_subset(&child.required_postconditions) {
+    if !parent
+        .required_postconditions
+        .is_subset(&child.required_postconditions)
+    {
         violations.push(AttenuationViolation::PostconditionWeakened);
     }
-    if !parent.rollback_obligations.is_subset(&child.rollback_obligations) {
+    if !parent
+        .rollback_obligations
+        .is_subset(&child.rollback_obligations)
+    {
         violations.push(AttenuationViolation::RollbackObligationWeakened);
     }
     if child.delegable && child.remaining_delegation_depth == 0 {
@@ -389,10 +409,7 @@ pub fn verify_delegation_chain_at(
     }
 }
 
-fn parameter_bound_is_subset(
-    child: &ParameterBound,
-    parent: &ParameterBound,
-) -> bool {
+fn parameter_bound_is_subset(child: &ParameterBound, parent: &ParameterBound) -> bool {
     match (child, parent) {
         (ParameterBound::ExactString(child), ParameterBound::ExactString(parent)) => {
             child == parent
@@ -400,10 +417,9 @@ fn parameter_bound_is_subset(
         (ParameterBound::ExactInteger(child), ParameterBound::ExactInteger(parent)) => {
             child == parent
         }
-        (
-            ParameterBound::ExactInteger(value),
-            ParameterBound::IntegerRange { min, max },
-        ) => value >= min && value <= max,
+        (ParameterBound::ExactInteger(value), ParameterBound::IntegerRange { min, max }) => {
+            value >= min && value <= max
+        }
         (
             ParameterBound::IntegerRange {
                 min: child_min,
@@ -450,8 +466,14 @@ mod tests {
             targets: set(&["service/api", "service/worker"]),
             operations: set(&["read", "restart"]),
             parameter_bounds: BTreeMap::from([
-                ("replicas".into(), ParameterBound::IntegerRange { min: 1, max: 5 }),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "replicas".into(),
+                    ParameterBound::IntegerRange { min: 1, max: 5 },
+                ),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics", "service-config"]),
             not_before_unix: 100,
@@ -491,8 +513,14 @@ mod tests {
             targets: set(&["service/api"]),
             operations: set(&["read"]),
             parameter_bounds: BTreeMap::from([
-                ("replicas".into(), ParameterBound::IntegerRange { min: 2, max: 3 }),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "replicas".into(),
+                    ParameterBound::IntegerRange { min: 2, max: 3 },
+                ),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics"]),
             not_before_unix: 120,
@@ -525,7 +553,6 @@ mod tests {
         assert_eq!(verify_delegation_at(&parent, &child, 150), Ok(()));
     }
 
-
     #[test]
     fn zero_mutation_budget_allows_safe_read_only_delegation() {
         let mut parent = parent_grant();
@@ -540,10 +567,9 @@ mod tests {
     fn exact_integer_inside_parent_range_is_accepted() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.parameter_bounds.insert(
-            "replicas".into(),
-            ParameterBound::ExactInteger(3),
-        );
+        child
+            .parameter_bounds
+            .insert("replicas".into(), ParameterBound::ExactInteger(3));
         assert_eq!(check_attenuation(&parent, &child), Ok(()));
     }
 
@@ -584,10 +610,9 @@ mod tests {
     fn incomparable_parameter_types_fail_closed() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.parameter_bounds.insert(
-            "replicas".into(),
-            ParameterBound::ExactString("3".into()),
-        );
+        child
+            .parameter_bounds
+            .insert("replicas".into(), ParameterBound::ExactString("3".into()));
         assert!(check_attenuation(&parent, &child).unwrap_err().contains(
             &AttenuationViolation::ParameterScopeExpanded("replicas".into())
         ));
@@ -722,7 +747,10 @@ mod tests {
             operations: set(&["read"]),
             parameter_bounds: BTreeMap::from([
                 ("replicas".into(), ParameterBound::ExactInteger(2)),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["metrics"]),
             not_before_unix: 140,
@@ -776,6 +804,5 @@ mod tests {
         assert!(parent.allowed_child_task_digests.contains(&child.task_digest));
         assert!(parent.allowed_child_plan_digests.contains(&child.plan_digest));
     }
-
 
 }
