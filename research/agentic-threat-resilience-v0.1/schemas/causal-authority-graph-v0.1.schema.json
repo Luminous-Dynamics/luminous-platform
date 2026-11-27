@@ -245,6 +245,9 @@
         "max_authority_age_ms": {
           "type": "integer",
           "minimum": 0
+        },
+        "request_digest": {
+          "$ref": "#/$defs/nullableDigest"
         }
       }
     },
