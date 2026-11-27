@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/mandate-assurance-corpus-v0.1.schema.json",
+  "title": "Luminous Cross-Domain Agent Mandate Assurance Corpus v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "source_draft",
+    "source_url",
+    "status",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-cross-domain-agent-mandate-assurance-v0.1"
+    },
+    "source_draft": {
+      "const": "draft-hulea-wimse-agent-mandate-01"
+    },
+    "source_url": {
+      "const": "https://datatracker.ietf.org/doc/html/draft-hulea-wimse-agent-mandate-01"
+    },
+    "status": {
+      "const": "synthetic-research-corpus-not-protocol-conformance"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "scheme"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scheme": {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "family",
+        "description",
+        "principal",
+        "delegator",
+        "authority_assertions",
+        "chain",
+        "request",
+        "expected"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^MND-[0-9]{3}$"
+        },
+        "family": {
+          "type": "string",
+          "enum": [
+            "positive",
+            "authority-scope",
+            "issuer-role",
+            "status-unknown",
+            "revocation",
+            "delegation-widening",
+            "proof-of-possession",
+            "audience",
+            "principal-entitlement",
+            "execution-obligation",
+            "subdelegation"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        },
+        "principal": {
+          "$ref": "#/$defs/party"
+        },
+        "delegator": {
+          "$ref": "#/$defs/party"
+        },
+        "authority_assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/authority"
+          }
+        },
+        "chain": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/mandate"
+          }
+        },
+        "request": {
+          "$ref": "#/$defs/request"
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "issuer",
+        "issuer_role",
+        "principal",
+        "delegator",
+        "powers",
+        "max_depth",
+        "status",
+        "signature_state",
+        "not_before",
+        "expires_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer_role": {
+          "enum": [
+            "authority_source",
+            "mandate_issuer",
+            "other"
+          ]
+        },
+        "principal": {
+          "$ref": "#/$defs/party"
+        },
+        "delegator": {
+          "$ref": "#/$defs/party"
+        },
+        "powers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "max_depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "status": {
+          "enum": [
+            "active",
+            "revoked",
+            "stale",
+            "unknown"
+          ]
+        },
+        "signature_state": {
+          "enum": [
+            "valid",
+            "invalid",
+            "unknown"
+          ]
+        },
+        "not_before": {
+          "type": "integer"
+        },
+        "expires_at": {
+          "type": "integer"
+        }
+      }
+    },
+    "mandate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "issuer",
+        "issuer_role",
+        "signing_key_jkt",
+        "subject",
+        "principal",
+        "delegator",
+        "permissions",
+        "parent_id",
+        "authority_refs",
+        "max_depth",
+        "audiences",
+        "status",
+        "signature_state",
+        "cnf_jkt",
+        "not_before",
+        "expires_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer_role": {
+          "enum": [
+            "mandate_issuer",
+            "holder_key",
+            "authority_source",
+            "other"
+          ]
+        },
+        "signing_key_jkt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal": {
+          "$ref": "#/$defs/party"
+        },
+        "delegator": {
+          "$ref": "#/$defs/party"
+        },
+        "permissions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parent_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authority_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "max_depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "audiences": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "enum": [
+            "active",
+            "revoked",
+            "stale",
+            "unknown"
+          ]
+        },
+        "signature_state": {
+          "enum": [
+            "valid",
+            "invalid",
+            "unknown"
+          ]
+        },
+        "cnf_jkt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "not_before": {
+          "type": "integer"
+        },
+        "expires_at": {
+          "type": "integer"
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relying_party",
+        "audience",
+        "presenter",
+        "presenter_jkt",
+        "requested_scope",
+        "pop_state",
+        "current_time",
+        "principal_entitled",
+        "rp_policy",
+        "obligations_discharged"
+      ],
+      "properties": {
+        "relying_party": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audience": {
+          "type": "string",
+          "minLength": 1
+        },
+        "presenter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "presenter_jkt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requested_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pop_state": {
+          "enum": [
+            "valid",
+            "invalid",
+            "missing",
+            "replayed"
+          ]
+        },
+        "current_time": {
+          "type": "integer"
+        },
+        "principal_entitled": {
+          "type": "boolean"
+        },
+        "rp_policy": {
+          "enum": [
+            "allow",
+            "deny"
+          ]
+        },
+        "obligations_discharged": {
+          "type": "boolean"
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validation",
+        "authorization",
+        "codes"
+      ],
+      "properties": {
+        "validation": {
+          "enum": [
+            "valid",
+            "invalid",
+            "indeterminate"
+          ]
+        },
+        "authorization": {
+          "enum": [
+            "allow",
+            "deny"
+          ]
+        },
+        "codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
