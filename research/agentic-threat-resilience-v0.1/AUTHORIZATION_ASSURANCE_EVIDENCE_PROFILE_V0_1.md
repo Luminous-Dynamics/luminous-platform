@@ -236,6 +236,8 @@ The existing `research/agent-effect-gate-v0.1/ACT_BOUND_CRYPTO_PROFILE_V0.2.md` 
 
 The executable closure is not yet public: the qualification-core tree has no Cargo manifest or workflow, and its README reports 52 source test functions as uncompiled/unexecuted. Platform issue #545 tracks a reproducible crate/CI boundary. Until it is resolved, root-reanchor remains source-level policy logic, not an executed qualification result. Issue #546 tracks an additional source review gap: the current pure root-reanchor predicate checks the request-digest string format but does not recompute the digest from the pending effect fields; the future adapter must supply an opaque verified canonical act or the predicate must recompute a domain-separated digest.
 
+The exact raw-trace mapping and native metric preservation are defined in [MASDRIFT_ADAPTER_PROTOCOL_V0_1.md](MASDRIFT_ADAPTER_PROTOCOL_V0_1.md). The adapter pins MasDrift commit `7119c09c0266162f89db29d3faa32d496837b5c3` and distinguishes tool attempts, executions, object-aware required-step completion, unauthorized interception, over-disclosure, handoff constraint loss, required-call blocking and token overhead. The most recent paper values are from v3, 15 October 2026; older preprint numbers are not interchangeable.
+
 ## 10.1 Authorization preservation across delegated agents
 
 The new comparison [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md) adds MasDrift as the direct authorization-preservation baseline and AIP draft -01 as an interoperability/protocol comparator.
