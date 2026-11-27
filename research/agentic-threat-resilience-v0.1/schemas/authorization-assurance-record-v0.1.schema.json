@@ -471,15 +471,15 @@
       "properties": {
         "state_correct": {
           "enum": [
-            "true",
-            "false",
+            true,
+            false,
             "unknown"
           ]
         },
         "authorization_correct": {
           "enum": [
-            "true",
-            "false",
+            true,
+            false,
             "unknown"
           ]
         },
