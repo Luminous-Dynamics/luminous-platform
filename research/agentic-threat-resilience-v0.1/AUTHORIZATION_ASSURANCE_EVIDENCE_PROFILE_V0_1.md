@@ -228,6 +228,14 @@ The desired comparison is paired: vulnerable and fixed artifacts where available
 - Raw per-episode receipts, failed episodes, seeds, manifests and replay commands are retained.
 - No schema check, test annotation, model statement or candidate trace is described as proof of an executed protected effect.
 
+## 10.2 Existing root-reanchor and act-bound crypto prototypes
+
+Platform already has two pure synthetic qualification arms in `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src`: `delegation.rs` (strict attenuation) and `root_reanchor.rs` (root-authorized precommitted leaf work despite narrower intermediate local effect scope). ATR's new CAP-003 and CAP-004 fixtures are being aligned to these exact contrasting semantics.
+
+The existing `research/agent-effect-gate-v0.1/ACT_BOUND_CRYPTO_PROFILE_V0.2.md` separates build/tool provenance, SPIFFE workload identity, runtime attestation, act-specific authorization handles, participant atomic effect finality and independent service truth. It is a design/spike plan, not a wired cryptographic sink. The source-policy and delegation work should converge on this profile instead of defining another trust token.
+
+The executable closure is not yet public: the qualification-core tree has no Cargo manifest or workflow, and its README reports 52 source test functions as uncompiled/unexecuted. Platform issue #545 tracks a reproducible crate/CI boundary. Until it is resolved, root-reanchor remains source-level policy logic, not an executed qualification result.
+
 ## 10.1 Authorization preservation across delegated agents
 
 The new comparison [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md) adds MasDrift as the direct authorization-preservation baseline and AIP draft -01 as an interoperability/protocol comparator.
