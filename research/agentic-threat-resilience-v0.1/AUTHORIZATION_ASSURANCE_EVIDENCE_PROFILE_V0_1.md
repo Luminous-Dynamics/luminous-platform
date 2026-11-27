@@ -240,13 +240,13 @@ The exact raw-trace mapping and native metric preservation are defined in [MASDR
 
 ## 10.1 Authorization preservation across delegated agents
 
-The new comparison [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md) adds MasDrift as the direct authorization-preservation baseline and AIP draft -01 as an interoperability/protocol comparator.
+The new comparison [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md) adds MasDrift as the direct authorization-preservation baseline and AIP draft -02 as an interoperability/protocol comparator.
 
 Preserve MasDrift's 600-task/eight-domain data and original coordination/defense labels. Add a fifth matched treatment, `source_anchor_capability_receipts`, rather than replacing the original Source, Chain or Both baselines. Report both unauthorized action attempts/executions and required-call block rate, task completion, step coverage, constraint-loss handoff and token overhead.
 
 The architecture hypothesis is a three-object contract: (1) immutable source policy P0 outside the agent graph; (2) invocation-bound delegation proof for identity, lineage and attenuation; (3) participant-enforced effect receipt for the actual committed operation. A source-policy reference monitor must evaluate exact canonical tool arguments and live revocation state at the enforcement/commit boundary. Delegation may attenuate but cannot rewrite P0. Ambiguity yields Require-Confirmation; unknown commit yields reconciliation, not allow.
 
-AIP's draft provides useful signed delegation and protocol-binding concepts, but remains an individual informational draft. Its bearer-token / proof-of-possession distinction, deferred token-specific revocation mechanism and varying completion-evidence trust levels are explicit integration caveats. Do not describe AIP as an adopted standard or use a completion claim as a resource commit receipt.
+AIP draft -02 provides a more explicit delegation-chain model and JWT/Biscuit encodings, but remains an individual Internet-Draft rather than an adopted standard. Its own conformance section says PoP is not implemented, V7 revocation is not interoperable or implemented, R6 principal-entitlement composition is out of scope, and R10 execution-time human approval is not met. Treat these as testable gaps and wrapper requirements; do not treat a chain signature or completion claim as a resource commit receipt.
 
 ## 10. Causal propagation and multi-agent cascades
 
