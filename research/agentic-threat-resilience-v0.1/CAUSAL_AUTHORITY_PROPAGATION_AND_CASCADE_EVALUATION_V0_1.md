@@ -103,6 +103,8 @@ OWASP's taxonomy is a useful common threat vocabulary, not proof that a control 
 AgentDyn provides a complementary dynamic prompt-injection baseline: 60 open-ended tasks and 560 injection cases across Shopping, GitHub and Daily Life, with ten defenses evaluated. Keep AgentDyn's native metrics and task conditions intact when adding the ATR causal graph / authorization oracles. Reference: https://arxiv.org/abs/2602.03117.
 
 ## 4.2 Direct delegation-preservation comparator: MasDrift
+The adapter contract is specified separately in [MASDRIFT_ADAPTER_PROTOCOL_V0_1.md](MASDRIFT_ADAPTER_PROTOCOL_V0_1.md). Use MasDrift v3 (15 October 2026) for current paper numbers, and preserve its raw traces and native completion/defense/handoff metrics. Do not mix older preprint results with v3 or substitute ATR graph outcomes for MasDrift's original measures.
+
 
 Use MasDrift as the direct baseline for authorization loss across multi-agent coordination architectures. Preserve its original task set and native measures: 600 benign productivity tasks across eight domains, reserved actions, sensitive audiences, constraint retention, required-step completion/coverage, unauthorized action attempts/executions, over-disclosure, first handoff of constraint loss, required-call block rate and token overhead. Preserve its single-agent, peer and supervisor-hierarchy conditions and its native Source, Chain and Both defense labels.
 
