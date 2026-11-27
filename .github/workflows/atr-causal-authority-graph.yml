@@ -83,7 +83,7 @@ jobs:
                   "tenant_digest": node["tenant_digest"],
               }
               canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-              return hashlib.sha256(b"luminous:atr:canonical-act:v1\\0" + canonical).hexdigest()
+              return hashlib.sha256(b"luminous:atr:canonical-act:v1\0" + canonical).hexdigest()
 
           for label, path in fixtures:
               graph = json.loads(path.read_text())
