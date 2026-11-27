@@ -228,6 +228,16 @@ The desired comparison is paired: vulnerable and fixed artifacts where available
 - Raw per-episode receipts, failed episodes, seeds, manifests and replay commands are retained.
 - No schema check, test annotation, model statement or candidate trace is described as proof of an executed protected effect.
 
+## 10.1 Authorization preservation across delegated agents
+
+The new comparison [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md) adds MasDrift as the direct authorization-preservation baseline and AIP draft -01 as an interoperability/protocol comparator.
+
+Preserve MasDrift's 600-task/eight-domain data and original coordination/defense labels. Add a fifth matched treatment, `source_anchor_capability_receipts`, rather than replacing the original Source, Chain or Both baselines. Report both unauthorized action attempts/executions and required-call block rate, task completion, step coverage, constraint-loss handoff and token overhead.
+
+The architecture hypothesis is a three-object contract: (1) immutable source policy P0 outside the agent graph; (2) invocation-bound delegation proof for identity, lineage and attenuation; (3) participant-enforced effect receipt for the actual committed operation. A source-policy reference monitor must evaluate exact canonical tool arguments and live revocation state at the enforcement/commit boundary. Delegation may attenuate but cannot rewrite P0. Ambiguity yields Require-Confirmation; unknown commit yields reconciliation, not allow.
+
+AIP's draft provides useful signed delegation and protocol-binding concepts, but remains an individual informational draft. Its bearer-token / proof-of-possession distinction, deferred token-specific revocation mechanism and varying completion-evidence trust levels are explicit integration caveats. Do not describe AIP as an adopted standard or use a completion claim as a resource commit receipt.
+
 ## 10. Causal propagation and multi-agent cascades
 
 The next research increment is the separate [Causal Authority Propagation and Multi-Agent Cascade Evaluation v0.1](CAUSAL_AUTHORITY_PROPAGATION_AND_CASCADE_EVALUATION_V0_1.md), tracked by [issue #543](https://github.com/Luminous-Dynamics/luminous-platform/issues/543).
