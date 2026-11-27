@@ -159,6 +159,30 @@ jobs:
               if any(event["event_state"] == "unknown_reconciliation_required" for event in trace):
                   raise SystemExit("an unresolved consequential event cannot be reported as pass")
 
+          unauthorized = json.loads((root / "scenarios/authorization-assurance-unauthorized-path-example-v0.1.json").read_text())
+          attack_errors = sorted(Draft202012Validator(schema).iter_errors(unauthorized), key=lambda e: list(e.absolute_path))
+          if attack_errors:
+              for error in attack_errors:
+                  location = "/".join(str(part) for part in error.absolute_path)
+                  print(f"unauthorized-path example {location}: {error.message}")
+              raise SystemExit(f"{len(attack_errors)} unauthorized-path example schema error(s)")
+          attack_required = set(unauthorized["claim"]["required_obligations"])
+          attack_evidenced = set(unauthorized["appraisal"]["evidenced_obligations"])
+          attack_residual = set(unauthorized["appraisal"]["residual_obligations"])
+          if attack_residual != attack_required - attack_evidenced:
+              raise SystemExit("unauthorized-path residual obligations are inconsistent")
+          if unauthorized["appraisal"]["state_correct"] is not True:
+              raise SystemExit("negative-control example must show the requested protected state was reached")
+          if unauthorized["appraisal"]["authorization_correct"] is not False:
+              raise SystemExit("negative-control example must fail the authorization oracle")
+          if unauthorized["appraisal"]["decision"] != "fail":
+              raise SystemExit("a correct final state through an unauthorized path must fail")
+          required_violations = {"missing_consent", "pep_bypass"}
+          if not required_violations.issubset(set(unauthorized["appraisal"]["hard_gate_violations"])):
+              raise SystemExit("unauthorized-path example must retain missing-consent and PEP-bypass hard gates")
+          if unauthorized["effect_receipt"] is None or unauthorized["effect_receipt"]["verdict"] != "effect_verified":
+              raise SystemExit("negative control must independently prove that the unauthorized effect actually occurred")
+          print("authorization-assurance schema and positive/negative dual-oracle examples valid")
           print("authorization-assurance schema valid; dual-oracle, obligation-gap and effect-binding invariants hold")
           PY
 
