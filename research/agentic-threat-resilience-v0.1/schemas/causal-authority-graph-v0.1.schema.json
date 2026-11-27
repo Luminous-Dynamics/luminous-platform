@@ -186,6 +186,50 @@
             "conflict",
             "unknown"
           ]
+        },
+        "task_id": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "plan_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "root_task_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "root_plan_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "parent_task_id": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "parent_task_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "branch_assignment_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "delegable": {
+          "type": "boolean"
+        },
+        "allowed_child_bindings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_digest",
+              "plan_digest"
+            ],
+            "properties": {
+              "task_digest": {
+                "$ref": "#/$defs/digest"
+              },
+              "plan_digest": {
+                "$ref": "#/$defs/digest"
+              }
+            }
+          }
         }
       }
     },
