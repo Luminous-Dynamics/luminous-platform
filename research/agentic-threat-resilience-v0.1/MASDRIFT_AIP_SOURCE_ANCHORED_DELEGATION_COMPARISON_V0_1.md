@@ -176,7 +176,7 @@ Report security hard gates and utility separately. No weighted aggregate may com
 
 - MasDrift paper: https://arxiv.org/abs/2608.07556
 - MasDrift implementation (MIT): https://github.com/ZhuoningXu/MasDrift
-- AIP draft -01 (individual informational Internet-Draft): https://www.ietf.org/archive/id/draft-prakash-aip-01.html
+- AIP current draft -02 (individual Internet-Draft, intended Standards Track): https://datatracker.ietf.org/doc/draft-prakash-aip/
 - AIP earlier paper/evaluation: https://arxiv.org/abs/2603.24775
 - OWASP Top 10 for Agentic Applications 2026: https://genai.owasp.org/top-10-for-agentic-applications-2026/
 - Google Agent Anomaly Detection benchmark study (12 Nov 2026): https://developers.googleblog.com/en/how-agent-anomaly-detection-scores-on-benchmarks-we-didnt-write/
