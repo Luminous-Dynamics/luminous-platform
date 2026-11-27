@@ -230,6 +230,21 @@
               }
             }
           }
+        },
+        "authority_state": {
+          "enum": [
+            "active",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "authority_checked_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_authority_age_ms": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
