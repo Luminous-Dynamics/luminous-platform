@@ -19,6 +19,19 @@ Use the pinned commit, not a floating `main`. At run time, record SHA-256 for bo
 
 Repository metadata at inspection: default branch `main`, MIT SPDX license, pushed 12 August 2026. The pin above is an immutable commit reference; this adapter is not a claim that upstream has no later code.
 
+## 1.1 Latest paper revision (v3)
+
+The adapter baseline uses the v3 paper revision (submitted 15 October 2026), not earlier preprint numbers. The v3 abstract and detailed results report:
+- 600 tasks, eight domains, six model configurations and nine coordination conditions;
+- centralized hierarchy completion 93.9–98.6%, but unauthorized execution 2.7–19.8%;
+- peer completion 85.7–87.0%, with unauthorized execution 0.6–0.8%;
+- at depth three, unauthorized execution reached 19.8%, versus 2.7% at depth one, while completion increased by 4.6 points;
+- source re-anchoring lowered unauthorized execution across all six configurations at a pooled 1.6-point completion cost;
+- Chain propagation blocked as many as 54.5% of required calls and cost up to 36.3 completion points;
+- one heterogeneous strong-supervisor / weak-executor condition produced 12.5% unauthorized execution, versus 0.6% in homogeneous strong-agent teams.
+
+These are MasDrift authors' results on their benchmark, not Luminous results or production effect rates. The original task corpus and native labels must remain intact. See v3: https://arxiv.org/abs/2608.07556.
+
 ## 2. Preserve the native experimental matrix
 
 Do not rewrite upstream task definitions or defense labels. Preserve the source's coordination conditions:
