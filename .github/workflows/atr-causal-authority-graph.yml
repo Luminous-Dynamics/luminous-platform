@@ -32,6 +32,7 @@ jobs:
       - name: Validate source policy, delegation lineage, root reanchoring, taint and utility fixtures
         run: |
           python - <<'PY'
+          import hashlib
           import json
           from collections import defaultdict, deque
           from pathlib import Path
@@ -61,6 +62,28 @@ jobs:
                   seen.add(current)
                   pending.extend(adjacency.get(current, ()))
               return False
+
+          def canonical_act_digest(node):
+              attrs = node["attributes"]
+              payload = {
+                  "actor_digest": attrs["actor_digest"],
+                  "arguments_digest": attrs["arguments_digest"],
+                  "branch_assignment_digest": attrs["branch_assignment_digest"],
+                  "capability_digest": attrs["capability_digest"],
+                  "consent_state": attrs["consent_state"],
+                  "operation": attrs["operation"],
+                  "plan_digest": attrs["plan_digest"],
+                  "resource_digest": attrs["resource_digest"],
+                  "revocation_epoch": attrs["revocation_epoch"],
+                  "root_plan_digest": attrs["root_plan_digest"],
+                  "root_task_digest": attrs["root_task_digest"],
+                  "source_policy_digest": attrs["source_policy_digest"],
+                  "task_digest": attrs["task_digest"],
+                  "task_id": attrs["task_id"],
+                  "tenant_digest": node["tenant_digest"],
+              }
+              canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+              return hashlib.sha256(b"luminous:atr:canonical-act:v1\\0" + canonical).hexdigest()
 
           for label, path in fixtures:
               graph = json.loads(path.read_text())
@@ -117,10 +140,9 @@ jobs:
                           if key not in attrs:
                               raise SystemExit(f"{label}: delegation grant {node['id']} lacks {key}")
                   if kind == "tool_call":
-                      for key in ("task_id", "task_digest", "plan_digest", "root_task_digest", "root_plan_digest", "branch_assignment_digest"):
+                      for key in ("task_id", "task_digest", "plan_digest", "root_task_digest", "root_plan_digest", "branch_assignment_digest", "actor_digest", "revocation_epoch", "request_digest"):
                           if key not in attrs:
                               raise SystemExit(f"{label}: tool call {node['id']} lacks {key}")
-                  if kind == "tool_call":
                       for key in ("source_policy_digest", "capability_digest", "operation", "arguments_digest", "resource_digest", "consent_state", "pdp_verdict", "pep_verdict", "event_state"):
                           if key not in attrs:
                               raise SystemExit(f"{label}: tool call {node['id']} lacks {key}")
@@ -231,11 +253,26 @@ jobs:
                   if attrs["branch_assignment_digest"] != grant_attrs["branch_assignment_digest"]:
                       raise SystemExit(f"{label}: tool call branch assignment does not match its capability")
 
-              # Every committed effect needs a separate observer and a matching verified receipt.
+              # Recompute each invocation digest from the exact actor, tenant, resource and action fields.
+              calls = [node for node in nodes if node["kind"] == "tool_call"]
+              for call in calls:
+                  if call["attributes"]["request_digest"] != canonical_act_digest(call):
+                      raise SystemExit(f"{label}: tool call {call['id']} request digest does not commit to its exact invocation")
+
               committed_effects = [node for node in nodes if node["kind"] == "effect" and node["attributes"].get("effect_status") == "committed"]
               for effect in (node for node in nodes if node["kind"] == "effect" and node["attributes"].get("effect_status") in ("committed", "absent")):
-                  digest = effect["attributes"].get("effect_digest")
-                  expected_verdict = "effect_verified" if effect["attributes"]["effect_status"] == "committed" else "effect_absent"
+                  effect_attrs = effect["attributes"]
+                  digest = effect_attrs.get("effect_digest")
+                  expected_verdict = "effect_verified" if effect_attrs["effect_status"] == "committed" else "effect_absent"
+                  matching_calls = [call for call in calls if call["attributes"]["request_digest"] == effect_attrs.get("request_digest")]
+                  if len(matching_calls) != 1:
+                      raise SystemExit(f"{label}: effect {effect['id']} must bind exactly one invocation digest")
+                  call = matching_calls[0]
+                  for key in ("actor_digest", "arguments_digest", "branch_assignment_digest", "capability_digest", "consent_state", "operation", "plan_digest", "resource_digest", "request_digest", "revocation_epoch", "root_plan_digest", "root_task_digest", "source_policy_digest", "task_digest", "task_id"):
+                      if effect_attrs.get(key) != call["attributes"].get(key):
+                          raise SystemExit(f"{label}: effect {effect['id']} does not bind exact invocation field {key}")
+                  if effect["tenant_digest"] != call["tenant_digest"]:
+                      raise SystemExit(f"{label}: effect {effect['id']} tenant differs from its invocation")
                   observer_edges = [edge for edge in edges if edge["source_id"] == effect["id"] and edge["edge_type"] == "observed_by"]
                   verified = False
                   for observer_edge in observer_edges:
@@ -246,6 +283,11 @@ jobs:
                           if receipt_edge["source_id"] == observer["id"] and receipt_edge["edge_type"] == "attests":
                               receipt = by_id[receipt_edge["target_id"]]
                               if receipt["kind"] == "effect_receipt" and receipt["attributes"].get("receipt_verdict") == expected_verdict and receipt["attributes"].get("effect_digest") == digest:
+                                  for key in ("actor_digest", "arguments_digest", "branch_assignment_digest", "capability_digest", "consent_state", "operation", "plan_digest", "resource_digest", "request_digest", "revocation_epoch", "root_plan_digest", "root_task_digest", "source_policy_digest", "task_digest", "task_id"):
+                                      if receipt["attributes"].get(key) != call["attributes"].get(key):
+                                          raise SystemExit(f"{label}: independent receipt {receipt['id']} does not bind invocation field {key}")
+                                  if receipt["tenant_digest"] != call["tenant_digest"]:
+                                      raise SystemExit(f"{label}: independent receipt {receipt['id']} tenant differs from invocation")
                                   verified = True
                   if not verified:
                       raise SystemExit(f"{label}: effect state {effect['id']} lacks a matching independent receipt")
