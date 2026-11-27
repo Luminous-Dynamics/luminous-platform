@@ -1,0 +1,121 @@
+name: ATR authorization-assurance record
+
+on:
+  pull_request:
+    paths:
+      - "research/agentic-threat-resilience-v0.1/AUTHORIZATION_ASSURANCE_EVIDENCE_PROFILE_V0_1.md"
+      - "research/agentic-threat-resilience-v0.1/schemas/authorization-assurance-record-v0.1.schema.json"
+      - "research/agentic-threat-resilience-v0.1/scenarios/authorization-assurance-record-example-v0.1.json"
+      - "research/agentic-threat-resilience-v0.1/scenarios/authorization-assurance-unauthorized-path-example-v0.1.json"
+      - ".github/workflows/atr-authorization-assurance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-authorization-assurance:
+    name: Draft 2020-12 authorization-assurance contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact pull request revision
+        uses: actions/checkout@v4
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned schema validator
+        run: python -m pip install --disable-pip-version-check "jsonschema==4.26.0"
+
+      - name: Validate schema, positive and negative examples, and semantic invariants
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path("research/agentic-threat-resilience-v0.1")
+          schema = json.loads((root / "schemas/authorization-assurance-record-v0.1.schema.json").read_text())
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+
+          cases = (
+              ("authorized-positive", root / "scenarios/authorization-assurance-record-example-v0.1.json"),
+              ("unauthorized-state-success", root / "scenarios/authorization-assurance-unauthorized-path-example-v0.1.json"),
+          )
+
+          for label, path in cases:
+              record = json.loads(path.read_text())
+              errors = sorted(validator.iter_errors(record), key=lambda e: list(e.absolute_path))
+              if errors:
+                  for error in errors:
+                      location = "/".join(str(part) for part in error.absolute_path)
+                      print(f"{label} {location}: {error.message}")
+                  raise SystemExit(f"{len(errors)} {label} schema error(s)")
+
+              required = set(record["claim"]["required_obligations"])
+              evidenced = set(record["appraisal"]["evidenced_obligations"])
+              residual = set(record["appraisal"]["residual_obligations"])
+              if residual != required - evidenced:
+                  raise SystemExit(f"{label}: residual obligations must equal required minus evidenced")
+
+              trace = record["authority_trace"]
+              sequences = [event["sequence"] for event in trace]
+              times = [event["observed_at_ms"] for event in trace]
+              if sequences != sorted(set(sequences)):
+                  raise SystemExit(f"{label}: authority trace sequences are not strictly increasing")
+              if times != sorted(times):
+                  raise SystemExit(f"{label}: authority trace timestamps are not monotonic")
+
+              for event in trace:
+                  if event["consent_required"] and event["pdp_decision"] == "allow" and event["consent_evidence_digest"] is None:
+                      raise SystemExit(f"{label}: allow decision lacks required consent evidence")
+                  if event["pdp_decision"] == "allow" and event["pep_action"] == "enforced" and event["pep_identity"] is None:
+                      raise SystemExit(f"{label}: enforced allow decision has no PEP identity")
+
+              appraisal = record["appraisal"]
+              if appraisal["decision"] == "pass":
+                  if appraisal["state_correct"] is not True or appraisal["authorization_correct"] is not True:
+                      raise SystemExit(f"{label}: pass requires both state and authorization oracles true")
+                  if residual or appraisal["hard_gate_violations"]:
+                      raise SystemExit(f"{label}: pass cannot contain residual obligations or hard-gate violations")
+                  receipt = record["effect_receipt"]
+                  if receipt is None or receipt["verdict"] != "effect_verified":
+                      raise SystemExit(f"{label}: pass requires independent effect verification")
+                  final_event = trace[-1]
+                  bindings = (
+                      ("actor_digest", "actor_digest"),
+                      ("tenant_digest", "tenant_digest"),
+                      ("resource_digest", "resource_digest"),
+                      ("operation", "operation"),
+                      ("arguments_digest", "arguments_digest"),
+                      ("policy_digest", "policy_digest"),
+                      ("credential_generation", "credential_generation"),
+                      ("enforcement_generation", "pep_generation"),
+                  )
+                  for receipt_field, trace_field in bindings:
+                      if receipt[receipt_field] != final_event[trace_field]:
+                          raise SystemExit(f"{label}: effect receipt {receipt_field} is not bound to final trace")
+                  if any(event["event_state"] == "unknown_reconciliation_required" for event in trace):
+                      raise SystemExit(f"{label}: unresolved consequential event cannot pass")
+
+              if label == "authorized-positive":
+                  if appraisal["decision"] != "pass" or appraisal["state_correct"] is not True or appraisal["authorization_correct"] is not True:
+                      raise SystemExit("authorized positive example must pass both oracles")
+                  if appraisal["hard_gate_violations"] or residual:
+                      raise SystemExit("authorized positive example must have zero hard violations and zero residual obligations")
+              else:
+                  required_violations = {"missing_consent", "pep_bypass"}
+                  if appraisal["state_correct"] is not True or appraisal["authorization_correct"] is not False:
+                      raise SystemExit("negative control must have state_correct=true and authorization_correct=false")
+                  if appraisal["decision"] != "fail" or not required_violations.issubset(set(appraisal["hard_gate_violations"])):
+                      raise SystemExit("state success through missing consent and PEP bypass must be a hard failure")
+                  receipt = record["effect_receipt"]
+                  if receipt is None or receipt["verdict"] != "effect_verified":
+                      raise SystemExit("negative control must independently prove that the unauthorized effect committed")
+
+          print("authorization-assurance schema valid; dual-oracle and residual-obligation invariants hold")
+          PY
