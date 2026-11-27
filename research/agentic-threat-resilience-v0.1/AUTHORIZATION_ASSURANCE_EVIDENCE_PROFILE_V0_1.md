@@ -234,7 +234,7 @@ Platform already has two pure synthetic qualification arms in `benchmarks/itops-
 
 The existing `research/agent-effect-gate-v0.1/ACT_BOUND_CRYPTO_PROFILE_V0.2.md` separates build/tool provenance, SPIFFE workload identity, runtime attestation, act-specific authorization handles, participant atomic effect finality and independent service truth. It is a design/spike plan, not a wired cryptographic sink. The source-policy and delegation work should converge on this profile instead of defining another trust token.
 
-The executable closure is not yet public: the qualification-core tree has no Cargo manifest or workflow, and its README reports 52 source test functions as uncompiled/unexecuted. Platform issue #545 tracks a reproducible crate/CI boundary. Until it is resolved, root-reanchor remains source-level policy logic, not an executed qualification result.
+The executable closure is not yet public: the qualification-core tree has no Cargo manifest or workflow, and its README reports 52 source test functions as uncompiled/unexecuted. Platform issue #545 tracks a reproducible crate/CI boundary. Until it is resolved, root-reanchor remains source-level policy logic, not an executed qualification result. Issue #546 tracks an additional source review gap: the current pure root-reanchor predicate checks the request-digest string format but does not recompute the digest from the pending effect fields; the future adapter must supply an opaque verified canonical act or the predicate must recompute a domain-separated digest.
 
 ## 10.1 Authorization preservation across delegated agents
 
