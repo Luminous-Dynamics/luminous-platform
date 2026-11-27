@@ -257,10 +257,10 @@ pub fn authorize_root_reanchored_effect(
                 child.grant_id.clone(),
             ));
         }
-        if !parent.allowed_child_task_plan_bindings.contains(&(
-            child.task_digest.clone(),
-            child.plan_digest.clone(),
-        )) {
+        if !parent
+            .allowed_child_task_plan_bindings
+            .contains(&(child.task_digest.clone(), child.plan_digest.clone()))
+        {
             denials.push(RootReanchorDenial::ParentChildPlanBindingMismatch(
                 child.grant_id.clone(),
             ));
@@ -280,10 +280,9 @@ pub fn authorize_root_reanchored_effect(
         // sibling work without inheriting a narrower intermediate effect role.
         if !root.allowed_child_task_digests.contains(&child.task_digest)
             || !root.allowed_child_plan_digests.contains(&child.plan_digest)
-            || !root.allowed_child_task_plan_bindings.contains(&(
-                child.task_digest.clone(),
-                child.plan_digest.clone(),
-            ))
+            || !root
+                .allowed_child_task_plan_bindings
+                .contains(&(child.task_digest.clone(), child.plan_digest.clone()))
         {
             denials.push(RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
                 child.task_id.clone(),
@@ -797,34 +796,47 @@ mod tests {
                 "grant-middle".into(),
             ))
     }
+
     #[test]
     fn root_reanchor_rejects_child_pair_not_committed_in_root_grant() {
         let mut chain = grants();
-        chain[0].allowed_child_task_plan_bindings.remove(&(digest('e'), digest('f')));
-        chain[0].allowed_child_task_plan_bindings.insert((digest('e'), digest('d')));
+        chain[0]
+            .allowed_child_task_plan_bindings
+            .remove(&(digest('e'), digest('f')));
+        chain[0]
+            .allowed_child_task_plan_bindings
+            .insert((digest('e'), digest('d')));
 
         // The request-side manifest still carries the legitimate pair. It
         // cannot override the authenticated grant's cross-paired commitment.
         let pending = request(&chain);
         let errors = authorize_root_reanchored_effect(&chain, &pending).unwrap_err();
-        assert!(errors.contains(&RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
-            "task-leaf".into()
-        )));
+        assert!(
+            errors.contains(&RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
+                "task-leaf".into()
+            ))
+        );
     }
 
     #[test]
     fn root_reanchor_rejects_child_pair_not_committed_in_parent_grant() {
         let mut chain = grants();
-        chain[1].allowed_child_task_plan_bindings.remove(&(digest('e'), digest('f')));
-        chain[1].allowed_child_task_plan_bindings.insert((digest('e'), digest('d')));
+        chain[1]
+            .allowed_child_task_plan_bindings
+            .remove(&(digest('e'), digest('f')));
+        chain[1]
+            .allowed_child_task_plan_bindings
+            .insert((digest('e'), digest('d')));
 
         // The caller-supplied map remains correct; the parent grant itself
         // does not bind that exact task/plan pair.
         let pending = request(&chain);
         let errors = authorize_root_reanchored_effect(&chain, &pending).unwrap_err();
-        assert!(errors.contains(&RootReanchorDenial::ParentChildPlanBindingMismatch(
-            "grant-leaf".into()
-        )));
+        assert!(
+            errors.contains(&RootReanchorDenial::ParentChildPlanBindingMismatch(
+                "grant-leaf".into()
+            ))
+        );
     }
 
 }
