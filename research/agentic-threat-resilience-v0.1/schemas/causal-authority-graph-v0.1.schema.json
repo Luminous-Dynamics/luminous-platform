@@ -248,6 +248,18 @@
         },
         "request_digest": {
           "$ref": "#/$defs/nullableDigest"
+        },
+        "control_domain_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "control_domain_role": {
+          "enum": [
+            "candidate",
+            "issuer",
+            "participant",
+            "observer",
+            "unknown"
+          ]
         }
       }
     },
