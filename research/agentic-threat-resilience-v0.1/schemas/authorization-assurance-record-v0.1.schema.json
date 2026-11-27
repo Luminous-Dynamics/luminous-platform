@@ -1,0 +1,534 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/agentic-threat-resilience/authorization-assurance-record-v0.1.schema.json",
+  "title": "ATR authorization-assurance record v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "episode_id",
+    "manifest",
+    "claim",
+    "authority_trace",
+    "effect_receipt",
+    "appraisal",
+    "assumptions"
+  ],
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "nullableDigest": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/digest"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullableIdentifier": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "delegation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delegator_digest",
+        "delegate_digest",
+        "parent_grant_digest",
+        "child_grant_digest",
+        "attenuation_digest",
+        "revocation_parent_digest"
+      ],
+      "properties": {
+        "delegator_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "delegate_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "parent_grant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "child_grant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "attenuation_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "revocation_parent_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        }
+      }
+    },
+    "traceEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "observed_at_ms",
+        "event_state",
+        "principal_digest",
+        "actor_digest",
+        "tenant_digest",
+        "workload_digest",
+        "resource_digest",
+        "operation",
+        "arguments_digest",
+        "consent_required",
+        "consent_evidence_digest",
+        "grant_digest",
+        "credential_digest",
+        "credential_generation",
+        "credential_revocation_state",
+        "policy_digest",
+        "policy_version",
+        "pdp_identity",
+        "pdp_decision",
+        "pep_identity",
+        "pep_generation",
+        "pep_action",
+        "executor_identity",
+        "delegation_chain"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "event_state": {
+          "enum": [
+            "attempted",
+            "admitted",
+            "denied",
+            "executed",
+            "committed",
+            "independently_verified",
+            "unknown_reconciliation_required"
+          ]
+        },
+        "principal_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "actor_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "tenant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "workload_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "resource_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "arguments_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "consent_required": {
+          "type": "boolean"
+        },
+        "consent_evidence_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "grant_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "credential_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "credential_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "credential_revocation_state": {
+          "enum": [
+            "current",
+            "revoked",
+            "expired",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "policy_version": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "pdp_identity": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "pdp_decision": {
+          "enum": [
+            "allow",
+            "deny",
+            "not_evaluated",
+            "unknown"
+          ]
+        },
+        "pep_identity": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "pep_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "pep_action": {
+          "enum": [
+            "enforced",
+            "denied",
+            "not_invoked",
+            "unknown"
+          ]
+        },
+        "executor_identity": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "delegation_chain": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/delegation"
+          }
+        }
+      }
+    },
+    "effectReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "observer_identity",
+        "episode_subject_digest",
+        "actor_digest",
+        "tenant_digest",
+        "resource_digest",
+        "operation",
+        "arguments_digest",
+        "policy_digest",
+        "enforcement_generation",
+        "credential_generation",
+        "transaction_id",
+        "state_revision",
+        "effect_digest",
+        "sequence",
+        "observed_at_ms",
+        "verifier_identity",
+        "verdict"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "observer_identity": {
+          "$ref": "#/$defs/identifier"
+        },
+        "episode_subject_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "actor_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "tenant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "resource_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "arguments_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "enforcement_generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "credential_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "transaction_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "state_revision": {
+          "$ref": "#/$defs/identifier"
+        },
+        "effect_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verifier_identity": {
+          "$ref": "#/$defs/identifier"
+        },
+        "verdict": {
+          "enum": [
+            "effect_verified",
+            "effect_absent",
+            "conflict",
+            "unknown"
+          ]
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "luminous.atr.authorization-assurance-record.v0.1"
+    },
+    "episode_id": {
+      "type": "string",
+      "pattern": "^ATR-[0-9]{3}$"
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog_sha256",
+        "scenario_definition_sha256",
+        "fixture_manifest_sha256",
+        "sut_profile_sha256",
+        "evaluator_build_sha256"
+      ],
+      "properties": {
+        "catalog_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "scenario_definition_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "fixture_manifest_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "sut_profile_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "evaluator_build_sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "property",
+        "scope",
+        "required_obligations",
+        "evidence_stage"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "property": {
+          "enum": [
+            "authorization_correctness",
+            "least_privilege",
+            "complete_mediation",
+            "non_bypassability",
+            "delegation_attenuation",
+            "revocation",
+            "fail_safe",
+            "effect_verification",
+            "accountability"
+          ]
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "principal_digest",
+            "tenant_digest",
+            "resource_digest",
+            "operation",
+            "effect_class",
+            "system_boundary"
+          ],
+          "properties": {
+            "principal_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "tenant_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "resource_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "operation": {
+              "$ref": "#/$defs/identifier"
+            },
+            "effect_class": {
+              "enum": [
+                "read",
+                "write",
+                "egress",
+                "secret_disclosure",
+                "financial",
+                "administrative",
+                "recovery",
+                "other"
+              ]
+            },
+            "system_boundary": {
+              "$ref": "#/$defs/identifier"
+            }
+          }
+        },
+        "required_obligations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "evidence_stage": {
+          "enum": [
+            "plan",
+            "tool_selection",
+            "tool_call",
+            "call_admission",
+            "execution",
+            "resource_commit",
+            "independent_state_verification",
+            "deployment_effect"
+          ]
+        }
+      }
+    },
+    "authority_trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/traceEvent"
+      }
+    },
+    "effect_receipt": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/effectReceipt"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "appraisal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state_correct",
+        "authorization_correct",
+        "evidenced_obligations",
+        "residual_obligations",
+        "hard_gate_violations",
+        "decision"
+      ],
+      "properties": {
+        "state_correct": {
+          "enum": [
+            "true",
+            "false",
+            "unknown"
+          ]
+        },
+        "authorization_correct": {
+          "enum": [
+            "true",
+            "false",
+            "unknown"
+          ]
+        },
+        "evidenced_obligations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "residual_obligations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "hard_gate_violations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "unauthorized_effect",
+              "missing_consent",
+              "revoked_credential",
+              "delegation_expansion",
+              "revoked_descendant_action",
+              "pep_bypass",
+              "cross_tenant_effect",
+              "false_effect_receipt",
+              "blind_duplicate_retry",
+              "evaluator_truth_leak"
+            ]
+          }
+        },
+        "decision": {
+          "enum": [
+            "pass",
+            "fail",
+            "unknown_reconciliation_required"
+          ]
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    }
+  }
+}
