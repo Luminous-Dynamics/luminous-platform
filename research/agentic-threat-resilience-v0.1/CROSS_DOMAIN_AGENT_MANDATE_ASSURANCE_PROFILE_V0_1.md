@@ -109,7 +109,7 @@ The initial corpus contains 12 synthetic cases:
 | MND-011 | Two-hop sub-delegation follows exact parent key and attenuates scope | Valid; RP allows |
 | MND-012 | Mandate issuer signature is not attributable to the mandate-issuer role | Invalid: role mismatch |
 
-The machine-readable fixture set and schema are in `scenarios/mandate-assurance-corpus-v0.1.json` and `schemas/mandate-assurance-corpus-v0.1.schema.json`. The checker recomputes expected validation and RP decisions from fixture facts. These are synthetic verifier-input outcomes, not real signatures, status tokens, or proof of cryptographic verification.
+The machine-readable fixture set and schema are in `scenarios/mandate-assurance-corpus-v0.1.json` and `schemas/mandate-assurance-corpus-v0.1.schema.json`. The checker recomputes expected validation and RP decisions from fixture facts. These are synthetic verifier-input outcomes, not real signatures, status tokens, or proof of cryptographic verification. The reference checker also runs 24 one-field adversarial mutation controls covering authority scope/role/status/signature, mandate role/status/signature/expiry, authority references, PoP replay and key/subject substitution, audience and requested scope substitution, RP entitlement/policy/obligation separation, parent-key lineage, child scope/expiry/depth widening, principal substitution and parent-mandate substitution. These mutations are generated from positive fixtures; they are not additional independent tasks or empirical attack episodes.
 
 ## 5. Interoperability with the wider Luminous profile
 
