@@ -224,7 +224,15 @@ The desired comparison is paired: vulnerable and fixed artifacts where available
 - Raw per-episode receipts, failed episodes, seeds, manifests and replay commands are retained.
 - No schema check, test annotation, model statement or candidate trace is described as proof of an executed protected effect.
 
-## 10. References
+## 10. Causal propagation and multi-agent cascades
+
+The next research increment is the separate [Causal Authority Propagation and Multi-Agent Cascade Evaluation v0.1](CAUSAL_AUTHORITY_PROPAGATION_AND_CASCADE_EVALUATION_V0_1.md), tracked by [issue #543](https://github.com/Luminous-Dynamics/luminous-platform/issues/543).
+
+This moves ATR beyond prompt-centric testing and treats the full causal path across untrusted memory, agent-to-agent communication, delegated grants, policy decisions, enforcement, executors and protected effects as the unit of evaluation. The proposed 12 scenario families include delayed memory poisoning, cross-agent provenance loss, delegation amplification, confused deputies, revocation races, policy mutation cascades, unknown commit fan-out and cross-tenant memory aliasing.
+
+This aligns with the gap Google described in its 12 November 2026 study: its vendor-authored 1,774-session study reports 4 detections in 18 poisoned-memory cases and explicitly notes the lack of public labeled traces for cascading failures and identity/privilege abuse. The result is bounded to one model, simulated applications and Google's Private Preview product; it is not a universal detector ranking. [Google study](https://developers.googleblog.com/en/how-agent-anomaly-detection-scores-on-benchmarks-we-didnt-write/).
+
+## 11. References
 
 - Elmasry (2026), Authorization assurance for tool-using LLM agents: https://link.springer.com/article/10.1007/s10207-026-01343-w
 - RFC 9334, Remote ATtestation procedureS (RATS) Architecture: https://www.rfc-editor.org/rfc/rfc9334.html
