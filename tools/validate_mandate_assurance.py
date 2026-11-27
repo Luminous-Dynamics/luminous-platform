@@ -2,6 +2,7 @@
 """Synthetic mandate-assurance corpus checker; not a cryptographic verifier."""
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 from jsonschema import Draft202012Validator
@@ -150,6 +151,128 @@ def authorization_decision(validation: str, case: dict) -> str:
     return "allow"
 
 
+def run_mutation_controls(cases: list[dict]) -> int:
+    """Exercise single-field adversarial mutations without trusting fixture labels."""
+    by_id = {case["case_id"]: case for case in cases}
+    total = 0
+
+    def cloned(case_id: str) -> dict:
+        return copy.deepcopy(by_id[case_id])
+
+    def expect(case: dict, label: str, validation: str, authorization: str) -> None:
+        nonlocal total
+        actual_validation, _ = validation_result(case)
+        actual_authorization = authorization_decision(actual_validation, case)
+        if (actual_validation, actual_authorization) != (validation, authorization):
+            raise SystemExit(
+                f"mutation {label}: expected {(validation, authorization)} "
+                f"got {(actual_validation, actual_authorization)}"
+            )
+        total += 1
+
+    mutations = []
+    case = cloned("MND-001")
+    case["authority_assertions"][0]["powers"] = ["payments:read@other"]
+    mutations.append(("authority-scope-shrink", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["authority_assertions"][0]["issuer_role"] = "mandate_issuer"
+    mutations.append(("authority-role-confusion", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["authority_assertions"][0]["signature_state"] = "invalid"
+    mutations.append(("authority-signature-invalid", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["authority_assertions"][0]["status"] = "revoked"
+    mutations.append(("authority-revoked", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["authority_assertions"][0]["status"] = "stale"
+    mutations.append(("authority-status-stale", case, "indeterminate", "deny"))
+
+    case = cloned("MND-001")
+    case["chain"][0]["authority_refs"] = []
+    mutations.append(("authority-reference-removed", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["chain"][0]["issuer_role"] = "authority_source"
+    mutations.append(("mandate-issuer-role-confusion", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["chain"][0]["signature_state"] = "invalid"
+    mutations.append(("mandate-signature-invalid", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["chain"][0]["status"] = "revoked"
+    mutations.append(("mandate-revoked", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["chain"][0]["expires_at"] = case["request"]["current_time"]
+    mutations.append(("mandate-expired-at-boundary", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["pop_state"] = "replayed"
+    mutations.append(("proof-replay", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["presenter_jkt"] = "attacker-key"
+    mutations.append(("presenter-key-substitution", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["presenter"] = "different-agent"
+    mutations.append(("presenter-subject-substitution", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["audience"] = "rp-payroll"
+    mutations.append(("audience-substitution", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["requested_scope"] = "payments:write@invoice-42"
+    mutations.append(("operation-scope-expansion", case, "invalid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["principal_entitled"] = False
+    mutations.append(("rp-principal-entitlement-denied", case, "valid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["rp_policy"] = "deny"
+    mutations.append(("rp-policy-denied", case, "valid", "deny"))
+
+    case = cloned("MND-001")
+    case["request"]["obligations_discharged"] = False
+    mutations.append(("rp-obligation-pending", case, "valid", "deny"))
+
+    case = cloned("MND-011")
+    case["chain"][1]["signing_key_jkt"] = "substituted-parent-key"
+    mutations.append(("child-issuer-key-substitution", case, "invalid", "deny"))
+
+    case = cloned("MND-011")
+    case["chain"][1]["permissions"].append("payments:write@invoice-42")
+    mutations.append(("child-permission-widening", case, "invalid", "deny"))
+
+    case = cloned("MND-011")
+    case["chain"][1]["expires_at"] = case["chain"][0]["expires_at"] + 1
+    mutations.append(("child-expiry-widening", case, "invalid", "deny"))
+
+    case = cloned("MND-011")
+    case["chain"][2]["max_depth"] = 1
+    mutations.append(("child-depth-widening", case, "invalid", "deny"))
+
+    case = cloned("MND-011")
+    case["chain"][2]["principal"]["id"] = "different-principal"
+    mutations.append(("principal-lineage-substitution", case, "invalid", "deny"))
+
+    case = cloned("MND-011")
+    case["chain"][2]["parent_id"] = "unrelated-parent"
+    mutations.append(("parent-mandate-substitution", case, "invalid", "deny"))
+
+    for label, case, validation, authorization in mutations:
+        expect(case, label, validation, authorization)
+
+    return total
+
+
 def main() -> None:
     schema = json.loads(SCHEMA_PATH.read_text())
     corpus = json.loads(CORPUS_PATH.read_text())
@@ -188,7 +311,12 @@ def main() -> None:
     if not any(case["expected"]["validation"] == "indeterminate" for case in cases):
         raise SystemExit("corpus must include a fail-closed indeterminate control")
 
-    print(f"mandate assurance corpus valid: {len(cases)}/{len(cases)} expected validation/RP outcomes; synthetic inputs only")
+    mutation_count = run_mutation_controls(cases)
+    print(
+        f"mandate assurance corpus valid: {len(cases)}/{len(cases)} expected "
+        f"validation/RP outcomes; {mutation_count} adversarial mutations rejected "
+        f"or correctly separated; synthetic inputs only"
+    )
 
 
 if __name__ == "__main__":
