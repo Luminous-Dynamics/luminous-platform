@@ -239,7 +239,9 @@ pub fn authorize_root_reanchored_effect(
             ));
         }
         if child.remaining_delegation_depth > parent.remaining_delegation_depth.saturating_sub(1) {
-            denials.push(RootReanchorDenial::ParentCannotDelegate(parent.grant_id.clone()));
+            denials.push(RootReanchorDenial::ParentCannotDelegate(
+                parent.grant_id.clone(),
+            ));
         }
         if !parent
             .allowed_child_task_digests
@@ -629,7 +631,10 @@ mod tests {
             operation: "restart".into(),
             parameter_values: BTreeMap::from([
                 ("replicas".into(), ParameterBound::ExactInteger(4)),
-                ("region".into(), ParameterBound::ExactString("af-south-1".into())),
+                (
+                    "region".into(),
+                    ParameterBound::ExactString("af-south-1".into()),
+                ),
             ]),
             data_scopes: set(&["service-config"]),
             requested_dispatches: 1,
