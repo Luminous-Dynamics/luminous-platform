@@ -251,10 +251,10 @@ pub fn check_attenuation(
     {
         violations.push(AttenuationViolation::ChildPlanDigestNotAllowed);
     }
-    if !parent.allowed_child_task_plan_bindings.contains(&(
-        child.task_digest.clone(),
-        child.plan_digest.clone(),
-    )) {
+    if !parent
+        .allowed_child_task_plan_bindings
+        .contains(&(child.task_digest.clone(), child.plan_digest.clone()))
+    {
         violations.push(AttenuationViolation::ChildTaskPlanPairNotAllowed);
     }
     if child.tenant_binding != parent.tenant_binding {
