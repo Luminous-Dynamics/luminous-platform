@@ -159,9 +159,10 @@ pub fn authorize_root_reanchored_effect(
             || grant.targets.is_empty()
             || grant.operations.is_empty()
             || grant.data_scopes.is_empty()
-            || grant.allowed_child_task_plan_bindings.iter().any(|(task, plan)| {
-                !digest_is_sha256(task) || !digest_is_sha256(plan)
-            })
+            || grant
+                .allowed_child_task_plan_bindings
+                .iter()
+                .any(|(task, plan)| !digest_is_sha256(task) || !digest_is_sha256(plan))
         {
             denials.push(RootReanchorDenial::InvalidGrantShape(
                 grant.grant_id.clone(),
@@ -816,11 +817,9 @@ mod tests {
         // cannot override the authenticated grant's cross-paired commitment.
         let pending = request(&chain);
         let errors = authorize_root_reanchored_effect(&chain, &pending).unwrap_err();
-        assert!(
-            errors.contains(&RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
-                "task-leaf".into()
-            ))
-        );
+        assert!(errors.contains(
+            &RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant("task-leaf".into())
+        ));
     }
 
     #[test]
