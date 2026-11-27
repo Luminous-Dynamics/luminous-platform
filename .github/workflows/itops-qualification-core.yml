@@ -30,6 +30,13 @@ jobs:
       - name: Verify formatting
         run: cargo fmt --all -- --check
 
+      - name: Verify the checked-in test inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -Ec '^    #\\[test\\]' src/delegation.rs)" -eq 14
+          test "$(grep -Ec '^    #\\[test\\]' src/root_reanchor.rs)" -eq 7
+
       - name: Run strict delegation and root-reanchor tests
         run: cargo test --locked --offline --all-targets
 
