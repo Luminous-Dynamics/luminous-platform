@@ -121,6 +121,8 @@ MasDrift reports that centralized hierarchies can substantially increase unautho
 AIP draft -01 is an additional protocol comparator for invocation-bound identity and multi-hop delegation, not a benchmark or adopted IETF standard. In particular, distinguish bearer-token possession from presenter identity, token/key revocation from already active sessions, and signed completion from independently observed resource commit. See [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md).
 
 ## 4.3 Existing root-reanchor implementation and fourth graph fixture
+The graph fixture's request digest is a benchmark-contract digest over a constrained, typed scalar envelope (identity digests, task/plan and branch digests, capability, tenant, resource, operation, argument digest, consent state and revocation epoch). The CI workflow recomputes the domain-separated SHA-256 digest from the actual call fields, then checks that the effect and independent receipt carry the exact same request digest and subject fields. This is not an RFC 8785/JCS implementation and is not the production Act-bound token digest; the production crypto path should use the pinned strict JCS + domain-separated digest profile from ACT_BOUND_CRYPTO_PROFILE_V0.2. The graph check is an evaluator consistency gate, not proof that a real participant enforced the request.
+
 
 The Platform public source already contains an experimental pure-policy arm at `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/root_reanchor.rs`, alongside strict edge-by-edge attenuation in `delegation.rs`.
 
