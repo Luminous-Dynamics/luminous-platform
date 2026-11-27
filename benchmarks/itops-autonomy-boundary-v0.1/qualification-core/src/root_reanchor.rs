@@ -238,6 +238,14 @@ pub fn authorize_root_reanchored_effect(
                 child.grant_id.clone(),
             ));
         }
+        if !parent.allowed_child_task_plan_bindings.contains(&(
+            child.task_digest.clone(),
+            child.plan_digest.clone(),
+        )) {
+            denials.push(RootReanchorDenial::ParentChildPlanBindingMismatch(
+                child.grant_id.clone(),
+            ));
+        }
         if request
             .parent_child_task_plan_bindings
             .get(&parent.grant_id)
@@ -253,6 +261,10 @@ pub fn authorize_root_reanchored_effect(
         // sibling work without inheriting a narrower intermediate effect role.
         if !root.allowed_child_task_digests.contains(&child.task_digest)
             || !root.allowed_child_plan_digests.contains(&child.plan_digest)
+            || !root.allowed_child_task_plan_bindings.contains(&(
+                child.task_digest.clone(),
+                child.plan_digest.clone(),
+            ))
         {
             denials.push(RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
                 child.task_id.clone(),
@@ -458,6 +470,10 @@ mod tests {
             required_approvals: set(&["change-ticket"]),
             required_postconditions: set(&["service-healthy"]),
             rollback_obligations: set(&["restore-service"]),
+            allowed_child_task_plan_bindings: BTreeSet::from([
+                (digest('c'), digest('d')),
+                (digest('e'), digest('f')),
+            ]),
             allowed_child_task_digests: set(&[&digest('c'), &digest('e')]),
             allowed_child_plan_digests: set(&[&digest('d'), &digest('f')]),
             delegable: true,
@@ -494,6 +510,7 @@ mod tests {
             required_approvals: set(&["change-ticket"]),
             required_postconditions: set(&["service-healthy"]),
             rollback_obligations: set(&["restore-service"]),
+            allowed_child_task_plan_bindings: BTreeSet::from([(digest('e'), digest('f'))]),
             allowed_child_task_digests: set(&[&digest('e')]),
             allowed_child_plan_digests: set(&[&digest('f')]),
             delegable: true,
@@ -530,6 +547,7 @@ mod tests {
             required_approvals: set(&["change-ticket", "service-owner"]),
             required_postconditions: set(&["service-healthy", "restart-confirmed"]),
             rollback_obligations: set(&["restore-service", "verify-rollback"]),
+            allowed_child_task_plan_bindings: BTreeSet::new(),
             allowed_child_task_digests: BTreeSet::new(),
             allowed_child_plan_digests: BTreeSet::new(),
             delegable: false,
@@ -699,4 +717,35 @@ mod tests {
             .unwrap_err()
             .contains(&RootReanchorDenial::AuthorityObservationStaleOrFuture("grant-middle".into()))
     }
+    #[test]
+    fn root_reanchor_rejects_child_pair_not_committed_in_root_grant() {
+        let mut chain = grants();
+        chain[0].allowed_child_task_plan_bindings.remove(&(digest('e'), digest('f')));
+        chain[0].allowed_child_task_plan_bindings.insert((digest('e'), digest('d')));
+
+        // The request-side manifest still carries the legitimate pair. It
+        // cannot override the authenticated grant's cross-paired commitment.
+        let pending = request(&chain);
+        let errors = authorize_root_reanchored_effect(&chain, &pending).unwrap_err();
+        assert!(errors.contains(&RootReanchorDenial::RootTaskGraphDoesNotPrecommitDescendant(
+            "task-leaf".into()
+        )));
+    }
+
+    #[test]
+    fn root_reanchor_rejects_child_pair_not_committed_in_parent_grant() {
+        let mut chain = grants();
+        chain[1].allowed_child_task_plan_bindings.remove(&(digest('e'), digest('f')));
+        chain[1].allowed_child_task_plan_bindings.insert((digest('e'), digest('d')));
+
+        // The caller-supplied map remains correct; the parent grant itself
+        // does not bind that exact task/plan pair.
+        let pending = request(&chain);
+        let errors = authorize_root_reanchored_effect(&chain, &pending).unwrap_err();
+        assert!(errors.contains(&RootReanchorDenial::ParentChildPlanBindingMismatch(
+            "grant-leaf".into()
+        )));
+    }
+
+
 }
