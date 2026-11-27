@@ -175,4 +175,4 @@ The July 2026 validity audit warns that agent-safety benchmarks measure differen
 - OWASP Top 10 for Agentic Applications 2026: https://genai.owasp.org/top-10-for-agentic-applications-2026/
 - OpenART benchmark landscape and task-complexity comparison: https://ai45lab.github.io/OpenART/benchmarks/
 - Wang et al., *Safety, or Just Capability? A Validity Audit of Agent-Safety Benchmarks*, arXiv:2607.28685: https://arxiv.org/abs/2607.28685
-- Existing Platform work: PR #542; issues #540–#549; Act-Bound crypto profile v0.2.
+- Existing Platform work: PR #542; issues #540–#550 (including #550 for the organization-specific instruction evidence gap); Act-Bound crypto profile v0.2.
