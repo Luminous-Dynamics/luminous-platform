@@ -120,6 +120,25 @@ MasDrift reports that centralized hierarchies can substantially increase unautho
 
 AIP draft -01 is an additional protocol comparator for invocation-bound identity and multi-hop delegation, not a benchmark or adopted IETF standard. In particular, distinguish bearer-token possession from presenter identity, token/key revocation from already active sessions, and signed completion from independently observed resource commit. See [MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md](MASDRIFT_AIP_SOURCE_ANCHORED_DELEGATION_COMPARISON_V0_1.md).
 
+## 4.3 Existing root-reanchor implementation and fourth graph fixture
+
+The Platform public source already contains an experimental pure-policy arm at `benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/root_reanchor.rs`, alongside strict edge-by-edge attenuation in `delegation.rs`.
+
+The root-reanchor implementation verifies each ancestor's exact grant/task/plan/principal linkage, parent and root precommitment of exact task+plan digest pairs, fresh active authority observations across the complete chain, and the final effect against root and leaf envelopes. It allows a separately preauthorized leaf task to retain its own scoped effect even if an intermediate agent's local effect role is narrower. It does not allow an arbitrary leaf: exact task/plan pair, root manifest, parent delegation, current ancestor authority, target, operation, parameters, data, budgets and approvals must all pass.
+
+The new CAP-004 fixture exercises this exact treatment:
+- root P0 and root grant allow read_po and draft_batch;
+- middle grant has only read_po as its local effect scope, but explicitly has delegation right and precommits the exact leaf task+plan;
+- root manifest precommits the exact descendant task+plan as well;
+- leaf grant is limited to draft_batch, which is within P0 and the leaf's own envelope;
+- each ancestor has an explicit fresh active authority observation;
+- the tool call reanchors to P0 and the exact leaf capability;
+- an independent observer verifies the committed effect.
+
+The workflow must demonstrate that strict Chain would reject the leaf call due to the narrower middle role, while source-anchor capability receipts accept only the exact root+parent-precommitted descendant. CAP-003 remains the corresponding safe-but-over-restrictive failure.
+
+The implementation is a pure synthetic predicate, not cryptographic grant issuance, proof-of-possession, authenticated authority freshness, a live participant commit gate, or an independent effect oracle. The qualification-core README explicitly states that its 52 test functions have not been compiled or run. It has no standalone public Cargo manifest or workflow at present; issue #545 tracks the build closure. The separate act-bound crypto profile v0.2 already describes the intended JWS/SPIFFE/participant finality boundaries, but says its verifier is not wired to the reference sink.
+
 ## 5. Metrics
 
 Report per episode and causal family:
