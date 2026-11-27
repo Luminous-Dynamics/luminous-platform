@@ -248,7 +248,7 @@ def run_mutation_controls(cases: list[dict]) -> int:
     mutations.append(("child-issuer-key-substitution", case, "invalid", "deny"))
 
     case = cloned("MND-011")
-    case["chain"][1]["permissions"].append("payments:write@invoice-42")
+    case["chain"][2]["permissions"].append("payments:write@invoice-42")
     mutations.append(("child-permission-widening", case, "invalid", "deny"))
 
     case = cloned("MND-011")
