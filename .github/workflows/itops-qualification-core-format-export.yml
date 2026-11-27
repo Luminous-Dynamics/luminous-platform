@@ -1,0 +1,40 @@
+name: ITOPS qualification-core rustfmt export
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/itops-autonomy-boundary-v0.1/qualification-core/src/**"
+      - ".github/workflows/itops-qualification-core-format-export.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  rustfmt-export:
+    name: Export exact rustfmt patch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact pull-request revision
+        uses: actions/checkout@v4
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: rustfmt
+
+      - name: Format and export patch
+        working-directory: benchmarks/itops-autonomy-boundary-v0.1/qualification-core
+        run: |
+          cargo fmt --all
+          git diff --binary -- src > rustfmt.patch
+          sha256sum rustfmt.patch | tee rustfmt-patch.sha256
+
+      - name: Upload rustfmt patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: itops-qualification-core-rustfmt-\${{ github.sha }}
+          path: |
+            benchmarks/itops-autonomy-boundary-v0.1/qualification-core/rustfmt.patch
+            benchmarks/itops-autonomy-boundary-v0.1/qualification-core/rustfmt-patch.sha256
+          if-no-files-found: error
