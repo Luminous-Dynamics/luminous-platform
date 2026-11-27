@@ -159,6 +159,9 @@ pub fn authorize_root_reanchored_effect(
             || grant.targets.is_empty()
             || grant.operations.is_empty()
             || grant.data_scopes.is_empty()
+            || grant.allowed_child_task_plan_bindings.iter().any(|(task, plan)| {
+                !digest_is_sha256(task) || !digest_is_sha256(plan)
+            })
         {
             denials.push(RootReanchorDenial::InvalidGrantShape(grant.grant_id.clone()));
         }
