@@ -335,3 +335,8 @@ The existing MSP OpsBench should remain focused on managed operations and recove
 ## Research programme v0.2
 
 The next proposed work is captured in [RESEARCH_AGENDA_V0_2.md](RESEARCH_AGENDA_V0_2.md). It does not change the v0.1 catalogue. The agenda extends qualification beyond prompt injection into executable authority, independently observed effects, cross-session memory poisoning, delegated-work revocation, common-cause witness failures, cross-client split views, multi-agent cascades and uncertain transaction outcomes. These are future scenario families and targets—not completed fixtures or measured results.
+
+
+## Receipt-v2 benchmark binding — 27 November 2026
+
+ATR-048 now explicitly tests witness receipt v2: the Merkle leaf must commit to the exact durable branch-endorsement digest, and a different valid endorsement cannot be substituted while retaining the old inclusion proof. The 50-case catalogue remains 44 adversarial / six benign. Exact raw catalogue SHA-256: `7233ff262a549db8c30864ef933dcb7dd023abb663f84ef99532bf13fcfd452f`, bound in the ATR-015 example manifest. The updated schema/digest workflow passed in run [45947959815](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/45947959815). This is catalogue/schema/manifest validation, not a runtime episode or detection-efficacy result.
