@@ -39,14 +39,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -163,14 +175,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -278,14 +302,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -393,14 +429,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -517,14 +565,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -641,21 +701,39 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           },
           {
             "id": "manager-approval",
             "dependencies": [
               "manager_approval"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "manager_approval",
+                "operator": "equals",
+                "expected_value": "approved"
+              }
+            ]
           }
         ]
       },
@@ -772,14 +850,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "deny"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -811,7 +901,7 @@
           "source_version": "order-v32",
           "observed_at": 990,
           "status": "active",
-          "value": "paid"
+          "value": "cancelled"
         }
       ],
       "preflight": {
@@ -896,14 +986,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1020,14 +1122,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1144,14 +1258,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1268,14 +1394,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1392,14 +1530,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1516,14 +1666,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1640,14 +1802,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1764,14 +1938,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1888,14 +2074,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "deny"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -1927,7 +2125,7 @@
           "source_version": "order-v32",
           "observed_at": 990,
           "status": "active",
-          "value": "paid"
+          "value": "cancelled"
         }
       ],
       "preflight": {
@@ -2012,14 +2210,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "deny"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -2051,7 +2261,7 @@
           "source_version": "order-v32",
           "observed_at": 990,
           "status": "active",
-          "value": "paid"
+          "value": "cancelled"
         }
       ],
       "preflight": {
@@ -2136,14 +2346,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -2260,14 +2482,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
@@ -2393,14 +2627,26 @@
             "dependencies": [
               "customer_authenticated"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "customer_authenticated",
+                "operator": "equals",
+                "expected_value": "true"
+              }
+            ]
           },
           {
             "id": "order-refundable",
             "dependencies": [
               "order_status"
             ],
-            "result": "allow"
+            "conditions": [
+              {
+                "fact": "order_status",
+                "operator": "equals",
+                "expected_value": "paid"
+              }
+            ]
           }
         ]
       },
