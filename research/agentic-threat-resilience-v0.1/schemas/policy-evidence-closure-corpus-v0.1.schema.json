@@ -19,7 +19,7 @@
     "cases": {
       "type": "array",
       "minItems": 20,
-      "maxItems": 20,
+      "maxItems": 24,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -347,7 +347,9 @@
             "current_authority_epoch",
             "revalidation_status",
             "revalidated_dependencies",
-            "new_attempt_while_unknown"
+            "new_attempt_while_unknown",
+            "checked_at",
+            "revalidated_facts"
           ],
           "properties": {
             "attempted": {
@@ -400,6 +402,15 @@
             },
             "new_attempt_while_unknown": {
               "type": "boolean"
+            },
+            "checked_at": {
+              "type": "integer"
+            },
+            "revalidated_facts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/fact"
+              }
             }
           }
         },
@@ -480,7 +491,8 @@
                 "pass",
                 "utility_failure",
                 "security_failure",
-                "indeterminate"
+                "indeterminate",
+                "safe_abort"
               ]
             }
           }
