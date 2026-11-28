@@ -93,7 +93,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E1-I2",
@@ -107,7 +111,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E1-I3",
@@ -121,7 +129,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E1-I4",
@@ -135,7 +147,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E1-I5",
@@ -149,7 +165,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E1-I6",
@@ -163,7 +183,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E1-I7",
@@ -177,7 +201,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I1",
@@ -191,7 +219,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I2",
@@ -205,7 +237,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I3",
@@ -219,7 +255,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I4",
@@ -233,7 +273,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I5",
@@ -247,7 +291,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I6",
@@ -261,7 +309,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E2-I7",
@@ -275,7 +327,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I1",
@@ -289,7 +345,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I2",
@@ -303,7 +363,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I3",
@@ -317,7 +381,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I4",
@@ -331,7 +399,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I5",
@@ -345,7 +417,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I6",
@@ -359,7 +435,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E3-I7",
@@ -373,7 +453,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I1",
@@ -387,7 +471,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I2",
@@ -401,7 +489,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I3",
@@ -415,7 +507,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I4",
@@ -429,7 +525,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I5",
@@ -443,7 +543,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I6",
@@ -457,7 +561,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E4-I7",
@@ -471,7 +579,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I1",
@@ -485,7 +597,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I2",
@@ -499,7 +615,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I3",
@@ -513,7 +633,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I4",
@@ -527,7 +651,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I5",
@@ -541,7 +669,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I6",
@@ -555,7 +687,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     },
     {
       "cell_id": "E5-I7",
@@ -569,7 +705,11 @@
       "run_manifest_id": null,
       "native_result_artifact": null,
       "atr_sidecar_artifact": null,
-      "independent_receipt_artifact": null
+      "independent_receipt_artifact": null,
+      "run_manifest_digest": null,
+      "native_result_digest": null,
+      "atr_sidecar_digest": null,
+      "independent_receipt_digest": null
     }
   ]
 }
