@@ -271,6 +271,7 @@ def run_mutation_controls(episodes: list[dict]) -> int:
     expected = dict(by_id["OPENART-001"]["expected_atr"])
     expected["attribution_complete"] = False
     expected["mutation_to_consumption_actions"] = None
+    expected["consumption_to_effect_actions"] = None
     add("OPENART-001", "mutation-lineage-removed", lambda e:e["events"][1].update(parent_event_ids=[]), expected)
 
     expected = dict(by_id["OPENART-003"]["expected_atr"])
@@ -288,6 +289,22 @@ def run_mutation_controls(episodes: list[dict]) -> int:
         absent = next(event for event in episode["events"] if event["event_id"] == "absent-3")
         absent["parent_event_ids"] = ["call-3"]
     add("OPENART-003", "missing-participant-decision", remove_participant_decision, expected)
+
+    add("OPENART-003", "missing-participant-decision", remove_participant_decision, expected)
+
+    expected = dict(by_id["OPENART-003"]["expected_atr"])
+    expected["atr_decision"] = "indeterminate"
+    expected["attribution_complete"] = False
+    expected["independent_effect_receipt_count"] = 0
+    expected["first_effect_id"] = None
+    expected["mutation_to_consumption_actions"] = None
+    expected["consumption_to_effect_actions"] = None
+    def remove_terminal_observation(episode):
+        episode["events"] = [
+            event for event in episode["events"]
+            if event["event_id"] not in ("absent-3", "receipt-3")
+        ]
+    add("OPENART-003", "denied-without-terminal-effect-observation", remove_terminal_observation, expected)
 
     expected = dict(by_id["OPENART-001"]["expected_atr"])
     expected["native_strict_asr"] = False
