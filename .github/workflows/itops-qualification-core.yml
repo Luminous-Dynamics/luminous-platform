@@ -36,8 +36,9 @@ jobs:
           set -euo pipefail
           test "$(grep -Ec '^    #\[test\]' src/delegation.rs)" -eq 15
           test "$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)" -eq 9
+          test "$(grep -Ec '^    #\[test\]' src/effect_finality.rs)" -eq 10
 
-      - name: Run strict delegation and root-reanchor tests
+      - name: Run delegation, root-reanchor and effect-finality tests
         run: cargo test --locked --offline --all-targets
 
       - name: Run Clippy
@@ -54,7 +55,8 @@ jobs:
             echo "cargo_lock_sha256=$(sha256sum Cargo.lock | cut -d ' ' -f 1)"
             echo "delegation_test_annotations=$(grep -Ec '^    #\[test\]' src/delegation.rs)"
             echo "root_reanchor_test_annotations=$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)"
-            echo "scope=dependency-free pure policy predicates; no participant/runtime qualification"
+            echo "effect_finality_test_annotations=$(grep -Ec '^    #\[test\]' src/effect_finality.rs)"
+            echo "scope=dependency-free policy and participant-finality reference models; no production participant/runtime qualification"
           } | tee qualification-build-receipt.txt
 
       - name: Upload source qualification receipt
