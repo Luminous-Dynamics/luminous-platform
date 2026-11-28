@@ -37,14 +37,14 @@ The numbers below describe what the source benchmarks report; they are not a cro
 | ReliabilityBench | Repeated-run consistency, semantic robustness and infrastructure fault tolerance | 1,280 episodes, 4 domains; reliability surface R(k, ε, λ), Action-MRs and fault injection | Security^k, commit^k, authority-context drift and independently reconciled unknown effects |
 | τ²-bench evaluator audit (empirical study) | Evaluator construct validity and forbidden-write detection | 2,160 episodes; 11 human-confirmed premature commits; LLM-judge/native agreement 56.2% | Explicit task/authorization/commitment axes, source-complete predicate evidence and independent receipts |
 | GuardianAgentBench | Long-horizon tool correctness and structural guardrails | 580 scenarios, 6 domains, 3 production-ready frameworks; reports monotonic degradation with tool-set size and turn depth | Source-anchored authorization and actual participant effect finality |
-| AgentCanary | Real executable agent environments and trajectory-grounded risk evaluation | Persistent multi-step state, dynamic task artifacts, three frameworks; Entry × Impact taxonomy and Outcome Safety / Security Awareness / Task Utility axes | Source-qualified authority, exact commit-time policy evidence and independent effect receipts |
+| AgentCanary | Real executable agent environments and trajectory-grounded risk evaluation | 496 seed tasks in the paper; 5 entries × 7 impacts; 12 models × 3 frameworks; separate upstream README integration of 1,800 NARA-Bench tasks | Source-anchored authorization, current predicate evidence and independent participant-effect finality |
 | DTap | Stateful desktop interaction and attack exposure | Median 15 tool calls in the OpenART comparison | Source-authorized delegation and independent protected-effect receipt |
 | OpenART | Long-horizon state evolution, environment poisoning and side-effect safety | 10K+ validated scenarios / 50 domains; release 10,150 tasks in 52 shards + 63,697 materialized tools; 15 agents × 5 models, 8 attack surfaces; median 97 tool calls, depth 32, parallel width 12.5, state-object count 96.5 | Formal authority lineage, mandate validation, principal entitlement, participant commit-time fence and effect receipts |
 | WIMSE agent-mandate draft | Cross-domain validation of who may delegate and who issued the mandate | Protocol/validation profile, not an empirical benchmark | Executed agent behaviour, runtime effects, efficacy and operational costs |
 
 **Sources and qualifications**
 
-- AgentCanary contributes an orthogonal Entry × Impact risk taxonomy, real executable environments with persistent state, and trajectory-grounded Outcome Safety / Security Awareness / Task Utility scoring; it is a useful execution-fidelity comparator, not a substitute for participant-side authorization evidence. [AgentCanary, arXiv:2606.10484](https://arxiv.org/abs/2606.10484)
+- AgentCanary is the real-executable-environment comparator covered by `AGENTCANARY_ADAPTER_PROTOCOL_V0_1.md` and the 35-cell `scenarios/agentcanary-entry-impact-coverage-v0.1.json` contract. The paper's 496 seed tasks and the upstream README's separate 1,800-task NARA-Bench import are distinct strata. Its native OSS/SAS/TUS and UOR/SAR/TSR are LLM-rubric trajectory scores; they remain unchanged and are not an independent participant or resource-effect oracle. Optional Tracee/eBPF system telemetry requires a dedicated privileged runner and is not a substitute for domain transaction receipts. [AgentCanary, arXiv:2606.10484](https://arxiv.org/abs/2606.10484)
 - ReliabilityBench reports a reliability surface over repeated trials, semantic perturbation and fault intensity; in its tested setup, task success fell from 96.9% at ε=0 to 88.1% at ε=0.2, and rate limiting was a damaging fault class. Those values are source-reported results for its 1,280-episode study, not Luminous results. [ReliabilityBench](https://arxiv.org/abs/2601.06112)
 - A November 2026 τ²-bench evaluator study reports 2,160 episodes, 98.2% LLM-judge self-agreement but 56.2% agreement with native scoring; human reviewers labeled 11 forbidden writes, and the judge passed 10–11. The authors also trace gate failures to omitted order-status and customer-authentication facts. This motivates the explicit evidence-closure profile rather than reliance on transcript judges alone. [Im, arXiv:2611.14581](https://arxiv.org/abs/2611.14581)
 - OpenART authors report over 10,000 validated stateful scenarios across 50 domains, with median task complexity of 97 tool calls, dependency depth 32 and parallel width 12.5. Its pinned upstream README (repository history pin 28 November 2026) describes 10,150 released task bundles in 52 shards and 63,697 materialized tools; the paper uses 15 target agents × 5 models and eight target-visible attack surfaces. The paper reports 85.0% pooled strict ASR (EMHA attacker) and 87.38% benign completion; strict ASR requires both deterministic evaluator and LLM judge. These are source-reported benchmark outcomes, not universal safety rates or Luminous results. The public benchmark landscape is descriptive, not a ranking. [OpenART benchmark landscape](https://ai45lab.github.io/OpenART/benchmarks/) and [paper](https://arxiv.org/abs/2608.00677).
@@ -220,7 +220,7 @@ A first minimal grid should run on the synthetic #540 participant before broad e
 
 These are initial design points, not universal severity standards. Expand the grid only after the first vertical slice is reproducible and the injected faults are known to be faithful.
 
-## 8. Staged execution plan (do not block on #540)
+## 9. Staged execution plan (do not block on #540)
 
 ### Stage A — current source-only increment
 - Cross-domain mandate profile and schema.
@@ -248,6 +248,7 @@ These are initial design points, not universal severity standards. Expand the gr
 - Add AgentDyn as the dynamic helpful-instruction / false-positive utility control.
 - Apply the MetaPI-style adaptive-generation profile to held-out AppWorld / VitaBench / Terminal-Bench-like utility tasks only after native tasks and evaluator controls are frozen.
 - Add AgentLAB as the adaptive long-horizon attack adapter, preserving its 5 families / 28 environments / 644 cases and native ASR/T2S.
+- Add AgentCanary as the real-execution / Entry × Impact adapter; start with a small exact task subset and mark each of the 35 cells only as coverage evidence advances. Keep its 496 seed tasks and separate NARA-Bench imported tasks distinct, and pin auxiliary judge/attacker models.
 - Add Trojan Hippo as the persistent-memory adapter, preserving backend/defense/persistence axes and native utility suites; measure taint-to-effect provenance separately.
 - Add OpenART as a separately pinned long-horizon evolving-state adapter using `OPENART_ADAPTER_PROTOCOL_V0_1.md`; preserve the hidden safety contract, target-visible evolution, deterministic + LLM-native scorer and raw trace/snapshot artifacts.
 - Run native upstream scorers unchanged, then ATR sidecar.
@@ -283,6 +284,8 @@ The latest schema/checker/fixtures are in this PR branch. The exact-head hosted 
 
 - OpenART benchmark landscape and complexity table: https://ai45lab.github.io/OpenART/benchmarks/
 - AgentCanary executable-environment and Entry × Impact evaluation: https://arxiv.org/abs/2606.10484
+- AgentCanary adapter protocol and explicit 35-cell coverage contract: `AGENTCANARY_ADAPTER_PROTOCOL_V0_1.md` and `scenarios/agentcanary-entry-impact-coverage-v0.1.json`.
+- AgentCanary source commit (Apache-2.0): https://github.com/inclusionAI/Agent3Sigma-Canary/tree/a03a36613feab18689d22b19243d8787d65f341d
 - ReliabilityBench repeated-run / Action-MR / fault-surface protocol: https://arxiv.org/abs/2601.06112
 - τ²-bench evaluator disagreement and commit-boundary audit (10 Nov 2026): https://arxiv.org/abs/2611.14581
 - Trojan Hippo paper v4: https://arxiv.org/abs/2605.01970
