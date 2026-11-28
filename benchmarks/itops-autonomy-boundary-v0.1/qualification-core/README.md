@@ -40,8 +40,8 @@ The public source files at the base snapshot inspected for this work contain:
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
 | `effect_finality.rs` | 15 |
-| `memory_provenance.rs` | 16 |
-| **Total** | **55** |
+| `memory_provenance.rs` | 18 |
+| **Total** | **57** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
@@ -118,7 +118,7 @@ This establishes unit-testable state-machine semantics, not production atomicity
 - tainted sensitive export requires an independent approval digest equal to the exact Act-Bound action digest;
 - separate flag when a denied action nevertheless has an observed committed effect.
 
-The 16 Rust tests cover clean read utility, untrusted contextual use, 100-session persistence, derived taint loss/upgrade, trust-label spoofing, cross-tenant use, tombstone/unknown status, exact approval, memory-as-consent, unauthorized observed export, no-memory utility and action/actor scope substitution.
+The 18 Rust tests cover clean read utility, untrusted contextual use, 100-session persistence, derived taint loss/upgrade, trust-label spoofing, cross-tenant use, tombstone/unknown status, exact approval, memory-as-consent, unauthorized observed export, no-memory utility and action/actor scope substitution.
 
 This module complements the Python MPR-001..014 corpus; neither is an executed Trojan Hippo benchmark or a live memory store.
 
