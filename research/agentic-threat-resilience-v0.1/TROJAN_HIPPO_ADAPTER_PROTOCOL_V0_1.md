@@ -154,6 +154,21 @@ The checker binds both operation and requested scope to P0. Invalid or indetermi
 
 The corpus and mutations are synthetic contract tests. They are not Trojan Hippo executions, memory-backend implementations, proof of distributed tombstone propagation, or an independent effect observer.
 
+## 8. Machine-readable ATR memory-provenance conformance
+
+The companion synthetic contract is published alongside this adapter:
+
+- `schemas/memory-provenance-conformance-v0.1.schema.json`;
+- `scenarios/memory-provenance-conformance-v0.1.json` — 14 cases, MPR-001..014;
+- `tools/validate_memory_provenance.py` — deterministic reference checker with 13 one-field adversarial mutation controls;
+- `.github/workflows/atr-memory-provenance.yml` — exact pull-request schema/reference-contract check.
+
+The fixtures exercise clean user-confirmed memory, untrusted but readable context, dormant 100-session persistence, summary/embedding taint inheritance, claimed-trust laundering, cross-tenant retrieval, stale tombstone resurrection, unknown status, exact independent action approval, memory-as-consent substitution, an independently observed unauthorized bypass, no-memory utility control and cross-agent derived taint.
+
+The checker binds both operation and requested scope to P0. Invalid or indeterminate memory provenance blocks use until resolved; tainted but provenance-complete content may still be read as context. A tainted memory cannot authorize a sensitive export: a separate active approval must bind the exact action digest, recipient and scope. The `observed_effect` fixture distinguishes an attempted unsafe path from an observed committed effect.
+
+The corpus and mutations are synthetic contract tests. They are not Trojan Hippo executions, memory-backend implementations, proof of distributed tombstone propagation, or an independent effect observer.
+
 ## 9. Claim boundary and integration order
 
 - This adapter is a protocol document; no upstream Trojan Hippo execution or Luminous model evaluation is claimed.
