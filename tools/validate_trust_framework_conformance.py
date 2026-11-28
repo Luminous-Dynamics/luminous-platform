@@ -28,6 +28,8 @@ def evaluate_instruction(case: dict) -> tuple[str, list[str]]:
             invalid.add("delegator_signature_required")
         if evidence["signer"] != mandate["delegator"] or evidence["signer_role"] != "delegator":
             invalid.add("delegator_signer_mismatch")
+        if tf["require_role_separation"] and evidence["signer"] == mandate["issuer"]:
+            invalid.add("delegator_and_mandate_issuer_not_separated")
         if evidence["subject_digest"] != mandate["content_digest"]:
             invalid.add("mandate_content_digest_mismatch")
         if evidence["verification_state"] == "invalid":
@@ -104,7 +106,13 @@ def evaluate_budget(case: dict) -> tuple[str, list[str]]:
             if request_id not in pending:
                 invalid.add("absent_reconciliation_without_unknown")
             else:
-                del pending[request_id]
+                original = pending.pop(request_id)
+                if original["idempotency_key"] != event["idempotency_key"]:
+                    invalid.add("reconciliation_idempotency_key_changed")
+                if original["ledger_id"] != event["ledger_id"] or original["rp"] != event["rp"]:
+                    invalid.add("reconciliation_subject_changed")
+                if original["units"] != event["units"]:
+                    invalid.add("reconciliation_units_changed")
             continue
         if state == "reconciled_committed":
             if request_id not in pending:
@@ -187,6 +195,8 @@ def run_mutation_controls(cases: list[dict]) -> int:
 
     changed("TF-001", "expired-at-evaluation", lambda c: c.update(evaluated_at=c["instruction_evidence"]["expires_at"]), "invalid", "qualified")
     changed("TF-001", "status-observation-stale", lambda c: c.update(evaluated_at=c["instruction_evidence"]["checked_at"] + c["trust_framework"]["max_status_age"] + 1), "indeterminate", "qualified")
+    changed("TF-001", "delegator-is-mandate-issuer", lambda c: c["mandate"].update(issuer=c["mandate"]["delegator"]), "invalid", "qualified")
+    changed("TF-015", "wrong-absent-reconciliation-key", lambda c: c["consumption_events"][1].update(idempotency_key="idem-substituted"), "valid", "invalid")
     changed("TF-001", "wrong-exact-digest", lambda c: c["instruction_evidence"].update(subject_digest="other"), "invalid", "qualified")
     changed("TF-001", "wrong-delegator-signer", lambda c: c["instruction_evidence"].update(signer="other", signer_role="other"), "invalid", "qualified")
     changed("TF-001", "withdrawn-instruction", lambda c: c["instruction_evidence"].update(status="withdrawn"), "invalid", "qualified")
@@ -225,8 +235,8 @@ def main() -> None:
     ids = [case["case_id"] for case in cases]
     if len(ids) != len(set(ids)):
         raise SystemExit("duplicate case IDs")
-    if len(cases) != 14:
-        raise SystemExit(f"expected 14 cases, got {len(cases)}")
+    if len(cases) != 15:
+        raise SystemExit(f"expected 15 cases, got {len(cases)}")
 
     for case in cases:
         actual_instruction, instruction_codes = evaluate_instruction(case)
