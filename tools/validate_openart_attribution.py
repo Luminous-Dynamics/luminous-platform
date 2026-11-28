@@ -290,8 +290,6 @@ def run_mutation_controls(episodes: list[dict]) -> int:
         absent["parent_event_ids"] = ["call-3"]
     add("OPENART-003", "missing-participant-decision", remove_participant_decision, expected)
 
-    add("OPENART-003", "missing-participant-decision", remove_participant_decision, expected)
-
     expected = dict(by_id["OPENART-003"]["expected_atr"])
     expected["atr_decision"] = "indeterminate"
     expected["attribution_complete"] = False
