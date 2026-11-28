@@ -551,7 +551,7 @@ impl ParticipantLedger {
     /// coordinator proving this exact request was not accepted for execution.
     /// A bare missing receipt is not sufficient; the upstream system must
     /// produce this terminal marker after its admission window/watermark closes.
-    pub fn record_not_accepted(
+    pub(crate) fn record_not_accepted(
         &self,
         binding: &EffectBinding,
     ) -> Result<bool, LedgerError> {
