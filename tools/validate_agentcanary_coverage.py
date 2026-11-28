@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from jsonschema import Draft202012Validator
 
@@ -19,8 +20,12 @@ def cell_contract_errors(cell: dict) -> list[str]:
         "task_manifest_digest": cell["task_manifest_digest"],
         "run_manifest_id": cell["run_manifest_id"],
         "native_result_artifact": cell["native_result_artifact"],
+        "native_result_digest": cell["native_result_digest"],
+        "run_manifest_digest": cell["run_manifest_digest"],
         "atr_sidecar_artifact": cell["atr_sidecar_artifact"],
+        "atr_sidecar_digest": cell["atr_sidecar_digest"],
         "independent_receipt_artifact": cell["independent_receipt_artifact"],
+        "independent_receipt_digest": cell["independent_receipt_digest"],
     }
     errors: list[str] = []
 
@@ -51,26 +56,48 @@ def cell_contract_errors(cell: dict) -> list[str]:
     elif state == "executed_native":
         if not task_ids:
             errors.append("executed_native_missing_task_ids")
-        require("task_manifest_digest", "run_manifest_id", "native_result_artifact")
-        forbid("atr_sidecar_artifact", "independent_receipt_artifact")
+        require("task_manifest_digest", "run_manifest_id", "run_manifest_digest",
+                "native_result_artifact", "native_result_digest")
+        forbid("atr_sidecar_artifact", "atr_sidecar_digest",
+               "independent_receipt_artifact", "independent_receipt_digest")
         if cell["atr_observer_profile"] is not None:
             errors.append("executed_native_has_observer_profile")
     elif state == "atr_observed":
         if not task_ids:
             errors.append("atr_observed_missing_task_ids")
-        require("task_manifest_digest", "run_manifest_id", "native_result_artifact",
-                "atr_sidecar_artifact")
-        forbid("independent_receipt_artifact")
+        require("task_manifest_digest", "run_manifest_id", "run_manifest_digest",
+                "native_result_artifact", "native_result_digest",
+                "atr_sidecar_artifact", "atr_sidecar_digest")
+        forbid("independent_receipt_artifact", "independent_receipt_digest")
         if not cell["atr_observer_profile"] or not cell["atr_observer_profile"].strip():
             errors.append("atr_observed_missing_observer_profile")
     elif state == "independently_verified":
         if not task_ids:
             errors.append("independently_verified_missing_task_ids")
-        require("task_manifest_digest", "run_manifest_id", "native_result_artifact",
-                "atr_sidecar_artifact", "independent_receipt_artifact")
+        require("task_manifest_digest", "run_manifest_id", "run_manifest_digest",
+                "native_result_artifact", "native_result_digest",
+                "atr_sidecar_artifact", "atr_sidecar_digest",
+                "independent_receipt_artifact", "independent_receipt_digest")
         if not cell["atr_observer_profile"] or not cell["atr_observer_profile"].strip():
             errors.append("independently_verified_missing_observer_profile")
 
+    digest_fields = (
+        "task_manifest_digest",
+        "run_manifest_digest",
+        "native_result_digest",
+        "atr_sidecar_digest",
+        "independent_receipt_digest",
+    )
+    required_digests = {
+        "task_pinned": ("task_manifest_digest",),
+        "executed_native": ("task_manifest_digest", "run_manifest_digest", "native_result_digest"),
+        "atr_observed": ("task_manifest_digest", "run_manifest_digest", "native_result_digest", "atr_sidecar_digest"),
+        "independently_verified": digest_fields,
+    }.get(state, ())
+    for name in required_digests:
+        value = cell[name]
+        if not isinstance(value, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", value):
+            errors.append(f"invalid_{name}")
     return errors
 
 
@@ -152,6 +179,18 @@ def main() -> None:
     mutations.append(("missing-task-manifest", invalid))
 
     invalid = positive.copy()
+    invalid["independent_receipt_digest"] = None
+    mutations.append(("missing-independent-receipt-digest", invalid))
+
+    invalid = positive.copy()
+    invalid["native_result_digest"] = "sha256:bad"
+    mutations.append(("invalid-native-result-digest", invalid))
+
+    invalid = positive.copy()
+    invalid["run_manifest_digest"] = None
+    mutations.append(("missing-run-manifest-digest", invalid))
+
+    invalid = positive.copy()
     invalid["atr_observer_profile"] = None
     mutations.append(("missing-observer-profile", invalid))
 
@@ -169,7 +208,7 @@ def main() -> None:
     }
     print(
         f"AgentCanary coverage contract valid: {len(actual)}/35 unique cells; "
-        f"coverage={counts}; 6 evidence-state mutation controls rejected; "
+        f"coverage={counts}; 9 evidence-state mutation controls rejected; "
         f"no task execution implied by schema validity"
     )
 
