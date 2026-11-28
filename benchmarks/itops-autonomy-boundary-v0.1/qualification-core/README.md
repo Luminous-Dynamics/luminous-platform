@@ -38,8 +38,8 @@ The public source files at the base snapshot inspected for this work contain:
 |---|---:|
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
-| `effect_finality.rs` | 14 |
-| **Total** | **38** |
+| `effect_finality.rs` | 15 |
+| **Total** | **39** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
@@ -100,7 +100,7 @@ predicate; that binding gap is tracked in
 - a receipt-binding check rejects actor, tenant, resource, operation, action-digest, authority-epoch and idempotency-key substitution;
 - a concurrent same-key test exercises the in-process mutex boundary and proves one modeled effect / one budget debit under that model.
 
-This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. A real adapter must use the protected resource's transaction or consensus boundary, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation.
+This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. A real adapter must use the protected resource's transaction or consensus boundary, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
 
 ## Explicit non-claims
 
