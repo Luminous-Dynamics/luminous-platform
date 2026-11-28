@@ -38,8 +38,8 @@ The public source files at the base snapshot inspected for this work contain:
 |---|---:|
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
-| `effect_finality.rs` | 10 |
-| **Total** | **34** |
+| `effect_finality.rs` | 11 |
+| **Total** | **35** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
