@@ -14,7 +14,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -51,7 +52,8 @@
         "instruction_outcome": "valid",
         "budget_outcome": "qualified",
         "decision": "allow"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-002",
@@ -64,7 +66,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -101,7 +104,8 @@
         "instruction_outcome": "invalid",
         "budget_outcome": "qualified",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-003",
@@ -114,7 +118,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -151,7 +156,8 @@
         "instruction_outcome": "invalid",
         "budget_outcome": "qualified",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-004",
@@ -164,7 +170,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -201,7 +208,8 @@
         "instruction_outcome": "invalid",
         "budget_outcome": "qualified",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-005",
@@ -214,7 +222,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -251,7 +260,8 @@
         "instruction_outcome": "invalid",
         "budget_outcome": "qualified",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-006",
@@ -264,7 +274,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -301,7 +312,8 @@
         "instruction_outcome": "indeterminate",
         "budget_outcome": "qualified",
         "decision": "unknown_reconciliation_required"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-007",
@@ -323,7 +335,8 @@
             "max_units": 1,
             "ledger_id": "ledger-rp-two"
           }
-        }
+        },
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -369,7 +382,8 @@
         "instruction_outcome": "valid",
         "budget_outcome": "qualified",
         "decision": "allow"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-008",
@@ -382,7 +396,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -419,7 +434,8 @@
         "instruction_outcome": "invalid",
         "budget_outcome": "qualified",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-009",
@@ -432,7 +448,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -478,7 +495,8 @@
         "instruction_outcome": "valid",
         "budget_outcome": "invalid",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-010",
@@ -491,7 +509,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 1,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -537,7 +556,8 @@
         "instruction_outcome": "valid",
         "budget_outcome": "invalid",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-011",
@@ -559,7 +579,8 @@
             "max_units": 1,
             "ledger_id": "ledger-rp-two"
           }
-        }
+        },
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -605,7 +626,8 @@
         "instruction_outcome": "valid",
         "budget_outcome": "qualified",
         "decision": "allow"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-012",
@@ -618,7 +640,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -664,7 +687,8 @@
         "instruction_outcome": "valid",
         "budget_outcome": "invalid",
         "decision": "deny"
-      }
+      },
+      "evaluated_at": 120
     },
     {
       "case_id": "TF-013",
@@ -677,7 +701,8 @@
         "authority_budget_ceiling": 2,
         "shared_ledger_id": "ledger-global-1",
         "global_budget": 2,
-        "rp_allocations": {}
+        "rp_allocations": {},
+        "max_status_age": 60
       },
       "mandate": {
         "mandate_id": "mandate-77",
@@ -714,7 +739,60 @@
         "instruction_outcome": "valid",
         "budget_outcome": "indeterminate",
         "decision": "unknown_reconciliation_required"
-      }
+      },
+      "evaluated_at": 120
+    },
+    {
+      "case_id": "TF-014",
+      "family": "status",
+      "description": "The status value says active, but its observation is older than the Trust-Framework freshness bound at evaluation time.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {},
+        "max_status_age": 60
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "indeterminate",
+        "budget_outcome": "qualified",
+        "decision": "unknown_reconciliation_required"
+      },
+      "evaluated_at": 300
     }
   ]
 }
