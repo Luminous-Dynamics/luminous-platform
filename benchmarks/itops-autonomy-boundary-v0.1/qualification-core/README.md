@@ -1,19 +1,12 @@
 # ITOPS qualification core — policy module crate
 
-This directory is now a standalone, dependency-free Rust library crate for the two
-pure multi-agent authorization policy arms used by the ITOPS / ATR research:
+This directory is a standalone, dependency-free Rust library crate for the ITOPS / ATR research. It contains three deliberately bounded reference modules:
 
 - `delegation.rs`: strict edge-by-edge monotonic delegation attenuation;
-- `root_reanchor.rs`: root-authorized, exact-precommitted descendant task
-  authorization, while retaining a narrower intermediate agent's local effect
-  role.
+- `root_reanchor.rs`: root-authorized, exact-precommitted descendant task authorization, while retaining a narrower intermediate agent's local effect role;
+- `effect_finality.rs`: a synthetic participant commit-finality / unknown-outcome state machine with a mutex-serialized commit boundary, revocation epochs, idempotency conflict detection, budget debit, and exact receipt-binding checks.
 
-The crate intentionally contains only those two policy modules. It does **not**
-contain the full benchmark catalogue loader, result-schema auditor, process-
-isolated runner, capability issuer, signed-token verifier, participant commit
-gate, or independent service observer. Those remain separate work items
-tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213)
-and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
+The effect-finality module is a **reference model**, not a distributed/production participant, cryptographic receipt verifier or independent observer. The crate does **not** contain the full benchmark catalogue loader, result-schema auditor, process-isolated runner, capability issuer, signed-token verifier, live participant PEP, distributed transaction service, or independent service observer. Those remain separate work items tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213), [issue #540](https://github.com/Luminous-Dynamics/luminous-platform/issues/540), and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
 
 ## Public build closure
 
@@ -45,13 +38,14 @@ The public source files at the base snapshot inspected for this work contain:
 |---|---:|
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
-| **Total** | **24** |
+| `effect_finality.rs` | 10 |
+| **Total** | **34** |
 
-These are source annotations, not executed results. The new workflow
-`.github/workflows/itops-qualification-core.yml` runs formatting, all-target
-unit tests and Clippy at the exact pull-request revision, then emits a
-machine-readable build receipt with source SHA, toolchain versions, Cargo.lock
-digest and source test counts.
+These are source annotations, not executed results. The exact-head workflow
+`.github/workflows/itops-qualification-core.yml` runs formatting, verifies
+all three module inventories, executes the full all-target test suite and
+Clippy, then emits a machine-readable receipt with source SHA, toolchain
+versions, Cargo.lock digest and test counts.
 
 ## Security semantics
 
@@ -92,11 +86,31 @@ The current `request_digest` is shape-checked but not recomputed by the pure
 predicate; that binding gap is tracked in
 [issue #546](https://github.com/Luminous-Dynamics/luminous-platform/issues/546).
 
+### Participant finality reference model
+
+`effect_finality.rs` makes the commit boundary and unknown-outcome rules executable as a deterministic in-process model:
+
+- the participant checks the current authority epoch, idempotency key and mutation budget while holding one serialized commit lock;
+- an exact duplicate request returns the original receipt without a second budget debit;
+- a different request reusing the same idempotency key is a conflict;
+- new mutations under an old authority epoch are denied, while effects that linearized before revocation remain historically committed;
+- response loss before or after participant processing enters `OutcomeUnknown`;
+- no new consequential request may replace an unknown attempt;
+- an authoritative absent reconciliation permits only retrying the original exact request and idempotency key;
+- a receipt-binding check rejects actor, tenant, resource, operation, action-digest, authority-epoch and idempotency-key substitution;
+- a concurrent same-key test exercises the in-process mutex boundary and proves one modeled effect / one budget debit under that model.
+
+This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. A real adapter must use the protected resource's transaction or consensus boundary, survive process/host failure, and supply an independently qualified effect observer.
+
 ## Explicit non-claims
 
 This crate is not a production issuer, token verifier, proof-of-possession
-implementation, participant PEP, commit-time revocation fence, independent
-effect observer, or measured benchmark. The authority observations supplied to
-the pure predicates are not independently authenticated or proven fresh by this
-crate. Unit-test annotations do not prove execution; rely on the exact-head
-workflow result and its uploaded receipt before claiming the test suite passed.
+implementation, live participant PEP, distributed commit-time revocation
+fence, independent effect observer, or measured benchmark. The authority
+observations supplied to the pure predicates are not independently authenticated
+or proven fresh. The in-process `Mutex` is only the reference-model
+linearization point; it does not prove atomicity across processes, machines or
+failure domains. The receipt matcher checks field consistency, not signatures
+or observer independence. Unit-test annotations do not prove execution; rely
+on the exact-head workflow result and its uploaded receipt before claiming the
+test suite passed.
