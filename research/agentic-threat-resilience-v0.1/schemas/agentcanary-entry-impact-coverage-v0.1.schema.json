@@ -126,7 +126,11 @@
         "run_manifest_id",
         "native_result_artifact",
         "atr_sidecar_artifact",
-        "independent_receipt_artifact"
+        "independent_receipt_artifact",
+        "run_manifest_digest",
+        "native_result_digest",
+        "atr_sidecar_digest",
+        "independent_receipt_digest"
       ],
       "properties": {
         "cell_id": {
@@ -197,6 +201,34 @@
             "string",
             "null"
           ]
+        },
+        "run_manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "native_result_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "atr_sidecar_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "independent_receipt_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[0-9a-f]{64}$"
         }
       }
     }
