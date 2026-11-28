@@ -29,6 +29,9 @@ pub struct EffectBinding {
     pub commit_evidence_digest: String,
     /// Resource revision observed during preflight.
     pub resource_version: String,
+    /// Monotonically increasing participant-observed revision; prevents ABA
+    /// when an opaque resource-version label is later reused.
+    pub resource_revision: u64,
     pub actor: String,
     pub tenant: String,
     pub resource: String,
@@ -60,6 +63,7 @@ pub struct EffectReceipt {
     pub preflight_evidence_digest: String,
     pub commit_evidence_digest: String,
     pub resource_version: String,
+    pub resource_revision: u64,
     pub actor: String,
     pub tenant: String,
     pub resource: String,
@@ -77,6 +81,7 @@ impl EffectReceipt {
             && self.preflight_evidence_digest == binding.preflight_evidence_digest
             && self.commit_evidence_digest == binding.commit_evidence_digest
             && self.resource_version == binding.resource_version
+            && self.resource_revision == binding.resource_revision
             && self.actor == binding.actor
             && self.tenant == binding.tenant
             && self.resource == binding.resource
@@ -90,7 +95,12 @@ pub enum CommitOutcome {
     Committed(EffectReceipt),
     AlreadyCommitted(EffectReceipt),
     DeniedStaleAuthorityEpoch { presented: u64, current: u64 },
-    DeniedStaleResourceVersion { presented: String, current: String },
+    DeniedStaleResourceRevision {
+        presented_version: String,
+        current_version: String,
+        presented_revision: u64,
+        current_revision: u64,
+    },
     DeniedOutsideParticipantScope,
     DeniedBudgetExhausted,
     IdempotencyKeyConflict,
@@ -101,6 +111,7 @@ pub enum LedgerError {
     Poisoned,
     InvalidBinding,
     InvalidResourceVersion,
+    ResourceRevisionExhausted,
     EpochExhausted,
     SequenceExhausted,
 }
@@ -111,6 +122,7 @@ struct LedgerState {
     /// None is retained for small legacy unit fixtures.
     participant_scope: Option<(String, String)>,
     current_resource_version: String,
+    resource_revision: u64,
     authority_epoch: u64,
     remaining_budget: u64,
     next_commit_sequence: u64,
@@ -175,6 +187,7 @@ impl ParticipantLedger {
             state: Mutex::new(LedgerState {
                 participant_scope,
                 current_resource_version,
+                resource_revision: 0,
                 authority_epoch,
                 remaining_budget: mutation_budget,
                 next_commit_sequence: 1,
@@ -208,12 +221,16 @@ impl ParticipantLedger {
         Ok(self.lock()?.current_resource_version.clone())
     }
 
+    pub fn current_resource_revision(&self) -> Result<u64, LedgerError> {
+        Ok(self.lock()?.resource_revision)
+    }
+
     /// Publish a new resource revision. Commit and revision changes share the
     /// same lock, yielding one in-process ordering for a concurrent race.
     pub fn advance_resource_version(
         &self,
         next_version: impl Into<String>,
-    ) -> Result<(), LedgerError> {
+    ) -> Result<u64, LedgerError> {
         let next_version = next_version.into();
         if next_version.trim().is_empty() {
             return Err(LedgerError::InvalidResourceVersion);
@@ -222,8 +239,13 @@ impl ParticipantLedger {
         if next_version == state.current_resource_version {
             return Err(LedgerError::InvalidResourceVersion);
         }
+        let next_revision = state
+            .resource_revision
+            .checked_add(1)
+            .ok_or(LedgerError::ResourceRevisionExhausted)?;
         state.current_resource_version = next_version;
-        Ok(())
+        state.resource_revision = next_revision;
+        Ok(next_revision)
     }
 
     pub fn remaining_budget(&self) -> Result<u64, LedgerError> {
@@ -266,10 +288,14 @@ impl ParticipantLedger {
             });
         }
 
-        if binding.resource_version != state.current_resource_version {
-            return Ok(CommitOutcome::DeniedStaleResourceVersion {
-                presented: binding.resource_version.clone(),
-                current: state.current_resource_version.clone(),
+        if binding.resource_version != state.current_resource_version
+            || binding.resource_revision != state.resource_revision
+        {
+            return Ok(CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: binding.resource_version.clone(),
+                current_version: state.current_resource_version.clone(),
+                presented_revision: binding.resource_revision,
+                current_revision: state.resource_revision,
             });
         }
 
@@ -294,6 +320,7 @@ impl ParticipantLedger {
             preflight_evidence_digest: binding.preflight_evidence_digest.clone(),
             commit_evidence_digest: binding.commit_evidence_digest.clone(),
             resource_version: binding.resource_version.clone(),
+            resource_revision: binding.resource_revision,
             actor: binding.actor.clone(),
             tenant: binding.tenant.clone(),
             resource: binding.resource.clone(),
@@ -433,7 +460,7 @@ impl EffectSession {
                 AttemptState::Committed
             }
             CommitOutcome::DeniedStaleAuthorityEpoch { .. }
-            | CommitOutcome::DeniedStaleResourceVersion { .. }
+            | CommitOutcome::DeniedStaleResourceRevision { .. }
             | CommitOutcome::DeniedOutsideParticipantScope
             | CommitOutcome::DeniedBudgetExhausted
             | CommitOutcome::IdempotencyKeyConflict => AttemptState::Denied,
@@ -492,6 +519,7 @@ mod tests {
             preflight_evidence_digest: "preflight-evidence-v1".into(),
             commit_evidence_digest: "commit-evidence-v1".into(),
             resource_version: "resource-v1".into(),
+            resource_revision: 0,
             actor: "agent-7".into(),
             tenant: "tenant-a".into(),
             resource: "ledger/account-4".into(),
@@ -673,6 +701,9 @@ mod tests {
         mutations.push(changed);
         let mut changed = original.clone();
         changed.resource_version = "resource-v99".into();
+        mutations.push(changed);
+        let mut changed = original.clone();
+        changed.resource_revision = 99;
         mutations.push(changed);
         let mut changed = original.clone();
         changed.relying_party = "rp-other".into();
@@ -900,9 +931,11 @@ mod tests {
         stale.resource_version = "orders-v31".into();
         assert_eq!(
             participant.commit(&stale).unwrap(),
-            CommitOutcome::DeniedStaleResourceVersion {
-                presented: "orders-v31".into(),
-                current: "orders-v32".into()
+            CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: "orders-v31".into(),
+                current_version: "orders-v32".into(),
+                presented_revision: 0,
+                current_revision: 0
             }
         );
 
@@ -929,9 +962,11 @@ mod tests {
         request.resource_version = "orders-v32".into();
         assert_eq!(
             participant.commit(&request).unwrap(),
-            CommitOutcome::DeniedStaleResourceVersion {
-                presented: "orders-v32".into(),
-                current: "orders-v33".into()
+            CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: "orders-v32".into(),
+                current_version: "orders-v33".into(),
+                presented_revision: 0,
+                current_revision: 1
             }
         );
         assert_eq!(participant.remaining_budget().unwrap(), 1);
@@ -975,15 +1010,23 @@ mod tests {
         match outcome {
             CommitOutcome::Committed(receipt) => {
                 assert_eq!(receipt.resource_version, "orders-v32");
+                assert_eq!(receipt.resource_revision, 0);
                 assert_eq!(participant.remaining_budget().unwrap(), 0);
                 assert_eq!(
                     participant.lookup("idem-resource-race").unwrap(),
                     Some(receipt)
                 );
             }
-            CommitOutcome::DeniedStaleResourceVersion { presented, current } => {
-                assert_eq!(presented, "orders-v32");
-                assert_eq!(current, "orders-v33");
+            CommitOutcome::DeniedStaleResourceRevision {
+                presented_version,
+                current_version,
+                presented_revision,
+                current_revision,
+            } => {
+                assert_eq!(presented_version, "orders-v32");
+                assert_eq!(current_version, "orders-v33");
+                assert_eq!(presented_revision, 0);
+                assert_eq!(current_revision, 1);
                 assert_eq!(participant.remaining_budget().unwrap(), 1);
                 assert_eq!(participant.lookup("idem-resource-race").unwrap(), None);
             }
@@ -1007,6 +1050,63 @@ mod tests {
             participant.commit(&missing_revision),
             Err(LedgerError::InvalidBinding)
         );
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+    }
+
+    #[test]
+    fn resource_revision_rejects_aba_even_when_version_label_is_reused() {
+        let participant = ParticipantLedger::new_scoped_versioned(
+            "tenant-a",
+            "ledger/account-4",
+            "orders-v32",
+            3,
+            1,
+        );
+        let mut stale = binding("idem-aba", "digest-aba", 3);
+        stale.resource_version = "orders-v32".into();
+        stale.resource_revision = 0;
+
+        assert_eq!(
+            participant.advance_resource_version("orders-v33").unwrap(),
+            1
+        );
+        assert_eq!(
+            participant.advance_resource_version("orders-v32").unwrap(),
+            2
+        );
+        assert_eq!(participant.current_resource_version().unwrap(), "orders-v32");
+
+        assert_eq!(
+            participant.commit(&stale).unwrap(),
+            CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: "orders-v32".into(),
+                current_version: "orders-v32".into(),
+                presented_revision: 0,
+                current_revision: 2
+            }
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+    }
+
+    #[test]
+    fn resource_revision_exhaustion_does_not_change_resource_or_revision() {
+        let participant = ParticipantLedger::new_scoped_versioned(
+            "tenant-a",
+            "ledger/account-4",
+            "orders-v32",
+            3,
+            1,
+        );
+        {
+            let mut state = participant.lock().unwrap();
+            state.resource_revision = u64::MAX;
+        }
+        assert_eq!(
+            participant.advance_resource_version("orders-v33"),
+            Err(LedgerError::ResourceRevisionExhausted)
+        );
+        assert_eq!(participant.current_resource_version().unwrap(), "orders-v32");
+        assert_eq!(participant.current_resource_revision().unwrap(), u64::MAX);
         assert_eq!(participant.remaining_budget().unwrap(), 1);
     }
 
