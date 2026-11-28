@@ -277,6 +277,8 @@ def run_mutation_controls(episodes: list[dict]) -> int:
     expected["attribution_complete"] = False
     expected["denied_or_unauthorized_attempts"] = 0
     expected["independent_effect_receipt_count"] = 1
+    expected["mutation_to_consumption_actions"] = None
+    expected["consumption_to_effect_actions"] = None
     expected["atr_decision"] = "indeterminate"
     def remove_participant_decision(episode):
         episode["events"] = [
