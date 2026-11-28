@@ -73,10 +73,7 @@ impl EffectReceipt {
 pub enum CommitOutcome {
     Committed(EffectReceipt),
     AlreadyCommitted(EffectReceipt),
-    DeniedStaleAuthorityEpoch {
-        presented: u64,
-        current: u64,
-    },
+    DeniedStaleAuthorityEpoch { presented: u64, current: u64 },
     DeniedOutsideParticipantScope,
     DeniedBudgetExhausted,
     IdempotencyKeyConflict,
@@ -240,10 +237,7 @@ impl ParticipantLedger {
         Ok(CommitOutcome::Committed(receipt))
     }
 
-    pub fn lookup(
-        &self,
-        idempotency_key: &str,
-    ) -> Result<Option<EffectReceipt>, LedgerError> {
+    pub fn lookup(&self, idempotency_key: &str) -> Result<Option<EffectReceipt>, LedgerError> {
         Ok(self.lock()?.receipts_by_key.get(idempotency_key).cloned())
     }
 }
@@ -251,10 +245,7 @@ impl ParticipantLedger {
 /// Verifies that an observed receipt is bound to the exact request fields.
 /// This checks consistency only; it does not establish observer independence,
 /// signature validity, or the truth of a remote resource state.
-pub fn verify_receipt_binding(
-    receipt: &EffectReceipt,
-    binding: &EffectBinding,
-) -> bool {
+pub fn verify_receipt_binding(receipt: &EffectReceipt, binding: &EffectBinding) -> bool {
     receipt.matches(binding)
         && receipt.state_revision == receipt.commit_sequence
         && receipt.commit_sequence > 0
@@ -510,11 +501,15 @@ mod tests {
     fn budget_is_debited_once_per_distinct_committed_effect() {
         let participant = ParticipantLedger::new(0, 1);
         assert!(matches!(
-            participant.commit(&binding("idem-1", "digest-1", 0)).unwrap(),
+            participant
+                .commit(&binding("idem-1", "digest-1", 0))
+                .unwrap(),
             CommitOutcome::Committed(_)
         ));
         assert_eq!(
-            participant.commit(&binding("idem-2", "digest-2", 0)).unwrap(),
+            participant
+                .commit(&binding("idem-2", "digest-2", 0))
+                .unwrap(),
             CommitOutcome::DeniedBudgetExhausted
         );
         assert_eq!(participant.remaining_budget().unwrap(), 0);
@@ -701,8 +696,7 @@ mod tests {
 
     #[test]
     fn shared_participant_budget_spans_relying_parties() {
-        let participant =
-            ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 9, 1);
+        let participant = ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 9, 1);
         let mut first_rp = binding("idem-rp-a", "digest-rp-a", 9);
         first_rp.relying_party = "rp-a".into();
         let mut second_rp = binding("idem-rp-b", "digest-rp-b", 9);
@@ -721,8 +715,7 @@ mod tests {
 
     #[test]
     fn scoped_participant_rejects_cross_tenant_or_resource_requests() {
-        let participant =
-            ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 2, 3);
+        let participant = ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 2, 3);
         let mut wrong_tenant = binding("idem-wrong-tenant", "digest-tenant", 2);
         wrong_tenant.tenant = "tenant-b".into();
         assert_eq!(
@@ -752,10 +745,7 @@ mod tests {
             Err(LedgerError::SequenceExhausted)
         );
         assert_eq!(participant.remaining_budget().unwrap(), 1);
-        assert_eq!(
-            participant.lookup("idem-sequence-overflow").unwrap(),
-            None
-        );
+        assert_eq!(participant.lookup("idem-sequence-overflow").unwrap(), None);
     }
 
 }
