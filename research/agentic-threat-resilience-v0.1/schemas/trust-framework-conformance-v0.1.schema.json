@@ -22,8 +22,8 @@
     },
     "cases": {
       "type": "array",
-      "minItems": 13,
-      "maxItems": 13,
+      "minItems": 14,
+      "maxItems": 14,
       "items": {
         "$ref": "#/$defs/case"
       }
@@ -107,7 +107,8 @@
         "mandate",
         "instruction_evidence",
         "consumption_events",
-        "expected"
+        "expected",
+        "evaluated_at"
       ],
       "properties": {
         "case_id": {
@@ -138,7 +139,8 @@
             "authority_budget_ceiling",
             "shared_ledger_id",
             "global_budget",
-            "rp_allocations"
+            "rp_allocations",
+            "max_status_age"
           ],
           "properties": {
             "instruction_method": {
@@ -179,6 +181,10 @@
               "additionalProperties": {
                 "$ref": "#/$defs/allocation"
               }
+            },
+            "max_status_age": {
+              "type": "integer",
+              "minimum": 0
             }
           }
         },
@@ -338,6 +344,9 @@
               ]
             }
           }
+        },
+        "evaluated_at": {
+          "type": "integer"
         }
       }
     }
