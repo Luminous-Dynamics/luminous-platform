@@ -1,0 +1,720 @@
+{
+  "profile": "luminous-wimse-agent-mandate-trust-framework-conformance-v0.1",
+  "source_draft": "draft-hulea-wimse-agent-mandate-01",
+  "status": "synthetic-trust-framework-conformance-not-protocol-implementation",
+  "cases": [
+    {
+      "case_id": "TF-001",
+      "family": "delegator-signature",
+      "description": "The delegator signs the exact mandate content; one shared-ledger consumption is within budget.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "qualified",
+        "decision": "allow"
+      }
+    },
+    {
+      "case_id": "TF-002",
+      "family": "delegator-signature",
+      "description": "The signature verifies but its subject digest identifies a different mandate.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "different-mandate-digest",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "invalid",
+        "budget_outcome": "qualified",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-003",
+      "family": "delegator-signature",
+      "description": "A generic payment approval is not a signature or approval over the exact mandate content.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "generic_approval",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": null,
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "invalid",
+        "budget_outcome": "qualified",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-004",
+      "family": "delegator-signature",
+      "description": "The signature subject is exact but the signer is not the delegator.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "other-person",
+        "signer_role": "other",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "invalid",
+        "budget_outcome": "qualified",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-005",
+      "family": "status",
+      "description": "The exact delegator instruction was withdrawn before the authorization decision.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "withdrawn",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "invalid",
+        "budget_outcome": "qualified",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-006",
+      "family": "status",
+      "description": "The instruction evidence status cannot be resolved within the Trust-Framework freshness window.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "unknown",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "indeterminate",
+        "budget_outcome": "qualified",
+        "decision": "unknown_reconciliation_required"
+      }
+    },
+    {
+      "case_id": "TF-007",
+      "family": "mandate-issuer-process",
+      "description": "A qualified, independently attested issuer process binds the exact mandate and delegator.",
+      "trust_framework": {
+        "instruction_method": "mandate_issuer_qualified_process",
+        "require_role_separation": true,
+        "budget_mode": "allocated_per_rp",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": null,
+        "global_budget": null,
+        "rp_allocations": {
+          "rp-one": {
+            "max_units": 1,
+            "ledger_id": "ledger-rp-one"
+          },
+          "rp-two": {
+            "max_units": 1,
+            "ledger_id": "ledger-rp-two"
+          }
+        }
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "issuer_process_attestation",
+        "signer": "audit-service-4",
+        "signer_role": "independent_assurance",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "qualified",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-rp-one",
+          "units": 1,
+          "state": "committed"
+        },
+        {
+          "sequence": 2,
+          "rp": "rp-two",
+          "request_id": "request-2",
+          "idempotency_key": "idem-2",
+          "ledger_id": "ledger-rp-two",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "qualified",
+        "decision": "allow"
+      }
+    },
+    {
+      "case_id": "TF-008",
+      "family": "mandate-issuer-process",
+      "description": "The Trust Framework requires a qualified issuer process, but the supplied issuer process evidence is unqualified.",
+      "trust_framework": {
+        "instruction_method": "mandate_issuer_qualified_process",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "issuer_process_attestation",
+        "signer": "audit-service-4",
+        "signer_role": "independent_assurance",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "unqualified",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "invalid",
+        "budget_outcome": "qualified",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-009",
+      "family": "shared-budget",
+      "description": "Two different RPs commit to different ledgers even though the Trust Framework declares one shared global budget.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        },
+        {
+          "sequence": 2,
+          "rp": "rp-two",
+          "request_id": "request-2",
+          "idempotency_key": "idem-2",
+          "ledger_id": "ledger-rp-two",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "invalid",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-010",
+      "family": "shared-budget",
+      "description": "Two RPs commit more units than the declared global budget allows, demonstrating double spend.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 1,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        },
+        {
+          "sequence": 2,
+          "rp": "rp-two",
+          "request_id": "request-2",
+          "idempotency_key": "idem-2",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "invalid",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-011",
+      "family": "per-rp-budget",
+      "description": "Two distinct RP budgets are explicitly allocated and each RP consumes within its own ledger.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "allocated_per_rp",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": null,
+        "global_budget": null,
+        "rp_allocations": {
+          "rp-one": {
+            "max_units": 1,
+            "ledger_id": "ledger-rp-one"
+          },
+          "rp-two": {
+            "max_units": 1,
+            "ledger_id": "ledger-rp-two"
+          }
+        }
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-rp-one",
+          "units": 1,
+          "state": "committed"
+        },
+        {
+          "sequence": 2,
+          "rp": "rp-two",
+          "request_id": "request-2",
+          "idempotency_key": "idem-2",
+          "ledger_id": "ledger-rp-two",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "qualified",
+        "decision": "allow"
+      }
+    },
+    {
+      "case_id": "TF-012",
+      "family": "unknown-outcome",
+      "description": "A first RP consumption is unknown; a second request is committed before the first is reconciled.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "unknown"
+        },
+        {
+          "sequence": 2,
+          "rp": "rp-two",
+          "request_id": "request-2",
+          "idempotency_key": "idem-2",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "invalid",
+        "decision": "deny"
+      }
+    },
+    {
+      "case_id": "TF-013",
+      "family": "unknown-outcome",
+      "description": "A pending unknown consumption remains unresolved, so no new commit is represented and authorization remains indeterminate.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {}
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "unknown"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "indeterminate",
+        "decision": "unknown_reconciliation_required"
+      }
+    }
+  ]
+}
