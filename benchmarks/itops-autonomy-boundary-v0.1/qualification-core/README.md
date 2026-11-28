@@ -40,8 +40,8 @@ The public source files at the base snapshot inspected for this work contain:
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
 | `effect_finality.rs` | 15 |
-| `memory_provenance.rs` | 20 |
-| **Total** | **59** |
+| `memory_provenance.rs` | 23 |
+| **Total** | **62** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
@@ -112,13 +112,16 @@ This establishes unit-testable state-machine semantics, not production atomicity
 - trusted, tainted, invalid and indeterminate memory classifications;
 - tenant/principal isolation, provenance completeness, max session age and revocation epoch checks;
 - monotonic taint inheritance for summaries and derived memory;
+- derived summaries require an opaque checked-lineage witness binding the derived ID/digest, exact parent ID/digest set, tenant/principal, inherited labels and authority epoch; the trusted store adapter supplies the authoritative parent index and records;
 - rejection of self-claimed trust escalation, including derived memory that inherits taint but labels itself system-verified;
 - P0 operation, scope, resource, recipient and authorized-actor checks;
 - memory cannot supply consent or delegated authority;
 - tainted sensitive export requires an independent approval digest equal to the exact Act-Bound action digest;
 - separate flag when a denied action nevertheless has an observed committed effect.
 
-The 20 Rust tests cover clean read utility, untrusted contextual use, 100-session persistence, derived taint loss/upgrade, trust-label spoofing, cross-tenant use, tombstone/unknown status, exact approval, memory-as-consent, unauthorized observed export, no-memory utility and action/actor scope substitution.
+The 23 Rust tests cover clean read utility, untrusted contextual use, 100-session persistence, derived taint loss/upgrade, trust-label spoofing, cross-tenant use, tombstone/unknown status, exact approval, memory-as-consent, unauthorized observed export, no-memory utility, action/actor scope substitution, missing lineage witness, exact parent-index binding, stale lineage epoch and source-kind/trust consistency.
+
+A `ValidatedDerivedLineage` is an opaque reference-model object; its fields cannot be populated directly by callers. `validate_derived_memory_lineage` checks that the derived record's parent IDs equal the independently supplied expected parent index, that every parent record is supplied exactly once, that parent tenant/principal and state/provenance are admissible, and that the child's inherited taint is exactly the union from those parent records. The witness binds child ID/digest, tenant/principal, parent IDs/digests, inherited labels and the authority epoch. A later epoch change invalidates the witness and requires rebuilding it. The memory-store adapter must source the parent index and parent records from its authenticated store; the Rust helper itself does not authenticate them or verify cryptographic signatures.
 
 This module complements the Python MPR-001..014 corpus; neither is an executed Trojan Hippo benchmark or a live memory store.
 
