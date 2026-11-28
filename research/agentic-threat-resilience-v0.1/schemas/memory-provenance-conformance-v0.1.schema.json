@@ -1,0 +1,357 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/memory-provenance-conformance-v0.1.schema.json",
+  "title": "ATR Memory Provenance Conformance Corpus v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "status",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-atr-memory-provenance-conformance-v0.1"
+    },
+    "status": {
+      "const": "synthetic-memory-provenance-contract-not-benchmark-execution"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "family",
+        "description",
+        "root_authority",
+        "memory",
+        "action",
+        "expected"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^MPR-[0-9]{3}$"
+        },
+        "family": {
+          "enum": [
+            "positive",
+            "untrusted-context",
+            "delayed-exfiltration",
+            "long-persistence",
+            "summary-laundering",
+            "trust-label-spoof",
+            "cross-tenant",
+            "tombstone-resurrection",
+            "unknown-status",
+            "exact-approval",
+            "memory-as-consent",
+            "observed-bypass",
+            "no-memory-control",
+            "cross-agent-derived-taint"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        },
+        "root_authority": {
+          "$ref": "#/$defs/root"
+        },
+        "memory": {
+          "$ref": "#/$defs/memory"
+        },
+        "action": {
+          "$ref": "#/$defs/action"
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      }
+    },
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal",
+        "tenant",
+        "allowed_operations",
+        "allowed_resources",
+        "allowed_recipients",
+        "max_memory_age_sessions",
+        "authority_epoch"
+      ],
+      "properties": {
+        "principal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_operations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "allowed_resources": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "allowed_recipients": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "max_memory_age_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "authority_epoch": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "content_digest",
+        "tenant",
+        "principal",
+        "source_kind",
+        "source_trust",
+        "claimed_trust",
+        "provenance_complete",
+        "state",
+        "taint_labels",
+        "parent_ids",
+        "parent_taint_labels",
+        "age_sessions",
+        "revocation_epoch"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_digest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "principal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_kind": {
+          "enum": [
+            "user_confirmed",
+            "system",
+            "untrusted_tool",
+            "derived_summary",
+            "none"
+          ]
+        },
+        "source_trust": {
+          "enum": [
+            "user_confirmed",
+            "system_verified",
+            "untrusted_external",
+            "derived"
+          ]
+        },
+        "claimed_trust": {
+          "enum": [
+            "user_confirmed",
+            "system_verified",
+            "untrusted_external",
+            "derived"
+          ]
+        },
+        "provenance_complete": {
+          "type": "boolean"
+        },
+        "state": {
+          "enum": [
+            "active",
+            "revoked",
+            "tombstoned",
+            "unknown"
+          ]
+        },
+        "taint_labels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parent_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parent_taint_labels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "age_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revocation_epoch": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor",
+        "tenant",
+        "operation",
+        "resource",
+        "recipient",
+        "effect",
+        "requested_scope",
+        "uses_memory_as_authority",
+        "requires_approval",
+        "approval_state",
+        "approval_digest",
+        "action_digest",
+        "observed_effect"
+      ],
+      "properties": {
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recipient": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effect": {
+          "enum": [
+            "none",
+            "protected_mutation",
+            "sensitive_export"
+          ]
+        },
+        "requested_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uses_memory_as_authority": {
+          "type": "boolean"
+        },
+        "requires_approval": {
+          "type": "boolean"
+        },
+        "approval_state": {
+          "enum": [
+            "not_required",
+            "missing",
+            "verified",
+            "invalid",
+            "unknown"
+          ]
+        },
+        "approval_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "action_digest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_effect": {
+          "enum": [
+            "none",
+            "committed"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_classification",
+        "authorization",
+        "unauthorized_effect"
+      ],
+      "properties": {
+        "memory_classification": {
+          "enum": [
+            "trusted",
+            "tainted",
+            "invalid",
+            "indeterminate"
+          ]
+        },
+        "authorization": {
+          "enum": [
+            "allow",
+            "deny"
+          ]
+        },
+        "unauthorized_effect": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
