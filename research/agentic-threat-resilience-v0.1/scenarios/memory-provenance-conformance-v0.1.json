@@ -22,7 +22,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -81,7 +85,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -142,7 +150,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -203,7 +215,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -264,7 +280,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -327,7 +347,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -388,7 +412,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -447,7 +475,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -508,7 +540,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -569,7 +605,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -630,7 +670,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -691,7 +735,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
@@ -752,7 +800,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "none",
@@ -811,7 +863,11 @@
           "trusted-recipient"
         ],
         "max_memory_age_sessions": 100,
-        "authority_epoch": 4
+        "authority_epoch": 4,
+        "allowed_scopes": [
+          "inbox:read",
+          "account:export"
+        ]
       },
       "memory": {
         "id": "mem-1",
