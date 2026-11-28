@@ -310,8 +310,7 @@ impl ParticipantLedger {
             if existing != binding {
                 return Ok(CommitOutcome::IdempotencyKeyConflict);
             }
-            // Only the exact binding may consume a terminal not-accepted marker.
-            state.aborted_by_key.remove(&binding.idempotency_key);
+            // Preserve the terminal marker until every admission check passes.
         }
 
         if let Some((tenant, resource)) = &state.participant_scope {
@@ -341,6 +340,9 @@ impl ParticipantLedger {
         if state.remaining_budget <= state.reserved_budget {
             return Ok(CommitOutcome::DeniedBudgetExhausted);
         }
+
+        // A terminal marker is consumed only once the exact retry is admitted.
+        state.aborted_by_key.remove(&binding.idempotency_key);
 
         // Complete fallible counter arithmetic before mutating budget.
         let sequence = state.next_commit_sequence;
@@ -409,7 +411,6 @@ impl ParticipantLedger {
             if existing != binding {
                 return Ok(CommitOutcome::IdempotencyKeyConflict);
             }
-            state.aborted_by_key.remove(&binding.idempotency_key);
         }
 
         if let Some((tenant, resource)) = &state.participant_scope {
@@ -437,6 +438,8 @@ impl ParticipantLedger {
             return Ok(CommitOutcome::DeniedBudgetExhausted);
         }
 
+        // Consume the exact terminal marker only when reserving this retry.
+        state.aborted_by_key.remove(&binding.idempotency_key);
         state.reserved_budget += 1;
         state.pending_by_key.insert(
             binding.idempotency_key.clone(),
