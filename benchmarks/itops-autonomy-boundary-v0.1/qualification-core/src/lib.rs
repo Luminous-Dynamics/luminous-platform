@@ -11,4 +11,5 @@
 
 pub mod delegation;
 pub mod effect_finality;
+pub mod memory_provenance;
 pub mod root_reanchor;
