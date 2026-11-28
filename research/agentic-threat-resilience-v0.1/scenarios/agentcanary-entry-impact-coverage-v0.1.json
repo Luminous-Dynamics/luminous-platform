@@ -88,7 +88,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E1-I2",
@@ -97,7 +102,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E1-I3",
@@ -106,7 +116,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E1-I4",
@@ -115,7 +130,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E1-I5",
@@ -124,7 +144,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E1-I6",
@@ -133,7 +158,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E1-I7",
@@ -142,7 +172,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I1",
@@ -151,7 +186,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I2",
@@ -160,7 +200,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I3",
@@ -169,7 +214,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I4",
@@ -178,7 +228,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I5",
@@ -187,7 +242,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I6",
@@ -196,7 +256,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E2-I7",
@@ -205,7 +270,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I1",
@@ -214,7 +284,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I2",
@@ -223,7 +298,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I3",
@@ -232,7 +312,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I4",
@@ -241,7 +326,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I5",
@@ -250,7 +340,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I6",
@@ -259,7 +354,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E3-I7",
@@ -268,7 +368,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I1",
@@ -277,7 +382,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I2",
@@ -286,7 +396,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I3",
@@ -295,7 +410,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I4",
@@ -304,7 +424,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I5",
@@ -313,7 +438,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I6",
@@ -322,7 +452,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E4-I7",
@@ -331,7 +466,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I1",
@@ -340,7 +480,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I2",
@@ -349,7 +494,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I3",
@@ -358,7 +508,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I4",
@@ -367,7 +522,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I5",
@@ -376,7 +536,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I6",
@@ -385,7 +550,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     },
     {
       "cell_id": "E5-I7",
@@ -394,7 +564,12 @@
       "coverage_state": "uncovered",
       "upstream_task_ids": [],
       "atr_observer_profile": null,
-      "notes": "No task has been independently qualified for this cell in this version."
+      "notes": "No task has been independently qualified for this cell in this version.",
+      "task_manifest_digest": null,
+      "run_manifest_id": null,
+      "native_result_artifact": null,
+      "atr_sidecar_artifact": null,
+      "independent_receipt_artifact": null
     }
   ]
 }
