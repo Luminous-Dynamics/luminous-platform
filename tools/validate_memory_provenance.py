@@ -41,7 +41,9 @@ def classify_memory(case: dict) -> tuple[str, list[str]]:
             errors.add("derived_memory_missing_parent")
         if not set(memory["parent_taint_labels"]).issubset(set(memory["taint_labels"])):
             errors.add("derived_memory_dropped_parent_taint")
-    if source_is_untrusted and memory["claimed_trust"] in ("user_confirmed", "system_verified"):
+    claims_trusted = memory["claimed_trust"] in ("user_confirmed", "system_verified")
+    has_taint = source_is_untrusted or bool(memory["taint_labels"])
+    if has_taint and claims_trusted:
         errors.add("untrusted_memory_trust_escalation")
     if memory["source_trust"] == "system_verified" and memory["source_kind"] == "untrusted_tool":
         errors.add("source_kind_trust_conflict")
@@ -63,6 +65,8 @@ def authorize(case: dict, memory_classification: str) -> tuple[str, list[str]]:
 
     if action["tenant"] != root["tenant"]:
         errors.add("action_tenant_mismatch")
+    if action["actor"] not in root["allowed_actors"]:
+        errors.add("actor_not_authorized_by_root")
     if action["operation"] not in root["allowed_operations"]:
         errors.add("operation_outside_root_policy")
     if action["resource"] not in root["allowed_resources"]:
@@ -126,6 +130,8 @@ def mutation_controls(cases: list[dict]) -> int:
     add("MPR-001", "effect-scope-expansion", lambda c: c["action"].update(operation="delete"), ("trusted", "deny", False))
     add("MPR-002", "cross-session-overage", lambda c: c["memory"].update(age_sessions=101), ("indeterminate", "deny", False))
     add("MPR-001", "scope-string-expansion", lambda c: c["action"].update(requested_scope="account:delete"), ("trusted", "deny", False))
+    add("MPR-014", "derived-trust-escalation", lambda c: c["memory"].update(claimed_trust="system_verified"), ("invalid", "deny", False))
+    add("MPR-001", "actor-substitution", lambda c: c["action"].update(actor="agent-attacker"), ("trusted", "deny", False))
 
     for label, case, expected in checks:
         actual = evaluate(case)[:3]
