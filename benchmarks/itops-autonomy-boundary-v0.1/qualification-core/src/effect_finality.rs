@@ -748,4 +748,51 @@ mod tests {
         assert_eq!(participant.lookup("idem-sequence-overflow").unwrap(), None);
     }
 
+    #[test]
+    fn concurrent_commit_and_revocation_have_one_linearized_outcome() {
+        let participant = Arc::new(ParticipantLedger::new(3, 1));
+        let start = Arc::new(Barrier::new(2));
+        let request = binding("idem-revocation-race", "digest-revocation-race", 3);
+
+        let commit_participant = Arc::clone(&participant);
+        let commit_start = Arc::clone(&start);
+        let commit_handle = thread::spawn(move || {
+            commit_start.wait();
+            commit_participant.commit(&request).unwrap()
+        });
+
+        let revoke_participant = Arc::clone(&participant);
+        let revoke_start = Arc::clone(&start);
+        let revoke_handle = thread::spawn(move || {
+            revoke_start.wait();
+            revoke_participant.revoke_and_advance_epoch().unwrap()
+        });
+
+        let outcome = commit_handle.join().unwrap();
+        assert_eq!(revoke_handle.join().unwrap(), 4);
+        assert_eq!(participant.current_authority_epoch().unwrap(), 4);
+
+        match outcome {
+            CommitOutcome::Committed(receipt) => {
+                assert_eq!(receipt.authority_epoch, 3);
+                assert_eq!(participant.remaining_budget().unwrap(), 0);
+                assert_eq!(
+                    participant.lookup("idem-revocation-race").unwrap(),
+                    Some(receipt)
+                );
+            }
+            CommitOutcome::DeniedStaleAuthorityEpoch {
+                presented: 3,
+                current: 4,
+            } => {
+                assert_eq!(participant.remaining_budget().unwrap(), 1);
+                assert_eq!(
+                    participant.lookup("idem-revocation-race").unwrap(),
+                    None
+                );
+            }
+            other => panic!("unexpected commit/revocation race outcome: {other:?}"),
+        }
+    }
+
 }
