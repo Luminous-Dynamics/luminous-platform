@@ -232,6 +232,16 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 - Independent observer compromise or correlated infrastructure failure can produce false assurance. Independence requires adversarial fault testing.
 - Cross-agent memory taint, queue ownership, service identity and state aliasing must be tested as graph paths, not merely as text labels.
 
+## 9.1 WIMSE mandate Trust-Framework conformance
+
+The separate `WIMSE_TRUST_FRAMEWORK_CONFORMANCE_PROFILE_V0_1.md` turns draft -01 Section 12.2 items 11 and 12 into a synthetic conformance contract:
+- 15 cases and 14 mutation controls for exact delegator-signed mandate content, qualified issuer process, role separation, withdrawal/supersession, evidence freshness, shared-global vs explicitly allocated per-RP budgets, concurrent overspend and unknown-outcome reconciliation.
+- Exact mandate-content digests remain opaque values supplied by the existing Act-Bound owner; the checker does not create a second production canonicalizer or signature verifier.
+- Shared participant budget tests are separate from per-RP allocation tests. A per-RP profile is accepted only with explicit Authority Source allocation and an allocation sum bounded by the authority ceiling.
+- A status marked active but checked outside the Trust Framework maximum-status-age is indeterminate, not current.
+
+The latest schema/checker/fixtures are in this PR branch. The exact-head hosted run is required before treating the conformance checker as CI-qualified; these fixtures remain synthetic even after a passing workflow.
+
 ## 10. References
 
 - OpenART benchmark landscape and complexity table: https://ai45lab.github.io/OpenART/benchmarks/
