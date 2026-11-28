@@ -330,7 +330,8 @@
             "first_state_consumption_id",
             "first_effect_id",
             "mutation_to_consumption_actions",
-            "consumption_to_effect_actions"
+            "consumption_to_effect_actions",
+            "denied_or_unauthorized_attempts"
           ],
           "properties": {
             "native_strict_asr": {
@@ -387,6 +388,10 @@
                 "integer",
                 "null"
               ],
+              "minimum": 0
+            },
+            "denied_or_unauthorized_attempts": {
+              "type": "integer",
               "minimum": 0
             }
           }
