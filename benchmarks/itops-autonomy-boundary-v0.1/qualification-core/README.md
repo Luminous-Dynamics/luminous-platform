@@ -39,9 +39,9 @@ The public source files at the base snapshot inspected for this work contain:
 |---|---:|
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
-| `effect_finality.rs` | 26 |
+| `effect_finality.rs` | 28 |
 | `memory_provenance.rs` | 23 |
-| **Total** | **73** |
+| **Total** | **75** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
@@ -104,7 +104,7 @@ predicate; that binding gap is tracked in
 - an explicit participant/ingress terminal not-accepted record or pending-abort record is required before the exact same request/idempotency key can be retried;
 - no new consequential request may replace an unknown or pending attempt;
 - a receipt-binding check rejects actor, RP, tenant, resource, operation, action-digest, preflight/commit evidence identity, resource-version, authority-epoch and idempotency-key substitution;
-- tests cover concurrent same-key requests, concurrent distinct requests sharing one budget, commit/revocation and commit/resource-version races, response loss with no terminal ingress proof, pending admission/finalization, revocation/resource changes during pending work, and reservation-aware budget admission;
+- tests cover concurrent same-key requests, concurrent distinct requests sharing one budget, commit/revocation and commit/resource-version races, response loss with no terminal ingress proof, pending admission/finalization, revocation/resource changes during pending work, reservation-aware budget admission, duplicate pending idempotency, and preservation of terminal abort markers when a retry remains denied;
 - empty evidence/resource bindings and sequence exhaustion are rejected before any budget debit.
 
 This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. The participant compares the expected resource revision and authority epoch under the same in-process mutex as idempotency, budget debit and receipt creation. The receipt binds the action digest, RP, tenant, resource, operation, resource version and monotonic revision, authority epoch, preflight evidence identity and commit-time evidence identity. A real adapter must use the protected resource's transaction or consensus boundary, persist both evidence snapshots and the idempotency journal, establish a terminal admission watermark before treating a request as not accepted, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
