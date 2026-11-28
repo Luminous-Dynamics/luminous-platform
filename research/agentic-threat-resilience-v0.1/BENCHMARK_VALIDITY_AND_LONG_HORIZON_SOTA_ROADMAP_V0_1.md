@@ -219,7 +219,7 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 
 ### Stage D — matched benchmark adapters
 - Run source-pinned MasDrift first because it directly tests multi-agent authorization preservation.
-- Add ACIArena next for cascading instruction injection across agent profiles/messages and different MAS implementations.
+- Add ACIArena next for cascading instruction injection across agent profiles/messages and different MAS implementations; the 3×3 adapter contract in `ACIARENA_ADAPTER_PROTOCOL_V0_1.md` requires all nine native surface/objective combinations and independent evidence.
 - Add AgentDyn as the dynamic helpful-instruction / false-positive utility control.
 - Apply the MetaPI-style adaptive-generation profile to held-out AppWorld / VitaBench / Terminal-Bench-like utility tasks only after native tasks and evaluator controls are frozen.
 - Add AgentLAB as the adaptive long-horizon attack adapter, preserving its 5 families / 28 environments / 644 cases and native ASR/T2S.
