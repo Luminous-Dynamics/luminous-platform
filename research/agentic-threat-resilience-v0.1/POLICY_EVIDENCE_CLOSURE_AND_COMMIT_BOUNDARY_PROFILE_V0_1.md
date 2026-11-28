@@ -8,7 +8,7 @@ A decision can be internally consistent yet wrong because a required fact was om
 
 ## Design shift: authorization decisions require evidence closure
 
-A policy's dependency set must be explicit and versioned. Every evaluated predicate must declare all facts it consumes. A decision is usable only when:
+A policy's dependency set must be explicit and versioned. Every evaluated predicate must declare all facts it consumes through executable conditions over source fact values; a caller-supplied `allow` / `deny` result bit is not an oracle. The reference checker supports `equals` and `not_equals` conditions and derives each predicate outcome from the exact source fact. A decision is usable only when:
 - the predicate dependency set exactly matches the policy's declared dependency manifest;
 - every required fact is supplied exactly once;
 - each fact comes from an accepted source, has source-authenticated trust, a source version, an observation time and an active status;
@@ -16,7 +16,7 @@ A policy's dependency set must be explicit and versioned. Every evaluated predic
 - actor, principal, tenant and resource match the resolved authority context;
 - the decision binds the same opaque Act-Bound request digest and evidence-bundle identity later presented to the participant.
 
-Missing, duplicate-conflicting, stale, candidate-only, revoked or unresolved facts yield **indeterminate**, not allow. A preflight allow is not a commit permit: the participant revalidates dynamic dependencies, resource version, authority epoch and exact action/evidence identities at the commit boundary.
+Missing, duplicate-conflicting, stale, candidate-only, revoked or unresolved facts yield **indeterminate**, not allow. A preflight allow is not a commit permit: the participant revalidates a second source-fact snapshot, dynamic dependencies, resource version, authority epoch and exact action/evidence identities at the commit boundary. Preflight and commit-time evidence have distinct bundle identities: the participant binds the exact preflight bundle reference and the newly evaluated commit-time bundle separately; the effect receipt must bind the commit-time bundle. A legitimate context change can therefore produce a `safe_abort`, distinct from an avoidable utility failure.
 
 ## Separate correctness axes
 
@@ -30,9 +30,9 @@ An LLM judge is auxiliary dialogue annotation. It cannot override an unauthorize
 
 ## Synthetic corpus
 
-The 20 cases PEV-001..020 cover complete allowed writes, missing authentication/order facts, stale data, candidate-supplied claims, hidden dependencies, prohibited commits, action/evidence substitution, actor/tenant substitution, authority/resource drift, under-action, unknown outcomes, unsafe retry, safe refusal, judge disagreement, effect without participant receipt, conflicting source facts and read-only utility.
+The 24 cases PEV-001..024 cover complete allowed writes, missing authentication/order facts, stale data, candidate-supplied claims, hidden dependencies, prohibited commits, action/evidence substitution, actor/tenant substitution, authority/resource drift, under-action, unknown outcomes, unsafe retry, safe refusal, judge disagreement, effect without participant receipt, conflicting source facts, read-only utility, commit-time order-state changes, commit-time evidence unavailability and a participant that ignores a changed predicate.
 
-The reference checker also runs 16 one-field mutations. These tests verify the synthetic contract only; they do not perform cryptographic hashing, signature verification, source authentication or real resource observation.
+The reference checker runs 21 one-field mutation controls. It validates two separate evidence bundles (preflight and commit), derives predicates directly from fact values, evaluates source/freshness at both stages, and binds the observed effect to the commit-time evidence identity. These tests verify the synthetic contract only; they do not perform cryptographic hashing, signature verification, source authentication or real resource observation.
 
 Files: `schemas/policy-evidence-closure-corpus-v0.1.schema.json`, `scenarios/policy-evidence-closure-corpus-v0.1.json`, `tools/validate_policy_evidence_closure.py`, and `.github/workflows/atr-policy-evidence-closure.yml`.
 
