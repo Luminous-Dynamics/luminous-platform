@@ -65,17 +65,17 @@ The included checker models these rules on ordered synthetic events. It is not a
 
 ## 4. Synthetic corpus and exact-head checker
 
-The corpus has 14 cases:
+The corpus has 15 cases:
 - exact delegator signature, wrong digest, generic approval, wrong signer/role, withdrawal, unknown status;
 - qualified vs unqualified Mandate-Issuer process evidence;
 - shared ledger success, divergent ledger identity and over-budget concurrent commit;
 - explicitly allocated per-RP success and missing allocation;
-- unknown-consumption lock / retry race;
+- unknown-consumption lock / retry race, including a valid absent-reconciliation / same-key recovery path;
 - per-RP allocation greater than the Authority Source ceiling.
 
 The reference checker separately evaluates `instruction_outcome` and `budget_outcome`, then derives the RP decision. Signature/status and process-assurance fields are inputs from hypothetical upstream verifiers, not cryptographic operations performed by this program.
 
-Twelve adversarial mutation controls start from positive fixtures and alter exact mandate digest, signer/role, instruction status, process assurance, ledger identity, committed units, RP allocations, and unknown-outcome ordering.
+Fourteen adversarial mutation controls start from positive fixtures and alter exact mandate digest, signer/role, instruction status, process assurance, ledger identity, committed units, RP allocations, and unknown-outcome ordering.
 
 Files:
 - `schemas/trust-framework-conformance-v0.1.schema.json`
