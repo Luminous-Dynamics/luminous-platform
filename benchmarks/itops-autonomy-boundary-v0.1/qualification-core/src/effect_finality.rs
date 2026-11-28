@@ -94,6 +94,8 @@ impl EffectReceipt {
 pub enum CommitOutcome {
     Committed(EffectReceipt),
     AlreadyCommitted(EffectReceipt),
+    PendingAccepted,
+    AlreadyPending,
     DeniedStaleAuthorityEpoch { presented: u64, current: u64 },
     DeniedStaleResourceRevision {
         presented_version: String,
@@ -116,6 +118,11 @@ pub enum LedgerError {
     SequenceExhausted,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PendingRecord {
+    binding: EffectBinding,
+}
+
 #[derive(Debug)]
 struct LedgerState {
     /// Some means all new effects must target this exact tenant/resource.
@@ -125,7 +132,10 @@ struct LedgerState {
     resource_revision: u64,
     authority_epoch: u64,
     remaining_budget: u64,
+    reserved_budget: u64,
     next_commit_sequence: u64,
+    pending_by_key: BTreeMap<String, PendingRecord>,
+    aborted_by_key: BTreeMap<String, EffectBinding>,
     receipts_by_key: BTreeMap<String, EffectReceipt>,
 }
 
@@ -190,7 +200,10 @@ impl ParticipantLedger {
                 resource_revision: 0,
                 authority_epoch,
                 remaining_budget: mutation_budget,
+                reserved_budget: 0,
                 next_commit_sequence: 1,
+                pending_by_key: BTreeMap::new(),
+                aborted_by_key: BTreeMap::new(),
                 receipts_by_key: BTreeMap::new(),
             }),
         }
@@ -275,6 +288,22 @@ impl ParticipantLedger {
             };
         }
 
+        if let Some(existing) = state.pending_by_key.get(&binding.idempotency_key) {
+            return if existing.binding == *binding {
+                Ok(CommitOutcome::AlreadyPending)
+            } else {
+                Ok(CommitOutcome::IdempotencyKeyConflict)
+            };
+        }
+
+        if let Some(existing) = state.aborted_by_key.get(&binding.idempotency_key) {
+            if existing != binding {
+                return Ok(CommitOutcome::IdempotencyKeyConflict);
+            }
+            // Only the exact binding may consume a terminal not-accepted marker.
+            state.aborted_by_key.remove(&binding.idempotency_key);
+        }
+
         if let Some((tenant, resource)) = &state.participant_scope {
             if binding.tenant != *tenant || binding.resource != *resource {
                 return Ok(CommitOutcome::DeniedOutsideParticipantScope);
@@ -299,7 +328,7 @@ impl ParticipantLedger {
             });
         }
 
-        if state.remaining_budget == 0 {
+        if state.remaining_budget <= state.reserved_budget {
             return Ok(CommitOutcome::DeniedBudgetExhausted);
         }
 
@@ -458,6 +487,9 @@ impl EffectSession {
         self.state = match outcome {
             CommitOutcome::Committed(_) | CommitOutcome::AlreadyCommitted(_) => {
                 AttemptState::Committed
+            }
+            CommitOutcome::PendingAccepted | CommitOutcome::AlreadyPending => {
+                AttemptState::OutcomeUnknown
             }
             CommitOutcome::DeniedStaleAuthorityEpoch { .. }
             | CommitOutcome::DeniedStaleResourceRevision { .. }
