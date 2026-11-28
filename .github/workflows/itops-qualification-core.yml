@@ -37,8 +37,9 @@ jobs:
           test "$(grep -Ec '^    #\[test\]' src/delegation.rs)" -eq 15
           test "$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)" -eq 9
           test "$(grep -Ec '^    #\[test\]' src/effect_finality.rs)" -eq 15
+          test "$(grep -Ec '^    #\[test\]' src/memory_provenance.rs)" -eq 16
 
-      - name: Run delegation, root-reanchor and effect-finality tests
+      - name: Run delegation, root-reanchor, effect-finality and memory-provenance tests
         run: cargo test --locked --offline --all-targets
 
       - name: Run Clippy
@@ -56,7 +57,8 @@ jobs:
             echo "delegation_test_annotations=$(grep -Ec '^    #\[test\]' src/delegation.rs)"
             echo "root_reanchor_test_annotations=$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)"
             echo "effect_finality_test_annotations=$(grep -Ec '^    #\[test\]' src/effect_finality.rs)"
-            echo "scope=dependency-free policy and participant-finality reference models; no production participant/runtime qualification"
+            echo "memory_provenance_test_annotations=$(grep -Ec '^    #\[test\]' src/memory_provenance.rs)"
+            echo "scope=dependency-free policy, participant-finality and memory-provenance reference models; no production participant/runtime qualification"
           } | tee qualification-build-receipt.txt
 
       - name: Upload source qualification receipt
