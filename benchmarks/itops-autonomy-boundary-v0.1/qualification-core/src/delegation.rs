@@ -576,9 +576,9 @@ mod tests {
     fn child_cannot_expand_target_operation_or_data_scope() {
         let parent = parent_grant();
         let mut child = child_grant();
-        child.targets = set(&["service/api", "service/worker"]);
-        child.operations = set(&["read", "restart"]);
-        child.data_scopes = set(&["metrics", "service-config"]);
+        child.targets = set(&["service/api", "service/db"]);
+        child.operations = set(&["read", "destroy"]);
+        child.data_scopes = set(&["metrics", "secrets"]);
         let errors = check_attenuation(&parent, &child).unwrap_err();
         assert!(errors.contains(&AttenuationViolation::TargetScopeExpanded));
         assert!(errors.contains(&AttenuationViolation::OperationScopeExpanded));
