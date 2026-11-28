@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/agentcanary-entry-impact-coverage-v0.1.schema.json",
+  "title": "AgentCanary Entry × Impact Coverage Contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "upstream",
+    "semantics",
+    "cells"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-agentcanary-entry-impact-coverage-v0.1"
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit",
+        "paper",
+        "seed_task_count"
+      ],
+      "properties": {
+        "repository": {
+          "const": "inclusionAI/Agent3Sigma-Canary"
+        },
+        "commit": {
+          "const": "a03a36613feab18689d22b19243d8787d65f341d"
+        },
+        "paper": {
+          "const": "https://arxiv.org/abs/2606.10484"
+        },
+        "seed_task_count": {
+          "const": 496
+        }
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries",
+        "impacts",
+        "required_cell_count",
+        "coverage_states"
+      ],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/dimension"
+          }
+        },
+        "impacts": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "$ref": "#/$defs/dimension"
+          }
+        },
+        "required_cell_count": {
+          "const": 35
+        },
+        "coverage_states": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "uncovered",
+              "task_pinned",
+              "executed_native",
+              "atr_observed",
+              "independently_verified"
+            ]
+          }
+        }
+      }
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 35,
+      "maxItems": 35,
+      "items": {
+        "$ref": "#/$defs/cell"
+      }
+    }
+  },
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "upstream_label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "upstream_label": {
+          "type": "string"
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cell_id",
+        "entry_id",
+        "impact_id",
+        "coverage_state",
+        "upstream_task_ids",
+        "atr_observer_profile",
+        "notes"
+      ],
+      "properties": {
+        "cell_id": {
+          "type": "string",
+          "pattern": "^E[1-5]-I[1-7]$"
+        },
+        "entry_id": {
+          "type": "string",
+          "pattern": "^E[1-5]$"
+        },
+        "impact_id": {
+          "type": "string",
+          "pattern": "^I[1-7]$"
+        },
+        "coverage_state": {
+          "enum": [
+            "uncovered",
+            "task_pinned",
+            "executed_native",
+            "atr_observed",
+            "independently_verified"
+          ]
+        },
+        "upstream_task_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "atr_observer_profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
