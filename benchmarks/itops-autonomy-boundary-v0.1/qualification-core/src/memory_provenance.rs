@@ -59,6 +59,9 @@ pub struct MemoryRecord {
 pub struct RootMemoryPolicy {
     pub principal: String,
     pub tenant: String,
+    /// Actor/workload IDs already admitted by the existing identity and
+    /// delegation verifier. This field is not itself proof of identity and
+    /// does not create or widen authority.
     pub allowed_actors: BTreeSet<String>,
     pub allowed_operations: BTreeSet<String>,
     pub allowed_scopes: BTreeSet<String>,
@@ -628,6 +631,30 @@ mod tests {
         let result = evaluate_memory_action(&policy(), &clean_memory(), &action);
         assert_eq!(result.authorization, AuthorizationDecision::Deny);
         assert!(result.violations.contains(&MemoryViolation::ActorNotAuthorized));
+    }
+
+    #[test]
+    fn derived_summary_preserves_parent_taint_but_remains_context_usable() {
+        let mut memory = clean_memory();
+        memory.source_kind = MemorySourceKind::DerivedSummary;
+        memory.source_trust = MemoryTrust::Derived;
+        memory.claimed_trust = MemoryTrust::Derived;
+        memory.parent_ids = set(&["mem-parent"]);
+        memory.parent_taint_labels = set(&["external:email", "pii:finance"]);
+        memory.taint_labels = set(&["external:email", "pii:finance"]);
+        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Tainted);
+        assert_eq!(result.authorization, AuthorizationDecision::Allow);
+    }
+
+    #[test]
+    fn memory_older_than_profile_limit_is_indeterminate_and_denied() {
+        let mut memory = untrusted_memory();
+        memory.age_sessions = 101;
+        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Indeterminate);
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+        assert!(result.violations.contains(&MemoryViolation::MemoryTooOld));
     }
 
 }
