@@ -37,7 +37,7 @@ jobs:
           test "$(grep -Ec '^    #\[test\]' src/delegation.rs)" -eq 15
           test "$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)" -eq 9
           test "$(grep -Ec '^    #\[test\]' src/effect_finality.rs)" -eq 15
-          test "$(grep -Ec '^    #\[test\]' src/memory_provenance.rs)" -eq 18
+          test "$(grep -Ec '^    #\[test\]' src/memory_provenance.rs)" -eq 20
 
       - name: Run delegation, root-reanchor, effect-finality and memory-provenance tests
         run: cargo test --locked --offline --all-targets
