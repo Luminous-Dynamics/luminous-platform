@@ -1,7 +1,8 @@
 //! Synthetic participant-finality and unknown-outcome state machine.
 //!
 //! This module models the atomic decision boundary between current authority,
-//! an idempotent request binding, a budget debit and a durable effect receipt.
+//! resource revision, dual evidence identities, idempotency, budget debit and
+//! a durable effect receipt.
 //! It is a deterministic in-process reference model, not a distributed ledger,
 //! a production participant, a cryptographic verifier or an independent observer.
 //!
@@ -234,7 +235,9 @@ impl ParticipantLedger {
     /// Existing idempotency keys are reconciled before checking the current
     /// authority epoch: an exact retry retrieves the original outcome, not a
     /// second mutation. Reusing a key with different request fields is a hard
-    /// conflict. New keys require the exact current epoch and remaining budget.
+    /// conflict. New keys require the exact current authority epoch, resource
+    /// revision and remaining budget. The receipt preserves both evidence
+    /// bundle identities supplied by their existing owners.
     pub fn commit(&self, binding: &EffectBinding) -> Result<CommitOutcome, LedgerError> {
         if !binding.is_well_formed() {
             return Err(LedgerError::InvalidBinding);
@@ -566,6 +569,12 @@ mod tests {
         ));
         assert_eq!(
             participant.commit(&changed).unwrap(),
+            CommitOutcome::IdempotencyKeyConflict
+        );
+        let mut changed_evidence = first.clone();
+        changed_evidence.commit_evidence_digest = "commit-evidence-substituted".into();
+        assert_eq!(
+            participant.commit(&changed_evidence).unwrap(),
             CommitOutcome::IdempotencyKeyConflict
         );
         assert_eq!(participant.remaining_budget().unwrap(), 1);
