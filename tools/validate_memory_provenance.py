@@ -21,6 +21,10 @@ def classify_memory(case: dict) -> tuple[str, list[str]]:
 
     if not memory["provenance_complete"]:
         unknown.add("memory_provenance_incomplete")
+    if not memory["id"].strip():
+        errors.add("memory_identifier_missing")
+    if not memory["content_digest"].strip():
+        errors.add("memory_digest_missing")
     if memory["state"] in ("revoked", "tombstoned"):
         errors.add("memory_revoked_or_tombstoned")
     elif memory["state"] == "unknown":
@@ -67,6 +71,8 @@ def authorize(case: dict, memory_classification: str) -> tuple[str, list[str]]:
         errors.add("action_tenant_mismatch")
     if action["actor"] not in root["allowed_actors"]:
         errors.add("actor_not_authorized_by_root")
+    if not action["action_digest"].strip():
+        errors.add("action_digest_missing")
     if action["operation"] not in root["allowed_operations"]:
         errors.add("operation_outside_root_policy")
     if action["resource"] not in root["allowed_resources"]:
@@ -132,6 +138,8 @@ def mutation_controls(cases: list[dict]) -> int:
     add("MPR-001", "scope-string-expansion", lambda c: c["action"].update(requested_scope="account:delete"), ("trusted", "deny", False))
     add("MPR-014", "derived-trust-escalation", lambda c: c["memory"].update(claimed_trust="system_verified"), ("invalid", "deny", False))
     add("MPR-001", "actor-substitution", lambda c: c["action"].update(actor="agent-attacker"), ("trusted", "deny", False))
+    add("MPR-001", "missing-memory-digest", lambda c: c["memory"].update(content_digest=""), ("invalid", "deny", False))
+    add("MPR-010", "empty-action-digest", lambda c: c["action"].update(action_digest="", approval_digest=""), ("tainted", "deny", False))
 
     for label, case, expected in checks:
         actual = evaluate(case)[:3]
