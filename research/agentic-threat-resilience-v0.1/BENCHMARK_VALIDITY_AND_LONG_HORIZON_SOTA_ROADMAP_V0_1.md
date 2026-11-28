@@ -29,6 +29,7 @@ The numbers below describe what the source benchmarks report; they are not a cro
 | AgentHarm | Harmful user-intent compliance | 110 tasks / 440 augmented tasks | Resource commit and authorization provenance |
 | ASB | Broad tool-agent attack/defense coverage | 10 scenarios, 400+ tools, 27 attacks/defenses, multiple metrics | Principal-to-agent mandate chain and independently verified resource state |
 | MasDrift v3 | Multi-agent authorization preservation, handoffs and coordination | 600 tasks, 8 domains, 6 model configurations, 9 coordination conditions | Cross-domain Authority Assertion and participant effect finality |
+| Trojan Hippo Bench | Dormant persistent-memory payloads and memory-layer defenses | 5 sensitive topics, 4 memory backends + no-memory baseline, 5 defense settings, persistence 0–100 benign sessions; utility 7 flows × 4 tests | Memory provenance, monotonic taint, exact approval binding, tombstone propagation and independent exfiltration effects |
 | AgentLAB | Adaptive long-horizon attack susceptibility | 5 attack families, 28 environments, 644 security test cases; native ASR and turns-to-success | Independent authority lineage, commit-time admission and effect receipts |
 | DTap | Stateful desktop interaction and attack exposure | Median 15 tool calls in the OpenART comparison | Source-authorized delegation and independent protected-effect receipt |
 | OpenART | Long-horizon state evolution, environment poisoning and side-effect safety | 10K+ validated scenarios / 50 domains; release 10,150 tasks in 52 shards + 63,697 materialized tools; 15 agents × 5 models, 8 attack surfaces; median 97 tool calls, depth 32, parallel width 12.5, state-object count 96.5 | Formal authority lineage, mandate validation, principal entitlement, participant commit-time fence and effect receipts |
@@ -39,6 +40,7 @@ The numbers below describe what the source benchmarks report; they are not a cro
 - OpenART authors report over 10,000 validated stateful scenarios across 50 domains, with median task complexity of 97 tool calls, dependency depth 32 and parallel width 12.5. Its pinned upstream README (repository history pin 28 November 2026) describes 10,150 released task bundles in 52 shards and 63,697 materialized tools; the paper uses 15 target agents × 5 models and eight target-visible attack surfaces. The paper reports 85.0% pooled strict ASR (EMHA attacker) and 87.38% benign completion; strict ASR requires both deterministic evaluator and LLM judge. These are source-reported benchmark outcomes, not universal safety rates or Luminous results. The public benchmark landscape is descriptive, not a ranking. [OpenART benchmark landscape](https://ai45lab.github.io/OpenART/benchmarks/) and [paper](https://arxiv.org/abs/2608.00677).
 - MasDrift v3 is the coordination comparator already covered by `MASDRIFT_ADAPTER_PROTOCOL_V0_1.md`; its native task labels, defense arms and trace semantics must remain unmodified.
 - AgentLAB is the adaptive long-horizon attack comparator covered by `AGENTLAB_ADAPTER_PROTOCOL_V0_1.md`. Its five attack families, 28 environments, 644 cases, native ASR and average turns-to-success remain intact; its adaptive planner/attacker/verifier/judge versions must be pinned, not treated as objective ground truth.
+- Trojan Hippo Bench is the persistent-memory comparator covered by `TROJAN_HIPPO_ADAPTER_PROTOCOL_V0_1.md`; preserve its five topics, memory backends, defenses, 0–100 benign-session persistence splits, adaptive train/test separation and utility suites. Its adaptive attacker and semantic judge are pinned experimental components, not authority/effect oracles.
 - `draft-hulea-wimse-agent-mandate-01` is an individual Internet-Draft published 1 November 2026. It is not endorsed by the IETF and has no formal standing in the IETF standards process. Treat it as a moving research input, pin exact text, and re-evaluate on every revision. [Datatracker status](https://datatracker.ietf.org/doc/draft-hulea-wimse-agent-mandate/01/).
 - The validity audit demonstrates why reported F1, ASR, completion or model rankings cannot be quoted as generic "safety." [Validity audit](https://arxiv.org/abs/2607.28685).
 
@@ -212,6 +214,7 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 ### Stage D — matched benchmark adapters
 - Run source-pinned MasDrift first because it directly tests multi-agent authorization preservation.
 - Add AgentLAB as the adaptive long-horizon attack adapter, preserving its 5 families / 28 environments / 644 cases and native ASR/T2S.
+- Add Trojan Hippo as the persistent-memory adapter, preserving backend/defense/persistence axes and native utility suites; measure taint-to-effect provenance separately.
 - Add OpenART as a separately pinned long-horizon evolving-state adapter using `OPENART_ADAPTER_PROTOCOL_V0_1.md`; preserve the hidden safety contract, target-visible evolution, deterministic + LLM-native scorer and raw trace/snapshot artifacts.
 - Run native upstream scorers unchanged, then ATR sidecar.
 - Expand held-out attack families only after reproducible execution and independent evaluator checks.
@@ -245,6 +248,10 @@ The latest schema/checker/fixtures are in this PR branch. The exact-head hosted 
 ## 10. References
 
 - OpenART benchmark landscape and complexity table: https://ai45lab.github.io/OpenART/benchmarks/
+- Trojan Hippo paper v4: https://arxiv.org/abs/2605.01970
+- Trojan Hippo Bench, AISec 2026: https://doi.org/10.1145/3847352.3848090
+- draft-han-bmwg-agent-security-benchmark-00: https://datatracker.ietf.org/doc/draft-han-bmwg-agent-security-benchmark/
+- ATR broad methodology crosswalk: `AGENT_SECURITY_BENCHMARK_CROSSWALK_V0_1.md`.
 - Chen et al., OpenART: Scaling Agent Red Teaming via Open-Ended Environment Evolution: https://arxiv.org/abs/2608.00677
 - Wang et al., Safety, or Just Capability? A Validity Audit of Agent-Safety Benchmarks: https://arxiv.org/abs/2607.28685
 - MasDrift v3: https://arxiv.org/abs/2608.07556
