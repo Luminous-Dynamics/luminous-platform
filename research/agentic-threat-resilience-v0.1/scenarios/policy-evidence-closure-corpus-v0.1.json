@@ -745,7 +745,7 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "effect_expected": "write"
+        "effect_expected": "none"
       },
       "policy": {
         "policy_id": "refund-policy",
