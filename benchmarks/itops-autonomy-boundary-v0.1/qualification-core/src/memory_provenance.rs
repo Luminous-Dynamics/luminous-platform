@@ -59,6 +59,7 @@ pub struct MemoryRecord {
 pub struct RootMemoryPolicy {
     pub principal: String,
     pub tenant: String,
+    pub allowed_actors: BTreeSet<String>,
     pub allowed_operations: BTreeSet<String>,
     pub allowed_scopes: BTreeSet<String>,
     pub allowed_resources: BTreeSet<String>,
@@ -126,6 +127,7 @@ pub enum MemoryViolation {
     RevokedOrTombstoned,
     StatusUnresolved,
     SubjectOrTenantMismatch,
+    ActorNotAuthorized,
     MemoryTooOld,
     RevocationEpochStale,
     EmptyMemoryHasProvenance,
@@ -215,7 +217,8 @@ pub fn classify_memory(
         memory.claimed_trust,
         MemoryTrust::UserConfirmed | MemoryTrust::SystemVerified
     );
-    if source_is_untrusted && claims_trusted {
+    let has_taint = source_is_untrusted || !memory.taint_labels.is_empty();
+    if has_taint && claims_trusted {
         insert_once(&mut invalid, MemoryViolation::TrustEscalation);
     }
     if memory.source_kind == MemorySourceKind::UntrustedTool
@@ -270,6 +273,9 @@ pub fn authorize_memory_influenced_action(
     }
     if action.tenant != policy.tenant {
         insert_once(&mut violations, MemoryViolation::ActionTenantMismatch);
+    }
+    if action.actor.trim().is_empty() || !policy.allowed_actors.contains(&action.actor) {
+        insert_once(&mut violations, MemoryViolation::ActorNotAuthorized);
     }
     if action.operation.trim().is_empty()
         || !policy.allowed_operations.contains(&action.operation)
@@ -377,6 +383,7 @@ mod tests {
         RootMemoryPolicy {
             principal: "principal-7".into(),
             tenant: "tenant-a".into(),
+            allowed_actors: set(&["agent-7"]),
             allowed_operations: set(&["read", "lookup", "send"]),
             allowed_scopes: set(&["inbox:read", "account:export"]),
             allowed_resources: set(&["inbox", "account-4"]),
@@ -599,4 +606,28 @@ mod tests {
         assert_eq!(result.authorization, AuthorizationDecision::Deny);
         assert!(result.violations.contains(&MemoryViolation::ScopeOutsideRootPolicy));
     }
+    #[test]
+    fn derived_memory_cannot_upgrade_inherited_taint_to_user_confirmed() {
+        let mut memory = clean_memory();
+        memory.source_kind = MemorySourceKind::DerivedSummary;
+        memory.source_trust = MemoryTrust::Derived;
+        memory.claimed_trust = MemoryTrust::SystemVerified;
+        memory.parent_ids = set(&["mem-parent"]);
+        memory.parent_taint_labels = set(&["external:email"]);
+        memory.taint_labels = set(&["external:email"]);
+        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Invalid);
+        assert!(result.violations.contains(&MemoryViolation::TrustEscalation));
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+    }
+
+    #[test]
+    fn actor_outside_root_authorized_workloads_is_denied() {
+        let mut action = read_action();
+        action.actor = "agent-attacker".into();
+        let result = evaluate_memory_action(&policy(), &clean_memory(), &action);
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+        assert!(result.violations.contains(&MemoryViolation::ActorNotAuthorized));
+    }
+
 }
