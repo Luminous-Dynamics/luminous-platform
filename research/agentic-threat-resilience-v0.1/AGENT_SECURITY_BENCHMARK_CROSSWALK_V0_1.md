@@ -93,7 +93,7 @@ The evaluator must be isolated from the candidate. LLM judges can remain as benc
 
 ## 6. Immediate implementation mapping
 
-- PR #542 contains the authorization-assurance, causal graph, cross-domain mandate, Trust-Framework and benchmark adapter profiles.
+- PR #542 contains the authorization-assurance, causal graph, cross-domain mandate, Trust-Framework, persistent-memory and benchmark adapter profiles. Issue #551 tracks the executable memory-store/tombstone integration.
 - PR #548 contains the pure Rust delegation/root-reanchor predicates and the synthetic participant-finality reference model.
 - #540 remains the first executable runner milestone: an isolated synthetic resource, candidate/evaluator separation, participant enforcement, fault injection and independent effect receipt.
 - #550 tracks WIMSE Trust-Framework Section 12.2 item 11 (instruction evidence) and item 12 (shared vs allocated RP budgets).
