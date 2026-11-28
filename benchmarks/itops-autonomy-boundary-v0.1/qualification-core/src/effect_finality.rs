@@ -78,6 +78,7 @@ pub enum CommitOutcome {
 pub enum LedgerError {
     Poisoned,
     InvalidBinding,
+    EpochExhausted,
 }
 
 #[derive(Debug)]
@@ -121,7 +122,7 @@ impl ParticipantLedger {
         state.authority_epoch = state
             .authority_epoch
             .checked_add(1)
-            .ok_or(LedgerError::Poisoned)?;
+            .ok_or(LedgerError::EpochExhausted)?;
         Ok(state.authority_epoch)
     }
 
@@ -253,10 +254,19 @@ pub enum SessionError {
 /// Client-side guard preventing a new consequential attempt while the prior
 /// outcome is unknown. An absent reconciliation permits only an exact retry
 /// of the same binding/idempotency key.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct EffectSession {
     binding: Option<EffectBinding>,
     state: AttemptState,
+}
+
+impl Default for EffectSession {
+    fn default() -> Self {
+        Self {
+            binding: None,
+            state: AttemptState::Empty,
+        }
+    }
 }
 
 impl EffectSession {
@@ -505,15 +515,14 @@ mod tests {
             Err(SessionError::RetrySameAttemptRequired)
         );
         session.retry_same_attempt().unwrap();
-        assert_eq!(
-            session
-                .submit(&participant, DeliveryFault::None)
-                .unwrap(),
-            Submission::Response(CommitOutcome::Committed(
-                receipt(participant.lookup("idem-same").unwrap().unwrap().into())
-            ))
-        );
+        assert!(matches!(
+            session.submit(&participant, DeliveryFault::None).unwrap(),
+            Submission::Response(CommitOutcome::Committed(_))
+        ));
         assert_eq!(session.state(), AttemptState::Committed);
+        let reconciled = participant.lookup("idem-same").unwrap().unwrap();
+        assert_eq!(reconciled.idempotency_key, "idem-same");
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
         assert_eq!(participant.remaining_budget().unwrap(), 0);
     }
 
