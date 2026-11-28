@@ -59,10 +59,14 @@ def evaluate_instruction(case: dict) -> tuple[str, list[str]]:
         indeterminate.add("instruction_status_unresolved")
     elif evidence["status"] == "not_applicable":
         invalid.add("instruction_status_required")
-    if evidence["checked_at"] >= evidence["expires_at"]:
+    if evidence["checked_at"] > case["evaluated_at"]:
+        invalid.add("instruction_status_observation_future_dated")
+    if case["evaluated_at"] >= evidence["expires_at"]:
         invalid.add("instruction_evidence_expired")
     if evidence["expires_at"] <= 0:
         invalid.add("instruction_evidence_invalid_expiry")
+    if case["evaluated_at"] - evidence["checked_at"] > tf["max_status_age"]:
+        indeterminate.add("instruction_status_observation_stale")
 
     codes = sorted(invalid | indeterminate)
     if invalid:
@@ -181,6 +185,8 @@ def run_mutation_controls(cases: list[dict]) -> int:
         mutate(item)
         mutations.append((label, item, want_instruction, want_budget))
 
+    changed("TF-001", "expired-at-evaluation", lambda c: c.update(evaluated_at=c["instruction_evidence"]["expires_at"]), "invalid", "qualified")
+    changed("TF-001", "status-observation-stale", lambda c: c.update(evaluated_at=c["instruction_evidence"]["checked_at"] + c["trust_framework"]["max_status_age"] + 1), "indeterminate", "qualified")
     changed("TF-001", "wrong-exact-digest", lambda c: c["instruction_evidence"].update(subject_digest="other"), "invalid", "qualified")
     changed("TF-001", "wrong-delegator-signer", lambda c: c["instruction_evidence"].update(signer="other", signer_role="other"), "invalid", "qualified")
     changed("TF-001", "withdrawn-instruction", lambda c: c["instruction_evidence"].update(status="withdrawn"), "invalid", "qualified")
@@ -219,8 +225,8 @@ def main() -> None:
     ids = [case["case_id"] for case in cases]
     if len(ids) != len(set(ids)):
         raise SystemExit("duplicate case IDs")
-    if len(cases) != 13:
-        raise SystemExit(f"expected 13 cases, got {len(cases)}")
+    if len(cases) != 14:
+        raise SystemExit(f"expected 14 cases, got {len(cases)}")
 
     for case in cases:
         actual_instruction, instruction_codes = evaluate_instruction(case)
