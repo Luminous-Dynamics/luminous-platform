@@ -4,7 +4,7 @@ This directory is a standalone, dependency-free Rust library crate for the ITOPS
 
 - `delegation.rs`: strict edge-by-edge monotonic delegation attenuation;
 - `root_reanchor.rs`: root-authorized, exact-precommitted descendant task authorization, while retaining a narrower intermediate agent's local effect role;
-- `effect_finality.rs`: a synthetic participant commit-finality / unknown-outcome state machine with a mutex-serialized commit boundary, revocation epochs, idempotency conflict detection, shared RP budget debit and exact receipt-binding checks;
+- `effect_finality.rs`: a synthetic participant commit-finality / unknown-outcome state machine with a mutex-serialized commit boundary, authority-epoch and resource-version fencing, shared RP budget debit, dual evidence identities and exact receipt-binding checks;
 - `memory_provenance.rs`: typed memory-source/trust/taint classification, monotonic derived-memory taint, tombstone/status handling, source-anchored scope checks and exact-action approval separation.
 
 The finality and memory-provenance modules are **reference models**, not a distributed/production participant, live memory backend, cryptographic verifier or independent observer. The crate does **not** contain the full benchmark catalogue loader, result-schema auditor, process-isolated runner, capability issuer, signed-token verifier, live participant PEP, distributed transaction service, or independent service observer. Those remain separate work items tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213), [issue #540](https://github.com/Luminous-Dynamics/luminous-platform/issues/540), and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
@@ -39,9 +39,9 @@ The public source files at the base snapshot inspected for this work contain:
 |---|---:|
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
-| `effect_finality.rs` | 15 |
+| `effect_finality.rs` | 19 |
 | `memory_provenance.rs` | 23 |
-| **Total** | **62** |
+| **Total** | **66** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
@@ -92,17 +92,19 @@ predicate; that binding gap is tracked in
 
 `effect_finality.rs` makes the commit boundary and unknown-outcome rules executable as a deterministic in-process model:
 
-- the participant checks the current authority epoch, idempotency key and mutation budget while holding one serialized commit lock;
+- the participant checks the current authority epoch, resource version, idempotency key and mutation budget while holding one serialized commit lock;
 - an exact duplicate request returns the original receipt without a second budget debit;
-- a different request reusing the same idempotency key is a conflict;
-- new mutations under an old authority epoch are denied, while effects that linearized before revocation remain historically committed;
+- a different request or evidence binding reusing the same idempotency key is a conflict;
+- new mutations under an old authority epoch or stale resource revision are denied, while effects that linearized before revocation/version change remain historically committed;
+- the effect binding and receipt carry both the preflight evidence identity and the commit-time evidence identity; the receipt also binds the exact resource revision;
 - response loss before or after participant processing enters `OutcomeUnknown`;
 - no new consequential request may replace an unknown attempt;
 - an authoritative absent reconciliation permits only retrying the original exact request and idempotency key;
-- a receipt-binding check rejects actor, tenant, resource, operation, action-digest, authority-epoch and idempotency-key substitution;
-- a concurrent same-key test exercises the in-process mutex boundary and proves one modeled effect / one budget debit under that model.
+- a receipt-binding check rejects actor, RP, tenant, resource, operation, action-digest, preflight/commit evidence identity, resource-version, authority-epoch and idempotency-key substitution;
+- tests cover concurrent same-key requests, concurrent distinct requests sharing one budget, and the commit/revocation and commit/resource-version races;
+- empty evidence/resource bindings and sequence exhaustion are rejected before any budget debit.
 
-This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. A real adapter must use the protected resource's transaction or consensus boundary, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
+This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. The participant compares the expected resource revision and authority epoch under the same in-process mutex as idempotency, budget debit and receipt creation. The receipt binds the action digest, RP, tenant, resource, operation, resource revision, authority epoch, preflight evidence identity and commit-time evidence identity. A real adapter must use the protected resource's transaction or consensus boundary, persist both evidence snapshots, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
 
 ## Memory provenance reference model
 
