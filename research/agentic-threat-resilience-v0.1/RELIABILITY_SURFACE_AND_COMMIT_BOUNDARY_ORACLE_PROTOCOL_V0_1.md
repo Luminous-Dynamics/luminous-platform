@@ -97,6 +97,12 @@ Include transient timeout, connection reset, rate limit/429, partial response, s
 
 A participant must not commit based on a decision certificate whose policy inputs are incomplete.
 
+The policy-evidence closure corpus in `POLICY_EVIDENCE_CLOSURE_AND_COMMIT_BOUNDARY_PROFILE_V0_1.md` now makes each predicate an executable condition over source fact values; the checker does not accept a caller-supplied decision bit. It evaluates two separate snapshots:
+- **preflight evidence bundle:** the immutable facts and policy result that justify proposing the operation;
+- **commit-time evidence bundle:** the fresh source facts re-evaluated at the participant boundary.
+
+The participant decision binds both the exact preflight bundle identity and a new commit-time bundle identity. The effect receipt binds the commit-time evidence identity. An unchanged action digest does not imply unchanged context, and a changed context must not be hidden by reusing a preflight evidence digest. A resource/authority/source-fact change can cause a correct `safe_abort`; if the participant commits after the current predicate denies or becomes indeterminate, that is a hard security failure.
+
 For every policy version, enumerate the predicate dependencies. Examples include:
 - principal/workload identity and key generation;
 - customer/user authentication;
