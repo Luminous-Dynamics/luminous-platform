@@ -57,10 +57,15 @@ No single benchmark covers the full lifecycle. ATR should preserve each benchmar
 |---|---|---|
 | AgentDojo / InjecAgent / AgentHarm | Tool-use injection and harmful compliance | Actual commit, authorization lineage and cross-tenant boundary |
 | AgentLAB (ICML 2026) | Adaptive long-horizon attacks: intent hijack, chaining, drift, task injection, memory poisoning | Exact authority/branch lineage and protected-resource effects |
+| ACIArena (ACL 2026) | Cascading injection across external inputs, agent profiles and inter-agent messages; 6 MAS implementations / 1,356 cases | Root/parent authority lineage, audience/task bindings and participant receipts |
+| AgentDyn | Dynamic open-ended tasks and helpful third-party instructions; 60 tasks / 560 injections | Dynamic replanning and security/utility false-positive boundary |
+| MetaPI (methodology) | Meta-benchmark generation from existing utility tasks with adaptive objectives/payloads | Frozen-task attack evolution, blind holdouts and independent effect oracles |
 | Trojan Hippo Bench (AISec 2026) | Dormant memory payloads, persistence up to 100 benign sessions, memory backends/defenses | Taint-preserving provenance, trust non-escalation, revocation/tombstones and exact approval |
 | MasDrift v3 | Multi-agent coordination and authorization preservation | Cross-domain Authority Assertions, workload identity and participant finality |
 | OpenART | Evolving stateful long-horizon execution and runtime attack surfaces | Root authority, commit-time fencing and independent causal effect receipt |
 | draft-han-bmwg-agent-security-benchmark-00 | Broad lifecycle metric/method framework (4 dimensions, 55 metrics) | Evidence-backed non-compensable gates, distinct attempt/execute/commit/observe states |
+
+Use MetaPI as a methodology, not a source benchmark: keep each upstream utility task, success condition and native scorer frozen while adapting injection points and payloads on training tasks only. ACIArena supplies cascading inter-agent injection coverage; AgentDyn adds helpful third-party instructions and dynamic replanning. Hold out task families, attack templates, agent implementations and model/runtime stacks. The independent participant/effect oracle must not be generated or judged by the adaptive attacker.
 
 The benchmark portfolio must be stratified by:
 - task horizon and dependency depth;
@@ -107,5 +112,11 @@ Do not make the first #540 vertical slice wait for complete integrations of Agen
 - AgentLAB, ICML 2026: https://proceedings.mlr.press/v306/jiang26as.html
 - Trojan Hippo Bench, AISec 2026: https://doi.org/10.1145/3847352.3848090
 - MasDrift v3: https://arxiv.org/abs/2608.07556
+- ACIArena, ACL 2026: https://aclanthology.org/2026.acl-long.457/
+- ACIArena code snapshot (no LICENSE file detected at pin): https://github.com/Greysahy/aciarena/tree/3f226a40cddf01a08b9f700cbef0031dfab2ff64
+- AgentDyn, arXiv:2602.03117: https://arxiv.org/abs/2602.03117
+- MetaPI, arXiv:2611.10026: https://arxiv.org/abs/2611.10026
+- ACIArena adapter: `ACIARENA_ADAPTER_PROTOCOL_V0_1.md`
+- Adaptive generation profile: `ADAPTIVE_BENCHMARK_EVOLUTION_PROFILE_V0_1.md`
 - OpenART benchmark landscape: https://ai45lab.github.io/OpenART/benchmarks/
 - ATR benchmark validity roadmap in this branch.
