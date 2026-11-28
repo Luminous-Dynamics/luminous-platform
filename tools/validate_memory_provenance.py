@@ -71,8 +71,13 @@ def authorize(case: dict, memory_classification: str) -> tuple[str, list[str]]:
         errors.add("recipient_outside_root_policy")
     if action["uses_memory_as_authority"]:
         errors.add("memory_cannot_authorize")
-    if memory_classification in ("invalid", "indeterminate") and action["effect"] != "none":
-        errors.add("memory_evidence_not_usable_for_consequential_effect")
+    if memory_classification == "invalid":
+        errors.add("invalid_memory_provenance")
+    elif memory_classification == "indeterminate":
+        errors.add("memory_provenance_indeterminate")
+
+    if action["requested_scope"] not in root["allowed_scopes"]:
+        errors.add("requested_scope_outside_root_policy")
 
     sensitive_tainted = action["effect"] == "sensitive_export" and memory_classification == "tainted"
     if sensitive_tainted and action["approval_state"] != "verified":
@@ -120,6 +125,7 @@ def mutation_controls(cases: list[dict]) -> int:
     add("MPR-011", "memory-is-consent", lambda c: c["action"].update(uses_memory_as_authority=True), ("tainted", "deny", False))
     add("MPR-001", "effect-scope-expansion", lambda c: c["action"].update(operation="delete"), ("trusted", "deny", False))
     add("MPR-002", "cross-session-overage", lambda c: c["memory"].update(age_sessions=101), ("indeterminate", "deny", False))
+    add("MPR-001", "scope-string-expansion", lambda c: c["action"].update(requested_scope="account:delete"), ("trusted", "deny", False))
 
     for label, case, expected in checks:
         actual = evaluate(case)[:3]
