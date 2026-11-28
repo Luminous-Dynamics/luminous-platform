@@ -139,7 +139,19 @@ For the declared high-impact profile:
 
 These are qualification targets, not universal security claims. Publish per-suite numerators/denominators, task-clustered confidence intervals, unknowns, exclusions and cost.
 
-## 7. Known integration limits
+## 7.1 Machine-checked 3×3 surface/objective coverage
+
+The synthetic coverage contract is published with this adapter:
+- `schemas/aciarena-coverage-contract-v0.1.schema.json`;
+- `scenarios/aciarena-coverage-contract-v0.1.json` — ACA-001..009, all 3 attack surfaces × 3 objectives;
+- `tools/validate_aciarena_coverage.py` — exact matrix/evidence checker with five mutation controls;
+- `.github/workflows/atr-aciarena-coverage.yml` — pinned schema/reference-contract workflow.
+
+Each combination requires source provenance, actor identity, tenant scope, task/plan binding, authority lineage, participant decision and independent effect observer. The objective-specific oracle is root task/plan immutability, task state/required-step correctness, or data-flow/egress receipt. The mutation controls remove a pair, duplicate a pair, drop observer evidence, substitute the objective oracle and remove authority lineage.
+
+These nine records define the completeness of the adapter mapping; they are not nine executed attacks or part of ACIArena's native 1,356-case result set.
+
+## 8. Known integration limits
 
 - The ACL paper specifies 1,356 cases and six MAS implementations; the public code README is intentionally minimal. The full benchmark matrix and trace semantics must be reconstructed from the pinned code/data before a reproduction claim.
 - `benchmark.py` uses a judge model and stores a native result record; the judge output is not a participant receipt.
