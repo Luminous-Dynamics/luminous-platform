@@ -108,7 +108,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-001:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -139,7 +139,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -147,7 +148,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-001:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -256,7 +258,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-002:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -278,7 +280,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -286,7 +289,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-002:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -395,7 +399,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-003:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -417,7 +421,8 @@
             "status": "active",
             "value": "true"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -425,7 +430,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-003:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -543,7 +549,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-004:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -574,7 +580,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -582,7 +589,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-004:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -700,7 +708,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-005:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -731,7 +739,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -739,7 +748,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-005:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -870,7 +880,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-006:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -901,7 +911,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -909,7 +920,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-006:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1027,7 +1039,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-007:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -1058,7 +1070,8 @@
             "status": "active",
             "value": "cancelled"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -1066,7 +1079,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-007:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1184,7 +1198,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:other-order:refund:v2",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-008:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -1215,7 +1229,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -1223,7 +1238,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:other-order:refund:v2"
+        "request_digest": "act:other-order:refund:v2",
+        "evidence_bundle_digest": "commit-evidence:PEV-008:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1341,7 +1357,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-009:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -1372,7 +1388,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -1380,7 +1397,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-009:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1498,7 +1516,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-010:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -1529,7 +1547,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -1537,7 +1556,8 @@
         "tenant": "tenant-other",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-010:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1655,7 +1675,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-011:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -1686,7 +1706,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -1694,7 +1715,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-011:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1812,7 +1834,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-012:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:33",
         "authority_epoch": 7,
@@ -1843,7 +1865,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -1851,7 +1874,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-012:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -1969,7 +1993,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-013:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2000,7 +2024,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -2008,7 +2033,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-013:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -2126,7 +2152,7 @@
         "attempted": true,
         "outcome": "unknown",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-014:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2157,7 +2183,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -2165,7 +2192,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-014:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -2283,7 +2311,7 @@
         "attempted": true,
         "outcome": "unknown",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-015:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2314,7 +2342,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -2322,7 +2351,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-015:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -2440,7 +2470,7 @@
         "attempted": false,
         "outcome": "not_attempted",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-016:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2471,7 +2501,8 @@
             "status": "active",
             "value": "cancelled"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -2479,7 +2510,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-016:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -2597,7 +2629,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-017:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2628,7 +2660,8 @@
             "status": "active",
             "value": "cancelled"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -2636,7 +2669,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-017:v1"
       },
       "llm_judge": "pass",
       "expected": {
@@ -2754,7 +2788,7 @@
         "attempted": false,
         "outcome": "not_attempted",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-018:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2785,7 +2819,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -2793,7 +2828,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-018:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -2920,7 +2956,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-019:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -2960,7 +2996,8 @@
             "status": "active",
             "value": "cancelled"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -2968,7 +3005,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-019:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -3086,7 +3124,7 @@
         "attempted": false,
         "outcome": "not_attempted",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-020:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -3117,7 +3155,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -3125,7 +3164,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-020:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -3243,7 +3283,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-021:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -3274,7 +3314,8 @@
             "status": "active",
             "value": "cancelled"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -3282,7 +3323,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-021:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -3400,7 +3442,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-022:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -3422,7 +3464,8 @@
             "status": "active",
             "value": "true"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -3430,7 +3473,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-022:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -3548,7 +3592,7 @@
         "attempted": true,
         "outcome": "committed",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-023:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -3579,7 +3623,8 @@
             "status": "active",
             "value": "cancelled"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": true,
@@ -3587,7 +3632,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-023:v1"
       },
       "llm_judge": "not_run",
       "expected": {
@@ -3705,7 +3751,7 @@
         "attempted": true,
         "outcome": "denied",
         "request_digest": "act:order-77:refund-10:v1",
-        "evidence_bundle_digest": "evidence:order-77:context-v32:authority-7",
+        "evidence_bundle_digest": "commit-evidence:PEV-024:v1",
         "resource_version": "orders-db:32",
         "current_resource_version": "orders-db:32",
         "authority_epoch": 7,
@@ -3736,7 +3782,8 @@
             "status": "active",
             "value": "paid"
           }
-        ]
+        ],
+        "preflight_evidence_bundle_digest": "evidence:order-77:context-v32:authority-7"
       },
       "effect": {
         "observed": false,
@@ -3744,7 +3791,8 @@
         "tenant": "tenant-shop-1",
         "resource": "order-77",
         "operation": "refund",
-        "request_digest": "act:order-77:refund-10:v1"
+        "request_digest": "act:order-77:refund-10:v1",
+        "evidence_bundle_digest": "commit-evidence:PEV-024:v1"
       },
       "llm_judge": "not_run",
       "expected": {
