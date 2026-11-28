@@ -36,6 +36,8 @@ The paper's core contribution is an orthogonal **risk-entry × risk-impact** mod
 
 This produces a **5 × 7 = 35-cell design space**, not an assertion that every cell is equally feasible, frequent or represented by an upstream task. The adapter must preserve upstream task assignments and independently mark ATR coverage as present, absent, not applicable or not yet instrumented. Never mark an uninstantiated matrix cell as tested.
 
+The machine-readable coverage contract is stored in `scenarios/agentcanary-entry-impact-coverage-v0.1.json`, constrained by `schemas/agentcanary-entry-impact-coverage-v0.1.schema.json`, and checked by `tools/validate_agentcanary_coverage.py` in `.github/workflows/atr-agentcanary-coverage.yml`. All 35 cells initialize to `uncovered`. A cell may only advance when the exact upstream task ID(s) and evidence profile are attached. `task_pinned` means only that a task is identified; `executed_native` means its upstream run completed; `atr_observed` means an ATR observer was applied; `independently_verified` requires a separately identified observer profile. Schema validity does not advance coverage state.
+
 The paper reports 496 seed evaluation tasks, which are subsequently strengthened by task-specific strategies, and evaluates 12 frontier models across three agent frameworks. The upstream README also documents a separate NARA-Bench integration of 1,800 imported tasks with a distinct toolset requirement. Keep the core 496-task suite and the NARA-Bench imported suite as separate benchmark strata; do not sum or merge their denominators without respecting their distinct task sources and execution constraints.
 
 ## 2. Native AgentCanary outputs (preserve unchanged)
