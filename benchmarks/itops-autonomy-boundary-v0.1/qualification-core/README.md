@@ -1,12 +1,13 @@
 # ITOPS qualification core — policy module crate
 
-This directory is a standalone, dependency-free Rust library crate for the ITOPS / ATR research. It contains three deliberately bounded reference modules:
+This directory is a standalone, dependency-free Rust library crate for the ITOPS / ATR research. It contains four deliberately bounded reference modules:
 
 - `delegation.rs`: strict edge-by-edge monotonic delegation attenuation;
 - `root_reanchor.rs`: root-authorized, exact-precommitted descendant task authorization, while retaining a narrower intermediate agent's local effect role;
-- `effect_finality.rs`: a synthetic participant commit-finality / unknown-outcome state machine with a mutex-serialized commit boundary, revocation epochs, idempotency conflict detection, budget debit, and exact receipt-binding checks.
+- `effect_finality.rs`: a synthetic participant commit-finality / unknown-outcome state machine with a mutex-serialized commit boundary, revocation epochs, idempotency conflict detection, shared RP budget debit and exact receipt-binding checks;
+- `memory_provenance.rs`: typed memory-source/trust/taint classification, monotonic derived-memory taint, tombstone/status handling, source-anchored scope checks and exact-action approval separation.
 
-The effect-finality module is a **reference model**, not a distributed/production participant, cryptographic receipt verifier or independent observer. The crate does **not** contain the full benchmark catalogue loader, result-schema auditor, process-isolated runner, capability issuer, signed-token verifier, live participant PEP, distributed transaction service, or independent service observer. Those remain separate work items tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213), [issue #540](https://github.com/Luminous-Dynamics/luminous-platform/issues/540), and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
+The finality and memory-provenance modules are **reference models**, not a distributed/production participant, live memory backend, cryptographic verifier or independent observer. The crate does **not** contain the full benchmark catalogue loader, result-schema auditor, process-isolated runner, capability issuer, signed-token verifier, live participant PEP, distributed transaction service, or independent service observer. Those remain separate work items tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213), [issue #540](https://github.com/Luminous-Dynamics/luminous-platform/issues/540), and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
 
 ## Public build closure
 
@@ -39,11 +40,12 @@ The public source files at the base snapshot inspected for this work contain:
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
 | `effect_finality.rs` | 15 |
-| **Total** | **39** |
+| `memory_provenance.rs` | 16 |
+| **Total** | **55** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
-all three module inventories, executes the full all-target test suite and
+all four module inventories, executes the full all-target test suite and
 Clippy, then emits a machine-readable receipt with source SHA, toolchain
 versions, Cargo.lock digest and test counts.
 
@@ -102,6 +104,24 @@ predicate; that binding gap is tracked in
 
 This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. A real adapter must use the protected resource's transaction or consensus boundary, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
 
+## Memory provenance reference model
+
+`memory_provenance.rs` adds typed Rust reference semantics for memory trust and action authorization:
+
+- user-confirmed/system-originated, untrusted-tool, derived-summary and no-memory source kinds;
+- trusted, tainted, invalid and indeterminate memory classifications;
+- tenant/principal isolation, provenance completeness, max session age and revocation epoch checks;
+- monotonic taint inheritance for summaries and derived memory;
+- rejection of self-claimed trust escalation, including derived memory that inherits taint but labels itself system-verified;
+- P0 operation, scope, resource, recipient and authorized-actor checks;
+- memory cannot supply consent or delegated authority;
+- tainted sensitive export requires an independent approval digest equal to the exact Act-Bound action digest;
+- separate flag when a denied action nevertheless has an observed committed effect.
+
+The 16 Rust tests cover clean read utility, untrusted contextual use, 100-session persistence, derived taint loss/upgrade, trust-label spoofing, cross-tenant use, tombstone/unknown status, exact approval, memory-as-consent, unauthorized observed export, no-memory utility and action/actor scope substitution.
+
+This module complements the Python MPR-001..014 corpus; neither is an executed Trojan Hippo benchmark or a live memory store.
+
 ## Explicit non-claims
 
 This crate is not a production issuer, token verifier, proof-of-possession
@@ -111,6 +131,8 @@ observations supplied to the pure predicates are not independently authenticated
 or proven fresh. The in-process `Mutex` is only the reference-model
 linearization point; it does not prove atomicity across processes, machines or
 failure domains. The receipt matcher checks field consistency, not signatures
-or observer independence. Unit-test annotations do not prove execution; rely
+or observer independence. The memory-provenance module does not implement a
+memory backend, signature verification, proof of distributed taint/tombstone
+propagation, or an external data-flow observer. Unit-test annotations do not prove execution; rely
 on the exact-head workflow result and its uploaded receipt before claiming the
 test suite passed.
