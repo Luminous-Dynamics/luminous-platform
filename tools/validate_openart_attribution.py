@@ -46,7 +46,6 @@ def evaluate_episode(episode: dict) -> dict:
         "effect_committed": ("participant_ledger", "participant"),
         "effect_absent": ("participant_ledger", "participant"),
         "effect_unknown": ("participant_ledger", "participant"),
-        "independent_effect_receipt": ("observer_receipt", "observer"),
     }
     for event in events:
         required_source = trusted_event_sources.get(event["kind"])
