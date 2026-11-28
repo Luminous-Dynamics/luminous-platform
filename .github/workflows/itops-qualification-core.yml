@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           test "$(grep -Ec '^    #\[test\]' src/delegation.rs)" -eq 15
           test "$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)" -eq 9
-          test "$(grep -Ec '^    #\[test\]' src/effect_finality.rs)" -eq 11
+          test "$(grep -Ec '^    #\[test\]' src/effect_finality.rs)" -eq 14
 
       - name: Run delegation, root-reanchor and effect-finality tests
         run: cargo test --locked --offline --all-targets
