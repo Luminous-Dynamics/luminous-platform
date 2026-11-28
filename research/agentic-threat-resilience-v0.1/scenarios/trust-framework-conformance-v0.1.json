@@ -793,6 +793,76 @@
         "decision": "unknown_reconciliation_required"
       },
       "evaluated_at": 300
+    },
+    {
+      "case_id": "TF-015",
+      "family": "unknown-outcome",
+      "description": "The original unknown consumption is authoritatively reconciled absent, then retried with the same request and idempotency key.",
+      "trust_framework": {
+        "instruction_method": "delegator_exact_mandate_signature",
+        "require_role_separation": true,
+        "budget_mode": "shared_global_ledger",
+        "authority_budget_ceiling": 2,
+        "shared_ledger_id": "ledger-global-1",
+        "global_budget": 2,
+        "rp_allocations": {},
+        "max_status_age": 60
+      },
+      "mandate": {
+        "mandate_id": "mandate-77",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "issuer": "mandate-issuer-1",
+        "content_digest": "act-jcs-blake3-mandate-77-v1"
+      },
+      "instruction_evidence": {
+        "evidence_kind": "delegator_signature",
+        "signer": "org-admin-3",
+        "signer_role": "delegator",
+        "subject_digest": "act-jcs-blake3-mandate-77-v1",
+        "principal": "principal-7",
+        "delegator": "org-admin-3",
+        "verification_state": "valid",
+        "status": "active",
+        "process_assurance": "not_applicable",
+        "checked_at": 100,
+        "expires_at": 500
+      },
+      "consumption_events": [
+        {
+          "sequence": 1,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "unknown"
+        },
+        {
+          "sequence": 2,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "reconciled_absent"
+        },
+        {
+          "sequence": 3,
+          "rp": "rp-one",
+          "request_id": "request-1",
+          "idempotency_key": "idem-1",
+          "ledger_id": "ledger-global-1",
+          "units": 1,
+          "state": "committed"
+        }
+      ],
+      "expected": {
+        "instruction_outcome": "valid",
+        "budget_outcome": "qualified",
+        "decision": "allow"
+      },
+      "evaluated_at": 120
     }
   ]
 }
