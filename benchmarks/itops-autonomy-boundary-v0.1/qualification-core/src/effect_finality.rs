@@ -1535,4 +1535,43 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn pending_resource_revision_change_aborts_and_releases_reservation() {
+        let participant = ParticipantLedger::new_scoped_versioned(
+            "tenant-a",
+            "ledger/account-4",
+            "orders-v32",
+            4,
+            1,
+        );
+        let mut request = binding("idem-pending-stale-resource", "digest-pending", 4);
+        request.resource_version = "orders-v32".into();
+        request.resource_revision = 0;
+
+        assert_eq!(
+            participant.accept_pending(&request).unwrap(),
+            CommitOutcome::PendingAccepted
+        );
+        assert_eq!(participant.reserved_budget().unwrap(), 1);
+        assert_eq!(
+            participant.advance_resource_version("orders-v33").unwrap(),
+            1
+        );
+        assert_eq!(
+            participant.finalize_pending("idem-pending-stale-resource").unwrap(),
+            CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: "orders-v32".into(),
+                current_version: "orders-v33".into(),
+                presented_revision: 0,
+                current_revision: 1
+            }
+        );
+        assert_eq!(participant.reserved_budget().unwrap(), 0);
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+        assert!(matches!(
+            participant.reconcile_attempt(&request).unwrap(),
+            ParticipantAttemptStatus::Aborted
+        ));
+    }
+
 }
