@@ -31,6 +31,8 @@ A generic approval, a signature over a similar but different mandate, or a valid
 
 A Trust Framework may instead define an auditable Mandate-Issuer process, with named controls, assurance level, independent process evidence, and role separation where required. The synthetic checker requires a qualified process attestation from the configured independent assurance role, bound to the exact mandate content and delegator/principal. This does not establish real issuer process quality; a real profile must specify audit scope, key management, status, incident response, retention and dispute resolution.
 
+Each evidence record also carries a status-check time and expiry. The RP evaluates it against an explicit Trust-Framework maximum status age. A fixture that merely labels an old observation `active` is still indeterminate when its check time exceeds that freshness bound; future-dated checks and expired evidence are invalid.
+
 For both profiles:
 - missing required evidence is invalid;
 - conflicting or unverifiable evidence is invalid or indeterminate according to the reason;
@@ -63,7 +65,7 @@ The included checker models these rules on ordered synthetic events. It is not a
 
 ## 4. Synthetic corpus and exact-head checker
 
-The corpus has 13 cases:
+The corpus has 14 cases:
 - exact delegator signature, wrong digest, generic approval, wrong signer/role, withdrawal, unknown status;
 - qualified vs unqualified Mandate-Issuer process evidence;
 - shared ledger success, divergent ledger identity and over-budget concurrent commit;
@@ -73,7 +75,7 @@ The corpus has 13 cases:
 
 The reference checker separately evaluates `instruction_outcome` and `budget_outcome`, then derives the RP decision. Signature/status and process-assurance fields are inputs from hypothetical upstream verifiers, not cryptographic operations performed by this program.
 
-Ten adversarial mutation controls start from positive fixtures and alter exact mandate digest, signer/role, instruction status, process assurance, ledger identity, committed units, RP allocations, and unknown-outcome ordering.
+Twelve adversarial mutation controls start from positive fixtures and alter exact mandate digest, signer/role, instruction status, process assurance, ledger identity, committed units, RP allocations, and unknown-outcome ordering.
 
 Files:
 - `schemas/trust-framework-conformance-v0.1.schema.json`
