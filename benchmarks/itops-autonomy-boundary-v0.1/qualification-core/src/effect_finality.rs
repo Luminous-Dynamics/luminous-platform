@@ -22,6 +22,12 @@ pub struct EffectBinding {
     /// Opaque digest supplied by the existing Act-Bound owner. This module
     /// never canonicalizes action data or computes a production digest.
     pub request_digest: String,
+    /// Opaque identity of the preflight evidence bundle.
+    pub preflight_evidence_digest: String,
+    /// Opaque identity of the fresh commit-time evidence bundle.
+    pub commit_evidence_digest: String,
+    /// Resource revision observed during preflight.
+    pub resource_version: String,
     pub actor: String,
     pub tenant: String,
     pub resource: String,
@@ -34,6 +40,9 @@ impl EffectBinding {
         !self.idempotency_key.trim().is_empty()
             && !self.relying_party.trim().is_empty()
             && !self.request_digest.trim().is_empty()
+            && !self.preflight_evidence_digest.trim().is_empty()
+            && !self.commit_evidence_digest.trim().is_empty()
+            && !self.resource_version.trim().is_empty()
             && !self.actor.trim().is_empty()
             && !self.tenant.trim().is_empty()
             && !self.resource.trim().is_empty()
@@ -47,6 +56,9 @@ pub struct EffectReceipt {
     pub idempotency_key: String,
     pub relying_party: String,
     pub request_digest: String,
+    pub preflight_evidence_digest: String,
+    pub commit_evidence_digest: String,
+    pub resource_version: String,
     pub actor: String,
     pub tenant: String,
     pub resource: String,
@@ -61,6 +73,9 @@ impl EffectReceipt {
         self.idempotency_key == binding.idempotency_key
             && self.relying_party == binding.relying_party
             && self.request_digest == binding.request_digest
+            && self.preflight_evidence_digest == binding.preflight_evidence_digest
+            && self.commit_evidence_digest == binding.commit_evidence_digest
+            && self.resource_version == binding.resource_version
             && self.actor == binding.actor
             && self.tenant == binding.tenant
             && self.resource == binding.resource
@@ -74,6 +89,7 @@ pub enum CommitOutcome {
     Committed(EffectReceipt),
     AlreadyCommitted(EffectReceipt),
     DeniedStaleAuthorityEpoch { presented: u64, current: u64 },
+    DeniedStaleResourceVersion { presented: String, current: String },
     DeniedOutsideParticipantScope,
     DeniedBudgetExhausted,
     IdempotencyKeyConflict,
@@ -83,6 +99,7 @@ pub enum CommitOutcome {
 pub enum LedgerError {
     Poisoned,
     InvalidBinding,
+    InvalidResourceVersion,
     EpochExhausted,
     SequenceExhausted,
 }
@@ -92,6 +109,7 @@ struct LedgerState {
     /// Some means all new effects must target this exact tenant/resource.
     /// None is retained for small legacy unit fixtures.
     participant_scope: Option<(String, String)>,
+    current_resource_version: String,
     authority_epoch: u64,
     remaining_budget: u64,
     next_commit_sequence: u64,
@@ -110,7 +128,7 @@ impl ParticipantLedger {
     /// Unscoped constructor retained for legacy policy tests. Participant
     /// adapters should prefer new_scoped.
     pub fn new(authority_epoch: u64, mutation_budget: u64) -> Self {
-        Self::build(None, authority_epoch, mutation_budget)
+        Self::build(None, "resource-v1".into(), authority_epoch, mutation_budget)
     }
 
     /// Creates a participant tied to one tenant/resource pair. All RPs that
@@ -124,6 +142,23 @@ impl ParticipantLedger {
     ) -> Self {
         Self::build(
             Some((tenant.into(), resource.into())),
+            "resource-v1".into(),
+            authority_epoch,
+            mutation_budget,
+        )
+    }
+
+    /// Creates a participant with an explicit protected-resource revision.
+    pub fn new_scoped_versioned(
+        tenant: impl Into<String>,
+        resource: impl Into<String>,
+        resource_version: impl Into<String>,
+        authority_epoch: u64,
+        mutation_budget: u64,
+    ) -> Self {
+        Self::build(
+            Some((tenant.into(), resource.into())),
+            resource_version.into(),
             authority_epoch,
             mutation_budget,
         )
@@ -131,12 +166,14 @@ impl ParticipantLedger {
 
     fn build(
         participant_scope: Option<(String, String)>,
+        current_resource_version: String,
         authority_epoch: u64,
         mutation_budget: u64,
     ) -> Self {
         Self {
             state: Mutex::new(LedgerState {
                 participant_scope,
+                current_resource_version,
                 authority_epoch,
                 remaining_budget: mutation_budget,
                 next_commit_sequence: 1,
@@ -164,6 +201,28 @@ impl ParticipantLedger {
 
     pub fn current_authority_epoch(&self) -> Result<u64, LedgerError> {
         Ok(self.lock()?.authority_epoch)
+    }
+
+    pub fn current_resource_version(&self) -> Result<String, LedgerError> {
+        Ok(self.lock()?.current_resource_version.clone())
+    }
+
+    /// Publish a new resource revision. Commit and revision changes share the
+    /// same lock, yielding one in-process ordering for a concurrent race.
+    pub fn advance_resource_version(
+        &self,
+        next_version: impl Into<String>,
+    ) -> Result<(), LedgerError> {
+        let next_version = next_version.into();
+        if next_version.trim().is_empty() {
+            return Err(LedgerError::InvalidResourceVersion);
+        }
+        let mut state = self.lock()?;
+        if next_version == state.current_resource_version {
+            return Err(LedgerError::InvalidResourceVersion);
+        }
+        state.current_resource_version = next_version;
+        Ok(())
     }
 
     pub fn remaining_budget(&self) -> Result<u64, LedgerError> {
@@ -204,6 +263,13 @@ impl ParticipantLedger {
             });
         }
 
+        if binding.resource_version != state.current_resource_version {
+            return Ok(CommitOutcome::DeniedStaleResourceVersion {
+                presented: binding.resource_version.clone(),
+                current: state.current_resource_version.clone(),
+            });
+        }
+
         if state.remaining_budget == 0 {
             return Ok(CommitOutcome::DeniedBudgetExhausted);
         }
@@ -222,6 +288,9 @@ impl ParticipantLedger {
             idempotency_key: binding.idempotency_key.clone(),
             relying_party: binding.relying_party.clone(),
             request_digest: binding.request_digest.clone(),
+            preflight_evidence_digest: binding.preflight_evidence_digest.clone(),
+            commit_evidence_digest: binding.commit_evidence_digest.clone(),
+            resource_version: binding.resource_version.clone(),
             actor: binding.actor.clone(),
             tenant: binding.tenant.clone(),
             resource: binding.resource.clone(),
@@ -361,6 +430,7 @@ impl EffectSession {
                 AttemptState::Committed
             }
             CommitOutcome::DeniedStaleAuthorityEpoch { .. }
+            | CommitOutcome::DeniedStaleResourceVersion { .. }
             | CommitOutcome::DeniedOutsideParticipantScope
             | CommitOutcome::DeniedBudgetExhausted
             | CommitOutcome::IdempotencyKeyConflict => AttemptState::Denied,
@@ -416,6 +486,9 @@ mod tests {
             idempotency_key: key.into(),
             relying_party: "rp-default".into(),
             request_digest: digest.into(),
+            preflight_evidence_digest: "preflight-evidence-v1".into(),
+            commit_evidence_digest: "commit-evidence-v1".into(),
+            resource_version: "resource-v1".into(),
             actor: "agent-7".into(),
             tenant: "tenant-a".into(),
             resource: "ledger/account-4".into(),
@@ -485,7 +558,8 @@ mod tests {
     fn same_key_with_different_request_is_a_conflict() {
         let participant = ParticipantLedger::new(0, 2);
         let first = binding("idem-1", "digest-1", 0);
-        let changed = binding("idem-1", "digest-2", 0);
+        let mut changed = binding("idem-1", "digest-2", 0);
+        changed.commit_evidence_digest = "commit-evidence-other".into();
         assert!(matches!(
             participant.commit(&first).unwrap(),
             CommitOutcome::Committed(_)
@@ -581,6 +655,15 @@ mod tests {
         let mut mutations = Vec::new();
         let mut changed = original.clone();
         changed.actor = "agent-other".into();
+        mutations.push(changed);
+        let mut changed = original.clone();
+        changed.preflight_evidence_digest = "preflight-evidence-other".into();
+        mutations.push(changed);
+        let mut changed = original.clone();
+        changed.commit_evidence_digest = "commit-evidence-other".into();
+        mutations.push(changed);
+        let mut changed = original.clone();
+        changed.resource_version = "resource-v99".into();
         mutations.push(changed);
         let mut changed = original.clone();
         changed.relying_party = "rp-other".into();
@@ -793,6 +876,129 @@ mod tests {
             }
             other => panic!("unexpected commit/revocation race outcome: {other:?}"),
         }
+    }
+
+    #[test]
+    fn resource_version_is_checked_at_the_commit_boundary() {
+        let participant = ParticipantLedger::new_scoped_versioned(
+            "tenant-a",
+            "ledger/account-4",
+            "orders-v32",
+            3,
+            1,
+        );
+        let mut stale = binding("idem-resource-old", "digest-old", 3);
+        stale.resource_version = "orders-v31".into();
+        assert_eq!(
+            participant.commit(&stale).unwrap(),
+            CommitOutcome::DeniedStaleResourceVersion {
+                presented: "orders-v31".into(),
+                current: "orders-v32".into()
+            }
+        );
+
+        let mut current = binding("idem-resource-current", "digest-current", 3);
+        current.resource_version = "orders-v32".into();
+        assert!(matches!(
+            participant.commit(&current).unwrap(),
+            CommitOutcome::Committed(_)
+        ));
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn resource_change_after_preflight_denies_old_request_without_debit() {
+        let participant = ParticipantLedger::new_scoped_versioned(
+            "tenant-a",
+            "ledger/account-4",
+            "orders-v32",
+            3,
+            1,
+        );
+        participant.advance_resource_version("orders-v33").unwrap();
+        let mut request = binding("idem-stale-order", "digest-order", 3);
+        request.resource_version = "orders-v32".into();
+        assert_eq!(
+            participant.commit(&request).unwrap(),
+            CommitOutcome::DeniedStaleResourceVersion {
+                presented: "orders-v32".into(),
+                current: "orders-v33".into()
+            }
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+        assert_eq!(participant.lookup("idem-stale-order").unwrap(), None);
+    }
+
+    #[test]
+    fn concurrent_commit_and_resource_change_have_one_linearized_outcome() {
+        let participant = Arc::new(ParticipantLedger::new_scoped_versioned(
+            "tenant-a",
+            "ledger/account-4",
+            "orders-v32",
+            3,
+            1,
+        ));
+        let start = Arc::new(Barrier::new(2));
+        let mut request = binding("idem-resource-race", "digest-race", 3);
+        request.resource_version = "orders-v32".into();
+
+        let commit_participant = Arc::clone(&participant);
+        let commit_start = Arc::clone(&start);
+        let commit_handle = thread::spawn(move || {
+            commit_start.wait();
+            commit_participant.commit(&request).unwrap()
+        });
+
+        let advance_participant = Arc::clone(&participant);
+        let advance_start = Arc::clone(&start);
+        let advance_handle = thread::spawn(move || {
+            advance_start.wait();
+            advance_participant.advance_resource_version("orders-v33").unwrap()
+        });
+
+        let outcome = commit_handle.join().unwrap();
+        advance_handle.join().unwrap();
+        assert_eq!(
+            participant.current_resource_version().unwrap(),
+            "orders-v33"
+        );
+
+        match outcome {
+            CommitOutcome::Committed(receipt) => {
+                assert_eq!(receipt.resource_version, "orders-v32");
+                assert_eq!(participant.remaining_budget().unwrap(), 0);
+                assert_eq!(
+                    participant.lookup("idem-resource-race").unwrap(),
+                    Some(receipt)
+                );
+            }
+            CommitOutcome::DeniedStaleResourceVersion { presented, current } => {
+                assert_eq!(presented, "orders-v32");
+                assert_eq!(current, "orders-v33");
+                assert_eq!(participant.remaining_budget().unwrap(), 1);
+                assert_eq!(participant.lookup("idem-resource-race").unwrap(), None);
+            }
+            other => panic!("unexpected resource-version race outcome: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn empty_evidence_or_resource_revision_bindings_are_rejected() {
+        let participant = ParticipantLedger::new(0, 1);
+        let mut missing_commit_evidence = binding("idem-no-evidence", "digest-x", 0);
+        missing_commit_evidence.commit_evidence_digest.clear();
+        assert_eq!(
+            participant.commit(&missing_commit_evidence),
+            Err(LedgerError::InvalidBinding)
+        );
+
+        let mut missing_revision = binding("idem-no-resource-version", "digest-y", 0);
+        missing_revision.resource_version.clear();
+        assert_eq!(
+            participant.commit(&missing_revision),
+            Err(LedgerError::InvalidBinding)
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
     }
 
 }
