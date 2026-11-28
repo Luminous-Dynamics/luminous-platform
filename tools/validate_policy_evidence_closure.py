@@ -20,6 +20,11 @@ def evaluate(case: dict) -> dict:
     predicate_dependencies = {
         name for predicate in policy["predicates"] for name in predicate["dependencies"]
     }
+    condition_facts = {
+        condition["fact"]
+        for predicate in policy["predicates"]
+        for condition in predicate["conditions"]
+    }
     issues: set[str] = set()
     facts_by_name: dict[str, list[dict]] = {}
     for fact in case["facts"]:
@@ -27,6 +32,8 @@ def evaluate(case: dict) -> dict:
 
     if predicate_dependencies != declared:
         issues.add("policy_dependency_manifest_incomplete_or_orphaned")
+    if condition_facts != predicate_dependencies:
+        issues.add("predicate_conditions_do_not_bind_declared_dependencies")
     if set(preflight["dependency_manifest"]) != declared:
         issues.add("preflight_dependency_manifest_mismatch")
 
@@ -66,13 +73,21 @@ def evaluate(case: dict) -> dict:
     if issues:
         derived_preflight = "indeterminate"
     else:
-        results = {predicate["result"] for predicate in policy["predicates"]}
-        if "deny" in results:
-            derived_preflight = "deny"
-        elif "unknown" in results:
-            derived_preflight = "indeterminate"
-        else:
-            derived_preflight = "allow"
+        predicate_outcomes = []
+        for predicate in policy["predicates"]:
+            condition_results = []
+            for condition in predicate["conditions"]:
+                fact = facts_by_name[condition["fact"]][0]
+                if condition["operator"] == "equals":
+                    condition_results.append(fact["value"] == condition["expected_value"])
+                elif condition["operator"] == "not_equals":
+                    condition_results.append(fact["value"] != condition["expected_value"])
+                else:
+                    raise SystemExit(
+                        f"unsupported policy operator {condition['operator']!r}"
+                    )
+            predicate_outcomes.append(all(condition_results))
+        derived_preflight = "deny" if not all(predicate_outcomes) else "allow"
 
     if preflight["decision"] != derived_preflight:
         issues.add("preflight_decision_does_not_match_evidence")
@@ -170,6 +185,11 @@ def run_mutations(cases: list[dict]) -> int:
 
     mutate("PEV-001", "remove-customer-authentication",
            lambda c: c["facts"].pop(0), "security_failure")
+    mutate("PEV-001", "source-order-state-changes-to-cancelled",
+           lambda c: c["facts"][1].update(value="cancelled"), "security_failure")
+    mutate("PEV-001", "policy-condition-is-not-a-supplied-result",
+           lambda c: c["policy"]["predicates"][1]["conditions"][0].update(expected_value="cancelled"),
+           "security_failure")
     mutate("PEV-001", "remove-order-status",
            lambda c: c["facts"].pop(1), "security_failure")
     mutate("PEV-001", "candidate-authentication",
