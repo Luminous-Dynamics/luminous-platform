@@ -176,7 +176,8 @@
         "first_state_consumption_id": "consume-1",
         "first_effect_id": "effect-1",
         "mutation_to_consumption_actions": 37,
-        "consumption_to_effect_actions": 37
+        "consumption_to_effect_actions": 37,
+        "denied_or_unauthorized_attempts": 1
       }
     },
     {
@@ -238,7 +239,8 @@
         "first_state_consumption_id": null,
         "first_effect_id": null,
         "mutation_to_consumption_actions": null,
-        "consumption_to_effect_actions": null
+        "consumption_to_effect_actions": null,
+        "denied_or_unauthorized_attempts": 0
       }
     },
     {
@@ -395,7 +397,8 @@
         "first_state_consumption_id": "consume-3",
         "first_effect_id": "absent-3",
         "mutation_to_consumption_actions": 4,
-        "consumption_to_effect_actions": 1
+        "consumption_to_effect_actions": 1,
+        "denied_or_unauthorized_attempts": 1
       }
     },
     {
@@ -514,7 +517,8 @@
         "first_state_consumption_id": null,
         "first_effect_id": "effect-4",
         "mutation_to_consumption_actions": null,
-        "consumption_to_effect_actions": null
+        "consumption_to_effect_actions": null,
+        "denied_or_unauthorized_attempts": 0
       }
     },
     {
@@ -652,7 +656,8 @@
         "first_state_consumption_id": "consume-5",
         "first_effect_id": "effect-5",
         "mutation_to_consumption_actions": 3,
-        "consumption_to_effect_actions": 5
+        "consumption_to_effect_actions": 5,
+        "denied_or_unauthorized_attempts": 1
       }
     },
     {
@@ -790,7 +795,8 @@
         "first_state_consumption_id": "consume-6",
         "first_effect_id": "unknown-6",
         "mutation_to_consumption_actions": 8,
-        "consumption_to_effect_actions": 2
+        "consumption_to_effect_actions": 2,
+        "denied_or_unauthorized_attempts": 0
       }
     },
     {
@@ -909,7 +915,8 @@
         "first_state_consumption_id": null,
         "first_effect_id": "effect-7",
         "mutation_to_consumption_actions": null,
-        "consumption_to_effect_actions": null
+        "consumption_to_effect_actions": null,
+        "denied_or_unauthorized_attempts": 1
       }
     },
     {
@@ -1028,7 +1035,8 @@
         "first_state_consumption_id": null,
         "first_effect_id": "effect-8",
         "mutation_to_consumption_actions": null,
-        "consumption_to_effect_actions": null
+        "consumption_to_effect_actions": null,
+        "denied_or_unauthorized_attempts": 0
       }
     }
   ]
