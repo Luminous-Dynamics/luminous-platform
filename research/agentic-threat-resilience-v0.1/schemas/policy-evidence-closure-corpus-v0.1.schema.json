@@ -60,7 +60,7 @@
       "required": [
         "id",
         "dependencies",
-        "result"
+        "conditions"
       ],
       "properties": {
         "id": {
@@ -75,12 +75,12 @@
             "minLength": 1
           }
         },
-        "result": {
-          "enum": [
-            "allow",
-            "deny",
-            "unknown"
-          ]
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
         }
       }
     },
@@ -484,6 +484,31 @@
               ]
             }
           }
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fact",
+        "operator",
+        "expected_value"
+      ],
+      "properties": {
+        "fact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator": {
+          "enum": [
+            "equals",
+            "not_equals"
+          ]
+        },
+        "expected_value": {
+          "type": "string",
+          "minLength": 1
         }
       }
     }
