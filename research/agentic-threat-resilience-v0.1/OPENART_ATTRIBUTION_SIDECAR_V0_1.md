@@ -35,7 +35,7 @@ The sidecar models:
 
 Each event has a monotonically increasing sequence, an optional target action index, an evidence class, actor role, tenant/request/object bindings and explicit parent-event IDs. Every parent must exist and precede its child.
 
-Evidence classes remain distinct:
+Evidence classes remain distinct. Event kinds are constrained to their corresponding evidence/actor domains: environment mutations originate from the attacker trace; state consumption, plans, handoffs and tool invocations from the target trace; participant decisions and effects from the participant ledger; and effect receipts from the observer. A candidate claim cannot be promoted into any of these trusted event classes.
 - upstream target trace;
 - attacker trace;
 - candidate claim;
