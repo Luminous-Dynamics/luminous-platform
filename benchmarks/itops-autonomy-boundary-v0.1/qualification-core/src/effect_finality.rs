@@ -341,15 +341,14 @@ impl ParticipantLedger {
             return Ok(CommitOutcome::DeniedBudgetExhausted);
         }
 
-        // A terminal marker is consumed only once the exact retry is admitted.
-        state.aborted_by_key.remove(&binding.idempotency_key);
-
-        // Complete fallible counter arithmetic before mutating budget.
+        // Complete fallible counter arithmetic before mutating budget or
+        // consuming the terminal not-accepted marker.
         let sequence = state.next_commit_sequence;
         let next_sequence = sequence
             .checked_add(1)
             .ok_or(LedgerError::SequenceExhausted)?;
 
+        state.aborted_by_key.remove(&binding.idempotency_key);
         state.remaining_budget -= 1;
         state.next_commit_sequence = next_sequence;
 
