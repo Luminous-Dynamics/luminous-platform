@@ -39,9 +39,9 @@ The public source files at the base snapshot inspected for this work contain:
 |---|---:|
 | `delegation.rs` | 15 |
 | `root_reanchor.rs` | 9 |
-| `effect_finality.rs` | 19 |
+| `effect_finality.rs` | 21 |
 | `memory_provenance.rs` | 23 |
-| **Total** | **66** |
+| **Total** | **68** |
 
 These are source annotations, not executed results. The exact-head workflow
 `.github/workflows/itops-qualification-core.yml` runs formatting, verifies
@@ -92,7 +92,7 @@ predicate; that binding gap is tracked in
 
 `effect_finality.rs` makes the commit boundary and unknown-outcome rules executable as a deterministic in-process model:
 
-- the participant checks the current authority epoch, resource version, idempotency key and mutation budget while holding one serialized commit lock;
+- the participant checks the current authority epoch, monotonic resource revision, resource version, idempotency key and mutation budget while holding one serialized commit lock;
 - an exact duplicate request returns the original receipt without a second budget debit;
 - a different request or evidence binding reusing the same idempotency key is a conflict;
 - new mutations under an old authority epoch or stale resource revision are denied, while effects that linearized before revocation/version change remain historically committed;
@@ -104,7 +104,7 @@ predicate; that binding gap is tracked in
 - tests cover concurrent same-key requests, concurrent distinct requests sharing one budget, and the commit/revocation and commit/resource-version races;
 - empty evidence/resource bindings and sequence exhaustion are rejected before any budget debit.
 
-This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. The participant compares the expected resource revision and authority epoch under the same in-process mutex as idempotency, budget debit and receipt creation. The receipt binds the action digest, RP, tenant, resource, operation, resource revision, authority epoch, preflight evidence identity and commit-time evidence identity. A real adapter must use the protected resource's transaction or consensus boundary, persist both evidence snapshots, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
+This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. The participant compares the expected resource revision and authority epoch under the same in-process mutex as idempotency, budget debit and receipt creation. The receipt binds the action digest, RP, tenant, resource, operation, resource version and monotonic revision, authority epoch, preflight evidence identity and commit-time evidence identity. A real adapter must use the protected resource's transaction or consensus boundary, persist both evidence snapshots, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
 
 ## Memory provenance reference model
 
