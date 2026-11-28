@@ -1577,4 +1577,56 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn duplicate_pending_admission_reserves_shared_budget_once() {
+        let participant = ParticipantLedger::new(5, 1);
+        let request = binding("idem-pending-replay", "digest-pending", 5);
+        assert_eq!(
+            participant.accept_pending(&request).unwrap(),
+            CommitOutcome::PendingAccepted
+        );
+        assert_eq!(
+            participant.accept_pending(&request).unwrap(),
+            CommitOutcome::AlreadyPending
+        );
+        assert_eq!(
+            participant.commit(&request).unwrap(),
+            CommitOutcome::AlreadyPending
+        );
+
+        let mut substituted = request.clone();
+        substituted.commit_evidence_digest = "commit-evidence-substituted".into();
+        assert_eq!(
+            participant.accept_pending(&substituted).unwrap(),
+            CommitOutcome::IdempotencyKeyConflict
+        );
+        assert_eq!(participant.reserved_budget().unwrap(), 1);
+        assert!(matches!(
+            participant.finalize_pending("idem-pending-replay").unwrap(),
+            CommitOutcome::Committed(_)
+        ));
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn terminal_not_accepted_marker_survives_a_retry_denied_by_current_authority() {
+        let participant = ParticipantLedger::new(8, 1);
+        let stale = binding("idem-terminal-stale", "digest-terminal-stale", 7);
+        assert!(participant.record_not_accepted(&stale).unwrap());
+        participant.revoke_and_advance_epoch().unwrap();
+
+        assert_eq!(
+            participant.commit(&stale).unwrap(),
+            CommitOutcome::DeniedStaleAuthorityEpoch {
+                presented: 7,
+                current: 9
+            }
+        );
+        assert!(matches!(
+            participant.reconcile_attempt(&stale).unwrap(),
+            ParticipantAttemptStatus::Aborted
+        ));
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+    }
+
 }
