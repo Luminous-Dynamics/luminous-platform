@@ -151,12 +151,16 @@ def main() -> None:
     positive.update({
         "coverage_state":"independently_verified",
         "upstream_task_ids":["task_9001"],
-        "task_manifest_digest":"sha256:task-manifest",
+        "task_manifest_digest":"sha256:" + "a" * 64,
         "run_manifest_id":"run-0001",
+        "run_manifest_digest":"sha256:" + "b" * 64,
         "native_result_artifact":"artifacts/native-result.json",
+        "native_result_digest":"sha256:" + "c" * 64,
         "atr_observer_profile":"observer-v1",
         "atr_sidecar_artifact":"artifacts/atr-sidecar.json",
+        "atr_sidecar_digest":"sha256:" + "d" * 64,
         "independent_receipt_artifact":"artifacts/independent-receipt.json",
+        "independent_receipt_digest":"sha256:" + "e" * 64,
     })
     if cell_contract_errors(positive):
         raise SystemExit("fully evidenced independently_verified control should pass")
