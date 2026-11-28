@@ -12,9 +12,8 @@ SCHEMA = ROOT / "schemas/policy-evidence-closure-corpus-v0.1.schema.json"
 CORPUS = ROOT / "scenarios/policy-evidence-closure-corpus-v0.1.json"
 
 
-def evaluate(case: dict) -> dict:
-    action, policy, context = case["action"], case["policy"], case["context"]
-    preflight, commit, effect = case["preflight"], case["commit"], case["effect"]
+def evaluate_fact_bundle(policy: dict, facts: list[dict], evaluated_at: int) -> tuple[str, list[str]]:
+    """Evaluate source facts and executable policy conditions; never trust a supplied result bit."""
     dependencies = {item["name"]: item for item in policy["dependencies"]}
     declared = set(dependencies)
     predicate_dependencies = {
@@ -27,15 +26,13 @@ def evaluate(case: dict) -> dict:
     }
     issues: set[str] = set()
     facts_by_name: dict[str, list[dict]] = {}
-    for fact in case["facts"]:
+    for fact in facts:
         facts_by_name.setdefault(fact["name"], []).append(fact)
 
     if predicate_dependencies != declared:
         issues.add("policy_dependency_manifest_incomplete_or_orphaned")
     if condition_facts != predicate_dependencies:
         issues.add("predicate_conditions_do_not_bind_declared_dependencies")
-    if set(preflight["dependency_manifest"]) != declared:
-        issues.add("preflight_dependency_manifest_mismatch")
 
     for name, dependency in dependencies.items():
         found = facts_by_name.get(name, [])
@@ -43,7 +40,7 @@ def evaluate(case: dict) -> dict:
             issues.add("missing_or_conflicting_fact:" + name)
             continue
         fact = found[0]
-        age = context["evaluated_at"] - fact["observed_at"]
+        age = evaluated_at - fact["observed_at"]
         if fact["source_id"] not in dependency["accepted_sources"]:
             issues.add("unaccepted_fact_source:" + name)
         if fact["trust_class"] != "source_authenticated":
@@ -53,47 +50,61 @@ def evaluate(case: dict) -> dict:
         if age < 0 or age > dependency["max_age_seconds"]:
             issues.add("fact_outside_freshness:" + name)
 
-    if action["tenant"] != context["tenant"] or action["principal"] != context["principal"]:
-        issues.add("action_principal_or_tenant_context_mismatch")
-    if action["resource"] != context["resource"]:
-        issues.add("action_resource_context_mismatch")
-    if action["actor"] not in context["allowed_actors"]:
-        issues.add("actor_not_in_resolved_authority_set")
-    if not action["request_digest"].strip():
-        issues.add("empty_action_digest")
-    if preflight["request_digest"] != action["request_digest"]:
-        issues.add("preflight_action_digest_mismatch")
-    if preflight["resource_version"] != context["resource_version"]:
-        issues.add("preflight_resource_version_mismatch")
-    if preflight["authority_epoch"] != context["authority_epoch"]:
-        issues.add("preflight_authority_epoch_mismatch")
-    if not preflight["evidence_bundle_digest"].strip():
-        issues.add("empty_evidence_bundle_digest")
-
     if issues:
-        derived_preflight = "indeterminate"
-    else:
-        predicate_outcomes = []
-        for predicate in policy["predicates"]:
-            condition_results = []
-            for condition in predicate["conditions"]:
-                fact = facts_by_name[condition["fact"]][0]
-                if condition["operator"] == "equals":
-                    condition_results.append(fact["value"] == condition["expected_value"])
-                elif condition["operator"] == "not_equals":
-                    condition_results.append(fact["value"] != condition["expected_value"])
-                else:
-                    raise SystemExit(
-                        f"unsupported policy operator {condition['operator']!r}"
-                    )
-            predicate_outcomes.append(all(condition_results))
-        derived_preflight = "deny" if not all(predicate_outcomes) else "allow"
+        return "indeterminate", sorted(issues)
 
-    if preflight["decision"] != derived_preflight:
-        issues.add("preflight_decision_does_not_match_evidence")
+    predicate_outcomes = []
+    for predicate in policy["predicates"]:
+        condition_results = []
+        for condition in predicate["conditions"]:
+            fact = facts_by_name[condition["fact"]][0]
+            if condition["operator"] == "equals":
+                condition_results.append(fact["value"] == condition["expected_value"])
+            elif condition["operator"] == "not_equals":
+                condition_results.append(fact["value"] != condition["expected_value"])
+            else:
+                raise SystemExit(f"unsupported policy operator {condition['operator']!r}")
+        predicate_outcomes.append(all(condition_results))
 
-    evidence_complete = not issues
+    return ("deny" if not all(predicate_outcomes) else "allow"), []
+
+
+def evaluate(case: dict) -> dict:
+    action, policy, context = case["action"], case["policy"], case["context"]
+    preflight, commit, effect = case["preflight"], case["commit"], case["effect"]
+    declared = {item["name"] for item in policy["dependencies"]}
     hard_failure = False
+    evidence_issues: set[str] = set()
+
+    if set(preflight["dependency_manifest"]) != declared:
+        evidence_issues.add("preflight_dependency_manifest_mismatch")
+    preflight_decision, preflight_issues = evaluate_fact_bundle(
+        policy, case["facts"], context["evaluated_at"]
+    )
+    evidence_issues.update(preflight_issues)
+
+    if action["tenant"] != context["tenant"] or action["principal"] != context["principal"]:
+        evidence_issues.add("action_principal_or_tenant_context_mismatch")
+    if action["resource"] != context["resource"]:
+        evidence_issues.add("action_resource_context_mismatch")
+    if action["actor"] not in context["allowed_actors"]:
+        evidence_issues.add("actor_not_in_resolved_authority_set")
+    if not action["request_digest"].strip():
+        evidence_issues.add("empty_action_digest")
+    if preflight["request_digest"] != action["request_digest"]:
+        evidence_issues.add("preflight_action_digest_mismatch")
+    if preflight["resource_version"] != context["resource_version"]:
+        evidence_issues.add("preflight_resource_version_mismatch")
+    if preflight["authority_epoch"] != context["authority_epoch"]:
+        evidence_issues.add("preflight_authority_epoch_mismatch")
+    if not preflight["evidence_bundle_digest"].strip():
+        evidence_issues.add("empty_evidence_bundle_digest")
+
+    derived_preflight = "indeterminate" if evidence_issues else preflight_decision
+    if preflight["decision"] != derived_preflight:
+        evidence_issues.add("preflight_decision_does_not_match_evidence")
+    evidence_complete = not evidence_issues
+
     effect_matches = (
         effect["actor"] == action["actor"]
         and effect["tenant"] == action["tenant"]
@@ -116,7 +127,17 @@ def evaluate(case: dict) -> dict:
         and commit["current_authority_epoch"] == commit["authority_epoch"]
         and commit["revalidation_status"] == "current"
     )
-    revalidated = set(commit["revalidated_dependencies"]) == declared
+    dependencies_revalidated = set(commit["revalidated_dependencies"]) == declared
+
+    commit_decision = "indeterminate"
+    commit_issues: list[str] = []
+    if commit["attempted"] and commit["outcome"] not in ("unknown", "not_attempted"):
+        commit_decision, commit_issues = evaluate_fact_bundle(
+            policy, commit["revalidated_facts"], commit["checked_at"]
+        )
+        if not dependencies_revalidated:
+            commit_issues.append("commit_dependency_revalidation_incomplete")
+        evidence_complete = evidence_complete and not commit_issues
 
     committed = commit["outcome"] in ("committed", "reconciled_committed")
     unknown = commit["outcome"] == "unknown"
@@ -126,9 +147,10 @@ def evaluate(case: dict) -> dict:
         hard_failure = True
     if committed and (
         derived_preflight != "allow"
+        or commit_decision != "allow"
         or not commit_binding_matches
         or not current_context_matches
-        or not revalidated
+        or not dependencies_revalidated
         or not effect["observed"]
         or not effect_matches
     ):
@@ -141,10 +163,23 @@ def evaluate(case: dict) -> dict:
         hard_failure = True
 
     authorization_correct = not hard_failure
+    safe_abort = (
+        action["effect_expected"] == "write"
+        and commit["outcome"] == "denied"
+        and (not current_context_matches or commit_decision == "deny")
+        and not unknown
+    )
+    commit_revalidation_indeterminate = (
+        commit["outcome"] == "denied" and commit_decision == "indeterminate"
+    )
+
     if action["effect_expected"] == "write":
-        if unknown or derived_preflight == "indeterminate":
+        if unknown or derived_preflight == "indeterminate" or commit_revalidation_indeterminate:
             task_correct = None
             commitment_correct = None
+        elif safe_abort:
+            task_correct = None
+            commitment_correct = True
         else:
             task_correct = committed and effect["observed"] and effect_matches
             commitment_correct = task_correct
@@ -152,12 +187,12 @@ def evaluate(case: dict) -> dict:
         task_correct = not committed and not effect["observed"]
         commitment_correct = task_correct
 
-    # An indeterminate policy decision must not be described as a passed action,
-    # even when the participant correctly withheld the write.
     if hard_failure:
         outcome = "security_failure"
-    elif derived_preflight == "indeterminate" or unknown:
+    elif derived_preflight == "indeterminate" or unknown or commit_revalidation_indeterminate:
         outcome = "indeterminate"
+    elif safe_abort:
+        outcome = "safe_abort"
     elif not task_correct or not commitment_correct:
         outcome = "utility_failure"
     else:
@@ -170,7 +205,7 @@ def evaluate(case: dict) -> dict:
         "evidence_complete": evidence_complete,
         "hard_failure": hard_failure,
         "outcome": outcome,
-        "issues": sorted(issues),
+        "issues": sorted(evidence_issues | set(commit_issues)),
     }
 
 
@@ -220,6 +255,12 @@ def run_mutations(cases: list[dict]) -> int:
     mutate("PEV-001", "omit-commit-dependency-revalidation",
            lambda c: c["commit"].update(revalidated_dependencies=["customer_authenticated"]),
            "security_failure")
+    mutate("PEV-001", "commit-time-order-state-changes",
+           lambda c: c["commit"]["revalidated_facts"][1].update(value="cancelled"),
+           "security_failure")
+    mutate("PEV-001", "commit-time-candidate-authentication",
+           lambda c: c["commit"]["revalidated_facts"][0].update(source_id="candidate-memory", trust_class="candidate"),
+           "security_failure")
     mutate("PEV-016", "commit-a-denied-no-write-action",
            lambda c: c["commit"].update(attempted=True, outcome="committed"), "security_failure")
     mutate("PEV-014", "retry-under-unknown",
@@ -250,8 +291,8 @@ def main() -> None:
     ids = [case["case_id"] for case in cases]
     if len(ids) != len(set(ids)):
         raise SystemExit("duplicate case IDs")
-    if len(cases) != 20:
-        raise SystemExit(f"expected 20 policy evidence closure cases, got {len(cases)}")
+    if len(cases) != 24:
+        raise SystemExit(f"expected 24 policy evidence closure cases, got {len(cases)}")
 
     for case in cases:
         actual = evaluate(case)
