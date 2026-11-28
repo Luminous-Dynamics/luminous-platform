@@ -34,6 +34,9 @@ The numbers below describe what the source benchmarks report; they are not a cro
 | MetaPI (methodology, not a task benchmark) | Adaptive attack generation over existing utility benchmarks | Applied to AppWorld, VitaBench and Terminal-Bench; discovers injection points, generates objectives and optimizes payloads | Frozen-task attack evolution with task/attacker holdouts and independent effect oracles |
 | Trojan Hippo Bench | Dormant persistent-memory payloads and memory-layer defenses | 5 sensitive topics, 4 memory backends + no-memory baseline, 5 defense settings, persistence 0–100 benign sessions; utility 7 flows × 4 tests | Memory provenance, monotonic taint, exact approval binding, tombstone propagation and independent exfiltration effects |
 | AgentLAB | Adaptive long-horizon attack susceptibility | 5 attack families, 28 environments, 644 security test cases; native ASR and turns-to-success | Independent authority lineage, commit-time admission and effect receipts |
+| ReliabilityBench | Repeated-run consistency, semantic robustness and infrastructure fault tolerance | 1,280 episodes, 4 domains; reliability surface R(k, ε, λ), Action-MRs and fault injection | Security^k, commit^k, authority-context drift and independently reconciled unknown effects |
+| τ²-bench evaluator audit (empirical study) | Evaluator construct validity and forbidden-write detection | 2,160 episodes; 11 human-confirmed premature commits; LLM-judge/native agreement 56.2% | Explicit task/authorization/commitment axes, source-complete predicate evidence and independent receipts |
+| GuardianAgentBench | Long-horizon tool correctness and structural guardrails | 580 scenarios, 6 domains, 3 production-ready frameworks; reports monotonic degradation with tool-set size and turn depth | Source-anchored authorization and actual participant effect finality |
 | DTap | Stateful desktop interaction and attack exposure | Median 15 tool calls in the OpenART comparison | Source-authorized delegation and independent protected-effect receipt |
 | OpenART | Long-horizon state evolution, environment poisoning and side-effect safety | 10K+ validated scenarios / 50 domains; release 10,150 tasks in 52 shards + 63,697 materialized tools; 15 agents × 5 models, 8 attack surfaces; median 97 tool calls, depth 32, parallel width 12.5, state-object count 96.5 | Formal authority lineage, mandate validation, principal entitlement, participant commit-time fence and effect receipts |
 | WIMSE agent-mandate draft | Cross-domain validation of who may delegate and who issued the mandate | Protocol/validation profile, not an empirical benchmark | Executed agent behaviour, runtime effects, efficacy and operational costs |
@@ -42,6 +45,9 @@ The numbers below describe what the source benchmarks report; they are not a cro
 
 - OpenART authors report over 10,000 validated stateful scenarios across 50 domains, with median task complexity of 97 tool calls, dependency depth 32 and parallel width 12.5. Its pinned upstream README (repository history pin 28 November 2026) describes 10,150 released task bundles in 52 shards and 63,697 materialized tools; the paper uses 15 target agents × 5 models and eight target-visible attack surfaces. The paper reports 85.0% pooled strict ASR (EMHA attacker) and 87.38% benign completion; strict ASR requires both deterministic evaluator and LLM judge. These are source-reported benchmark outcomes, not universal safety rates or Luminous results. The public benchmark landscape is descriptive, not a ranking. [OpenART benchmark landscape](https://ai45lab.github.io/OpenART/benchmarks/) and [paper](https://arxiv.org/abs/2608.00677).
 - MasDrift v3 is the coordination comparator already covered by `MASDRIFT_ADAPTER_PROTOCOL_V0_1.md`; its native task labels, defense arms and trace semantics must remain unmodified.
+- ReliabilityBench is the repeated-run / perturbation / fault-intensity comparator covered by `RELIABILITY_SURFACE_AND_COMMIT_BOUNDARY_ORACLE_PROTOCOL_V0_1.md`. Preserve its native (k, epsilon, lambda) grid and Action-MRs; ATR adds separate task, authorization, commitment, recovery and evidence dimensions.
+- The November 2026 τ²-bench evaluator audit is a methodology comparator, not a new benchmark suite. It shows why native-state, LLM-judge and commit-boundary outputs must be preserved as distinct instruments, and why policy predicates need source-complete dependency manifests.
+- GuardianAgentBench supplies an additional multi-framework/long-turn utility and attack-control comparator; its accuracy and guardrail rates are source-reported, not Luminous measurements.
 - AgentLAB is the adaptive long-horizon attack comparator covered by `AGENTLAB_ADAPTER_PROTOCOL_V0_1.md`. Its five attack families, 28 environments, 644 cases, native ASR and average turns-to-success remain intact; its adaptive planner/attacker/verifier/judge versions must be pinned, not treated as objective ground truth.
 - ACIArena is the multi-agent cascading-injection comparator covered by `ACIARENA_ADAPTER_PROTOCOL_V0_1.md`: 1,356 cases, six MAS implementations, external inputs / agent profiles / inter-agent messages, and instruction hijacking / task disruption / information exfiltration. It is an ACL 2026 long paper; the pinned public code snapshot lacks a detected LICENSE file, so licensing review is required before execution or reuse.
 - AgentDyn is the dynamic open-ended third-party-instruction comparator: 60 tasks / 560 injections across Shopping, GitHub and Daily Life. Its helpful-instruction and dynamic-replanning controls are especially useful for measuring false-positive over-defense.
@@ -195,6 +201,21 @@ Every release must report:
 
 Use human audit only for explicitly subjective fields, report inter-rater agreement and blind the reviewer to treatment. LLM judge outputs are annotations, not authority or effect oracles. Recheck evaluator agreement on an independently sampled set and make adversarial evaluator mutation tests part of the benchmark.
 
+## 8. Reliability-surface and evaluator-oracle programme
+
+The new [Reliability Surface and Commit-Boundary Oracle Protocol](RELIABILITY_SURFACE_AND_COMMIT_BOUNDARY_ORACLE_PROTOCOL_V0_1.md) combines repeated-run consistency, semantic perturbation and infrastructure faults with ATR's separate effect/authority measurements. Do not collapse them into a single reliability score.
+
+The new [Policy Evidence Closure and Commit-Boundary Profile](POLICY_EVIDENCE_CLOSURE_AND_COMMIT_BOUNDARY_PROFILE_V0_1.md), tracked by #553, turns the November τ²-bench evaluator finding into a source-level conformance contract: complete predicate dependencies, source/freshness/version closure, same exact action/evidence binding at commit, and independent effect observation. The 20-case synthetic corpus includes a positive write, safe refusal, required-write under-action, missing/stale/candidate-only facts, policy denial with a committed write, actor/tenant substitution, context drift, unknown outcomes, judge disagreement and effect without participant receipt.
+
+A first minimal grid should run on the synthetic #540 participant before broad external integration:
+- k = 1, 4, 8 repetitions per frozen task and arm;
+- epsilon = 0 and 0.2 with semantically equivalent paraphrase/reorder/distractor transformations;
+- lambda = 0 and 0.1 with deterministic fault profiles, especially response loss before and after commit;
+- record the full vector of task success, safe^k, authorized^k, commitment^k, recovery and attribution;
+- cluster inference by task/seed and preserve every failed/unknown run.
+
+These are initial design points, not universal severity standards. Expand the grid only after the first vertical slice is reproducible and the injected faults are known to be faithful.
+
 ## 8. Staged execution plan (do not block on #540)
 
 ### Stage A — current source-only increment
@@ -234,7 +255,7 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 - Release raw sanitized traces, receipts, cost ledger and independent replay bundle.
 - Invite independent replication before saying "better than SOTA."
 
-## 9. Immediate research issues that remain open
+## 10. Immediate research issues that remain open
 
 - The Mandate Issuer's internal evidence that the delegator actually instructed issuance is a trust-framework problem; the protocol's signature alone cannot prove it. Platform #550 tracks a profile that binds this separate instruction/approval event to the exact root mandate artifact and tests role separation.
 - Global mandate budgets across multiple relying parties need shared state or a narrower single-RP/audience design; independently validated copies can otherwise spend the same budget in parallel.
@@ -244,7 +265,7 @@ Use human audit only for explicitly subjective fields, report inter-rater agreem
 - Independent observer compromise or correlated infrastructure failure can produce false assurance. Independence requires adversarial fault testing.
 - Cross-agent memory taint, queue ownership, service identity and state aliasing must be tested as graph paths, not merely as text labels.
 
-## 9.1 WIMSE mandate Trust-Framework conformance
+## 10.1 WIMSE mandate Trust-Framework conformance
 
 The separate `WIMSE_TRUST_FRAMEWORK_CONFORMANCE_PROFILE_V0_1.md` turns draft -01 Section 12.2 items 11 and 12 into a synthetic conformance contract:
 - 15 cases and 14 mutation controls for exact delegator-signed mandate content, qualified issuer process, role separation, withdrawal/supersession, evidence freshness, shared-global vs explicitly allocated per-RP budgets, concurrent overspend and unknown-outcome reconciliation.
@@ -254,7 +275,7 @@ The separate `WIMSE_TRUST_FRAMEWORK_CONFORMANCE_PROFILE_V0_1.md` turns draft -01
 
 The latest schema/checker/fixtures are in this PR branch. The exact-head hosted run is required before treating the conformance checker as CI-qualified; these fixtures remain synthetic even after a passing workflow.
 
-## 10. References
+## 11. References
 
 - OpenART benchmark landscape and complexity table: https://ai45lab.github.io/OpenART/benchmarks/
 - Trojan Hippo paper v4: https://arxiv.org/abs/2605.01970
