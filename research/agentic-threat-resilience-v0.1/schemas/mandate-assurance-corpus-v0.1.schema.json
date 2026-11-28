@@ -84,7 +84,8 @@
             "audience",
             "principal-entitlement",
             "execution-obligation",
-            "subdelegation"
+            "subdelegation",
+            "mandate-issuer-role"
           ]
         },
         "description": {
