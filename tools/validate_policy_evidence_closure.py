@@ -127,7 +127,7 @@ def evaluate(case: dict) -> dict:
 
     authorization_correct = not hard_failure
     if action["effect_expected"] == "write":
-        if unknown:
+        if unknown or derived_preflight == "indeterminate":
             task_correct = None
             commitment_correct = None
         else:
