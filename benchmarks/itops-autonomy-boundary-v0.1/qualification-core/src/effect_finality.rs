@@ -15,6 +15,10 @@ use std::sync::{Mutex, MutexGuard};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EffectBinding {
     pub idempotency_key: String,
+    /// The relying party that presents this mandate. A shared participant
+    /// records the RP identity but does not silently allocate a separate budget
+    /// to each RP.
+    pub relying_party: String,
     /// Opaque digest supplied by the existing Act-Bound owner. This module
     /// never canonicalizes action data or computes a production digest.
     pub request_digest: String,
@@ -28,6 +32,7 @@ pub struct EffectBinding {
 impl EffectBinding {
     fn is_well_formed(&self) -> bool {
         !self.idempotency_key.trim().is_empty()
+            && !self.relying_party.trim().is_empty()
             && !self.request_digest.trim().is_empty()
             && !self.actor.trim().is_empty()
             && !self.tenant.trim().is_empty()
@@ -40,6 +45,7 @@ impl EffectBinding {
 pub struct EffectReceipt {
     pub transaction_id: String,
     pub idempotency_key: String,
+    pub relying_party: String,
     pub request_digest: String,
     pub actor: String,
     pub tenant: String,
@@ -53,6 +59,7 @@ pub struct EffectReceipt {
 impl EffectReceipt {
     pub fn matches(&self, binding: &EffectBinding) -> bool {
         self.idempotency_key == binding.idempotency_key
+            && self.relying_party == binding.relying_party
             && self.request_digest == binding.request_digest
             && self.actor == binding.actor
             && self.tenant == binding.tenant
@@ -70,6 +77,7 @@ pub enum CommitOutcome {
         presented: u64,
         current: u64,
     },
+    DeniedOutsideParticipantScope,
     DeniedBudgetExhausted,
     IdempotencyKeyConflict,
 }
@@ -79,10 +87,14 @@ pub enum LedgerError {
     Poisoned,
     InvalidBinding,
     EpochExhausted,
+    SequenceExhausted,
 }
 
 #[derive(Debug)]
 struct LedgerState {
+    /// Some means all new effects must target this exact tenant/resource.
+    /// None is retained for small legacy unit fixtures.
+    participant_scope: Option<(String, String)>,
     authority_epoch: u64,
     remaining_budget: u64,
     next_commit_sequence: u64,
@@ -98,9 +110,36 @@ pub struct ParticipantLedger {
 }
 
 impl ParticipantLedger {
+    /// Unscoped constructor retained for legacy policy tests. Participant
+    /// adapters should prefer new_scoped.
     pub fn new(authority_epoch: u64, mutation_budget: u64) -> Self {
+        Self::build(None, authority_epoch, mutation_budget)
+    }
+
+    /// Creates a participant tied to one tenant/resource pair. All RPs that
+    /// share this participant also share its mutation budget and idempotency
+    /// ledger; per-RP budgets require an explicit authority-side allocation.
+    pub fn new_scoped(
+        tenant: impl Into<String>,
+        resource: impl Into<String>,
+        authority_epoch: u64,
+        mutation_budget: u64,
+    ) -> Self {
+        Self::build(
+            Some((tenant.into(), resource.into())),
+            authority_epoch,
+            mutation_budget,
+        )
+    }
+
+    fn build(
+        participant_scope: Option<(String, String)>,
+        authority_epoch: u64,
+        mutation_budget: u64,
+    ) -> Self {
         Self {
             state: Mutex::new(LedgerState {
+                participant_scope,
                 authority_epoch,
                 remaining_budget: mutation_budget,
                 next_commit_sequence: 1,
@@ -155,6 +194,12 @@ impl ParticipantLedger {
             };
         }
 
+        if let Some((tenant, resource)) = &state.participant_scope {
+            if binding.tenant != *tenant || binding.resource != *resource {
+                return Ok(CommitOutcome::DeniedOutsideParticipantScope);
+            }
+        }
+
         if binding.authority_epoch != state.authority_epoch {
             return Ok(CommitOutcome::DeniedStaleAuthorityEpoch {
                 presented: binding.authority_epoch,
@@ -166,15 +211,19 @@ impl ParticipantLedger {
             return Ok(CommitOutcome::DeniedBudgetExhausted);
         }
 
-        state.remaining_budget -= 1;
+        // Complete fallible counter arithmetic before mutating budget.
         let sequence = state.next_commit_sequence;
-        state.next_commit_sequence = sequence
+        let next_sequence = sequence
             .checked_add(1)
-            .ok_or(LedgerError::Poisoned)?;
+            .ok_or(LedgerError::SequenceExhausted)?;
+
+        state.remaining_budget -= 1;
+        state.next_commit_sequence = next_sequence;
 
         let receipt = EffectReceipt {
             transaction_id: format!("synthetic-tx-{sequence}"),
             idempotency_key: binding.idempotency_key.clone(),
+            relying_party: binding.relying_party.clone(),
             request_digest: binding.request_digest.clone(),
             actor: binding.actor.clone(),
             tenant: binding.tenant.clone(),
@@ -321,6 +370,7 @@ impl EffectSession {
                 AttemptState::Committed
             }
             CommitOutcome::DeniedStaleAuthorityEpoch { .. }
+            | CommitOutcome::DeniedOutsideParticipantScope
             | CommitOutcome::DeniedBudgetExhausted
             | CommitOutcome::IdempotencyKeyConflict => AttemptState::Denied,
         };
@@ -373,6 +423,7 @@ mod tests {
     fn binding(key: &str, digest: &str, epoch: u64) -> EffectBinding {
         EffectBinding {
             idempotency_key: key.into(),
+            relying_party: "rp-default".into(),
             request_digest: digest.into(),
             actor: "agent-7".into(),
             tenant: "tenant-a".into(),
@@ -523,7 +574,6 @@ mod tests {
         let reconciled = participant.lookup("idem-same").unwrap().unwrap();
         assert_eq!(reconciled.idempotency_key, "idem-same");
         assert_eq!(participant.remaining_budget().unwrap(), 0);
-        assert_eq!(participant.remaining_budget().unwrap(), 0);
     }
 
     #[test]
@@ -536,6 +586,9 @@ mod tests {
         let mut mutations = Vec::new();
         let mut changed = original.clone();
         changed.actor = "agent-other".into();
+        mutations.push(changed);
+        let mut changed = original.clone();
+        changed.relying_party = "rp-other".into();
         mutations.push(changed);
         let mut changed = original.clone();
         changed.tenant = "tenant-other".into();
@@ -644,6 +697,65 @@ mod tests {
         assert_eq!(committed, 1);
         assert_eq!(budget_denials, 1);
         assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn shared_participant_budget_spans_relying_parties() {
+        let participant =
+            ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 9, 1);
+        let mut first_rp = binding("idem-rp-a", "digest-rp-a", 9);
+        first_rp.relying_party = "rp-a".into();
+        let mut second_rp = binding("idem-rp-b", "digest-rp-b", 9);
+        second_rp.relying_party = "rp-b".into();
+
+        assert!(matches!(
+            participant.commit(&first_rp).unwrap(),
+            CommitOutcome::Committed(_)
+        ));
+        assert_eq!(
+            participant.commit(&second_rp).unwrap(),
+            CommitOutcome::DeniedBudgetExhausted
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn scoped_participant_rejects_cross_tenant_or_resource_requests() {
+        let participant =
+            ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 2, 3);
+        let mut wrong_tenant = binding("idem-wrong-tenant", "digest-tenant", 2);
+        wrong_tenant.tenant = "tenant-b".into();
+        assert_eq!(
+            participant.commit(&wrong_tenant).unwrap(),
+            CommitOutcome::DeniedOutsideParticipantScope
+        );
+
+        let mut wrong_resource = binding("idem-wrong-resource", "digest-resource", 2);
+        wrong_resource.resource = "ledger/account-99".into();
+        assert_eq!(
+            participant.commit(&wrong_resource).unwrap(),
+            CommitOutcome::DeniedOutsideParticipantScope
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 3);
+    }
+
+    #[test]
+    fn sequence_exhaustion_does_not_debit_budget_or_create_receipt() {
+        let participant = ParticipantLedger::new(0, 1);
+        {
+            let mut state = participant.lock().unwrap();
+            state.next_commit_sequence = u64::MAX;
+        }
+        let request = binding("idem-sequence-overflow", "digest-overflow", 0);
+        assert_eq!(
+            participant.commit(&request),
+            Err(LedgerError::SequenceExhausted)
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+        assert_eq!(
+            participant.lookup("idem-sequence-overflow").unwrap(),
+            None
+        );
     }
 
 }
