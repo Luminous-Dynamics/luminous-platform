@@ -349,7 +349,8 @@
             "revalidated_dependencies",
             "new_attempt_while_unknown",
             "checked_at",
-            "revalidated_facts"
+            "revalidated_facts",
+            "preflight_evidence_bundle_digest"
           ],
           "properties": {
             "attempted": {
@@ -411,6 +412,10 @@
               "items": {
                 "$ref": "#/$defs/fact"
               }
+            },
+            "preflight_evidence_bundle_digest": {
+              "type": "string",
+              "minLength": 1
             }
           }
         },
@@ -423,7 +428,8 @@
             "tenant",
             "resource",
             "operation",
-            "request_digest"
+            "request_digest",
+            "evidence_bundle_digest"
           ],
           "properties": {
             "observed": {
@@ -443,6 +449,10 @@
             },
             "request_digest": {
               "type": "string"
+            },
+            "evidence_bundle_digest": {
+              "type": "string",
+              "minLength": 1
             }
           }
         },
