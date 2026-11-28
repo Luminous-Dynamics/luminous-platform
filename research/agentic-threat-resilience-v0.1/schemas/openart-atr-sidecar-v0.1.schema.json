@@ -1,0 +1,402 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/openart-atr-sidecar-v0.1.schema.json",
+  "title": "OpenART ATR Attribution Sidecar v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "upstream_commit",
+    "status",
+    "episodes"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-openart-atr-attribution-sidecar-v0.1"
+    },
+    "upstream_commit": {
+      "const": "c6e61dc7957796ba3bfcf1ba8b394f2648be1737"
+    },
+    "status": {
+      "const": "synthetic-sidecar-contract-not-openart-execution"
+    },
+    "episodes": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/episode"
+      }
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "sequence",
+        "action_index",
+        "kind",
+        "evidence_class",
+        "actor_role",
+        "parent_event_ids",
+        "object_id",
+        "object_digest",
+        "tenant_digest",
+        "request_digest",
+        "authorization_state",
+        "effect_state",
+        "effect_ref",
+        "independent"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "action_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "kind": {
+          "enum": [
+            "environment_mutation",
+            "state_consumed",
+            "task_plan_changed",
+            "agent_handoff",
+            "tool_invocation",
+            "participant_decision",
+            "effect_committed",
+            "effect_absent",
+            "effect_unknown",
+            "independent_effect_receipt"
+          ]
+        },
+        "evidence_class": {
+          "enum": [
+            "upstream_target_trace",
+            "attacker_trace",
+            "candidate_claim",
+            "participant_ledger",
+            "observer_receipt",
+            "deterministic_evaluator",
+            "llm_judge"
+          ]
+        },
+        "actor_role": {
+          "enum": [
+            "target",
+            "attacker",
+            "participant",
+            "observer",
+            "evaluator",
+            "judge"
+          ]
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "object_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "object_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tenant_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "request_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authorization_state": {
+          "enum": [
+            "authorized",
+            "unauthorized",
+            "denied",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "effect_state": {
+          "enum": [
+            "committed",
+            "absent",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "effect_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "independent": {
+          "type": "boolean"
+        }
+      }
+    },
+    "episode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "description",
+        "source_pin",
+        "task",
+        "hidden_contract",
+        "native_scorecard",
+        "events",
+        "expected_atr"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "pattern": "^OPENART-[0-9]{3}$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 12
+        },
+        "source_pin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "commit",
+            "license"
+          ],
+          "properties": {
+            "repository": {
+              "const": "AI45Lab/OpenART"
+            },
+            "commit": {
+              "const": "c6e61dc7957796ba3bfcf1ba8b394f2648be1737"
+            },
+            "license": {
+              "const": "AGPL-3.0"
+            }
+          }
+        },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "task_id",
+            "task_bundle_digest",
+            "target_runtime",
+            "target_model",
+            "raw_trace_digest",
+            "result_digest",
+            "timing_digest"
+          ],
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "task_bundle_digest": {
+              "type": "string",
+              "minLength": 1
+            },
+            "target_runtime": {
+              "type": "string",
+              "minLength": 1
+            },
+            "target_model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "raw_trace_digest": {
+              "type": "string",
+              "minLength": 1
+            },
+            "result_digest": {
+              "type": "string",
+              "minLength": 1
+            },
+            "timing_digest": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "hidden_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "digest",
+            "evaluator_only",
+            "target_access",
+            "attacker_access",
+            "target_tool_access"
+          ],
+          "properties": {
+            "digest": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evaluator_only": {
+              "const": true
+            },
+            "target_access": {
+              "const": false
+            },
+            "attacker_access": {
+              "const": false
+            },
+            "target_tool_access": {
+              "const": false
+            }
+          }
+        },
+        "native_scorecard": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "deterministic_attack_success",
+            "judge_attack_success",
+            "strict_asr",
+            "benign_completion"
+          ],
+          "properties": {
+            "deterministic_attack_success": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "judge_attack_success": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "strict_asr": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "benign_completion": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "expected_atr": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "native_strict_asr",
+            "atr_decision",
+            "attribution_complete",
+            "unauthorized_committed_effects",
+            "independent_effect_receipt_count",
+            "first_environment_mutation_id",
+            "first_state_consumption_id",
+            "first_effect_id",
+            "mutation_to_consumption_actions",
+            "consumption_to_effect_actions",
+            "denied_or_unauthorized_attempts"
+          ],
+          "properties": {
+            "native_strict_asr": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "atr_decision": {
+              "enum": [
+                "safe",
+                "unsafe",
+                "indeterminate"
+              ]
+            },
+            "attribution_complete": {
+              "type": "boolean"
+            },
+            "unauthorized_committed_effects": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "independent_effect_receipt_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "first_environment_mutation_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "first_state_consumption_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "first_effect_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mutation_to_consumption_actions": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "consumption_to_effect_actions": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "denied_or_unauthorized_attempts": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

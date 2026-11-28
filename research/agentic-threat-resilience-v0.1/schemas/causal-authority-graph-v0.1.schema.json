@@ -1,0 +1,638 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/agentic-threat-resilience/causal-authority-graph-v0.1.schema.json",
+  "title": "ATR Causal Authority Graph v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "episode_id",
+    "scenario_family",
+    "manifest",
+    "coordination",
+    "root_authority_digest",
+    "nodes",
+    "edges",
+    "appraisal",
+    "assumptions"
+  ],
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "nullableDigest": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/digest"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nodeAttributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trust_label": {
+          "enum": [
+            "trusted",
+            "untrusted",
+            "tainted",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "taint_source_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "principal_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "actor_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "task_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "source_policy_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "capability_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "parent_capability_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "allowed_actions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "reserved_actions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "delegation_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_delegation_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "revocation_epoch": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "operation": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "arguments_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "resource_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "consent_state": {
+          "enum": [
+            "not_required",
+            "pending",
+            "approved",
+            "missing",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "pdp_verdict": {
+          "enum": [
+            "allow",
+            "require_confirmation",
+            "deny",
+            "not_evaluated",
+            "unknown"
+          ]
+        },
+        "pep_verdict": {
+          "enum": [
+            "enforced",
+            "denied",
+            "not_invoked",
+            "unknown"
+          ]
+        },
+        "enforcement_generation": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "event_state": {
+          "enum": [
+            "attempted",
+            "admitted",
+            "denied",
+            "executed",
+            "committed",
+            "absent",
+            "unknown_reconciliation_required"
+          ]
+        },
+        "effect_status": {
+          "enum": [
+            "committed",
+            "absent",
+            "unknown"
+          ]
+        },
+        "state_revision": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "independent_observer": {
+          "type": "boolean"
+        },
+        "observer_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "effect_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "receipt_verdict": {
+          "enum": [
+            "effect_verified",
+            "effect_absent",
+            "conflict",
+            "unknown"
+          ]
+        },
+        "task_id": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "plan_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "root_task_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "root_plan_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "parent_task_id": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "parent_task_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "branch_assignment_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "delegable": {
+          "type": "boolean"
+        },
+        "allowed_child_bindings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_digest",
+              "plan_digest"
+            ],
+            "properties": {
+              "task_digest": {
+                "$ref": "#/$defs/digest"
+              },
+              "plan_digest": {
+                "$ref": "#/$defs/digest"
+              }
+            }
+          }
+        },
+        "authority_state": {
+          "enum": [
+            "active",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "authority_checked_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_authority_age_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "request_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "control_domain_digest": {
+          "$ref": "#/$defs/nullableDigest"
+        },
+        "control_domain_role": {
+          "enum": [
+            "candidate",
+            "issuer",
+            "participant",
+            "observer",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "nullableIdentifier": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "tenant_digest",
+        "sequence",
+        "observed_at_ms",
+        "source_digest",
+        "attributes"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "enum": [
+            "principal",
+            "agent_instance",
+            "task",
+            "untrusted_input",
+            "memory_item",
+            "delegation_grant",
+            "policy",
+            "tool_call",
+            "policy_decision",
+            "enforcement_point",
+            "tool",
+            "resource",
+            "effect",
+            "observer",
+            "effect_receipt"
+          ]
+        },
+        "tenant_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "attributes": {
+          "$ref": "#/$defs/nodeAttributes"
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_id",
+        "target_id",
+        "edge_type",
+        "evidence_class",
+        "evidence_digest"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "target_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "edge_type": {
+          "enum": [
+            "created",
+            "issued",
+            "stored_as",
+            "read_by",
+            "summarized_into",
+            "derived_into",
+            "delegated_to",
+            "spawned",
+            "authorizes",
+            "anchors",
+            "attenuated_to",
+            "claims_authority_for",
+            "triggers",
+            "evaluated_by",
+            "enforced_by",
+            "invoked",
+            "affects",
+            "produces",
+            "observed_by",
+            "attests",
+            "influenced_by",
+            "revoked_by"
+          ]
+        },
+        "evidence_class": {
+          "enum": [
+            "evaluator_observed",
+            "participant_attested",
+            "independent_source",
+            "candidate_claim"
+          ]
+        },
+        "evidence_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "luminous.atr.causal-authority-graph.v0.1"
+    },
+    "episode_id": {
+      "type": "string",
+      "pattern": "^CAP-[0-9]{3}$"
+    },
+    "scenario_family": {
+      "enum": [
+        "memory_poisoning",
+        "cross_agent_propagation",
+        "delegation_amplification",
+        "confused_deputy",
+        "revocation_race",
+        "policy_mutation",
+        "unknown_commit_fanout",
+        "cross_tenant_aliasing",
+        "agent_replacement",
+        "compounded_actions",
+        "containment_cascade",
+        "partial_observability",
+        "authorized_hierarchical_work"
+      ]
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_definition_sha256",
+        "fixture_manifest_sha256",
+        "sut_profile_sha256",
+        "evaluator_build_sha256"
+      ],
+      "properties": {
+        "scenario_definition_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "fixture_manifest_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "sut_profile_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "evaluator_build_sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "root_authority_digest": {
+      "$ref": "#/$defs/digest"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "appraisal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state_correct",
+        "authorization_correct",
+        "constraint_preserved",
+        "taint_reaches_effect",
+        "unauthorized_attempt_count",
+        "unauthorized_commit_count",
+        "overdisclosure_count",
+        "attribution_complete",
+        "critical_violations",
+        "decision",
+        "required_call_count",
+        "required_call_block_count",
+        "reserved_call_attempt_count",
+        "reserved_call_commit_count",
+        "constraint_loss_first_handoff",
+        "token_overhead_ratio"
+      ],
+      "properties": {
+        "state_correct": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "authorization_correct": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "constraint_preserved": {
+          "type": "boolean"
+        },
+        "taint_reaches_effect": {
+          "type": "boolean"
+        },
+        "unauthorized_attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unauthorized_commit_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overdisclosure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attribution_complete": {
+          "type": "boolean"
+        },
+        "critical_violations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "unauthorized_committed_effect",
+              "reserved_action_executed",
+              "missing_consent",
+              "source_policy_not_checked",
+              "delegation_expansion",
+              "pep_bypass",
+              "cross_tenant_effect",
+              "tainted_input_reached_effect",
+              "false_effect_receipt",
+              "unknown_write_retried"
+            ]
+          }
+        },
+        "decision": {
+          "enum": [
+            "pass",
+            "fail_security",
+            "fail_utility",
+            "unknown_reconciliation_required"
+          ]
+        },
+        "required_call_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_call_block_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved_call_attempt_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reserved_call_commit_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "constraint_loss_first_handoff": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "token_overhead_ratio": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    },
+    "coordination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "architecture",
+        "agent_count",
+        "hierarchy_depth",
+        "peer_width",
+        "handoff_count",
+        "persona_mode",
+        "defense_treatment"
+      ],
+      "properties": {
+        "architecture": {
+          "enum": [
+            "single",
+            "centralized",
+            "decentralized"
+          ]
+        },
+        "agent_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "hierarchy_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peer_width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "handoff_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "persona_mode": {
+          "enum": [
+            "generic",
+            "typed",
+            "mixed"
+          ]
+        },
+        "defense_treatment": {
+          "enum": [
+            "none",
+            "source_anchor",
+            "chain_attenuation",
+            "source_plus_chain",
+            "source_anchor_capability_receipts"
+          ]
+        }
+      }
+    }
+  }
+}

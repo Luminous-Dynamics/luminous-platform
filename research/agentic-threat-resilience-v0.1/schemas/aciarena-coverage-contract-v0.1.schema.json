@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/aciarena-coverage-contract-v0.1.schema.json",
+  "title": "ACIArena ATR Coverage Contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "upstream",
+    "status",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-aciarena-atr-coverage-contract-v0.1"
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paper",
+        "code_commit",
+        "license_status"
+      ],
+      "properties": {
+        "paper": {
+          "const": "2026.acl-long.457"
+        },
+        "code_commit": {
+          "const": "3f226a40cddf01a08b9f700cbef0031dfab2ff64"
+        },
+        "license_status": {
+          "const": "no-license-file-detected-at-pinned-tree-review-required"
+        }
+      }
+    },
+    "status": {
+      "const": "coverage-contract-not-benchmark-execution"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_provenance",
+        "actor_identity",
+        "tenant_scope",
+        "task_plan_binding",
+        "authority_lineage",
+        "participant_decision",
+        "independent_effect_observer"
+      ],
+      "properties": {
+        "source_provenance": {
+          "const": true
+        },
+        "actor_identity": {
+          "const": true
+        },
+        "tenant_scope": {
+          "const": true
+        },
+        "task_plan_binding": {
+          "const": true
+        },
+        "authority_lineage": {
+          "const": true
+        },
+        "participant_decision": {
+          "const": true
+        },
+        "independent_effect_observer": {
+          "const": true
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "surface",
+        "objective",
+        "description",
+        "objective_oracle",
+        "required_evidence"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^ACA-[0-9]{3}$"
+        },
+        "surface": {
+          "enum": [
+            "external_input",
+            "agent_profile",
+            "inter_agent_message"
+          ]
+        },
+        "objective": {
+          "enum": [
+            "instruction_hijacking",
+            "task_disruption",
+            "information_exfiltration"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 12
+        },
+        "objective_oracle": {
+          "enum": [
+            "root_task_and_plan_immutability",
+            "task_state_and_required_step_oracle",
+            "data_flow_and_external_egress_receipt"
+          ]
+        },
+        "required_evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    }
+  }
+}
