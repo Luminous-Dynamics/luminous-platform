@@ -112,6 +112,7 @@ pub enum CommitOutcome {
 pub enum LedgerError {
     Poisoned,
     InvalidBinding,
+    NoPendingAttempt,
     InvalidResourceVersion,
     ResourceRevisionExhausted,
     EpochExhausted,
@@ -365,6 +366,215 @@ impl ParticipantLedger {
         Ok(CommitOutcome::Committed(receipt))
     }
 
+    /// Admit an asynchronous request into the participant's durable
+    /// idempotency journal. The budget unit is reserved before work is queued,
+    /// so concurrent pending requests cannot overbook the same budget.
+    ///
+    /// A production adapter must persist this admission record transactionally
+    /// before acknowledging or queueing the work. This in-process model only
+    /// demonstrates the state-machine contract.
+    pub fn accept_pending(
+        &self,
+        binding: &EffectBinding,
+    ) -> Result<CommitOutcome, LedgerError> {
+        if !binding.is_well_formed() {
+            return Err(LedgerError::InvalidBinding);
+        }
+
+        let mut state = self.lock()?;
+        if let Some(existing) = state.receipts_by_key.get(&binding.idempotency_key) {
+            return if existing.matches(binding) {
+                Ok(CommitOutcome::AlreadyCommitted(existing.clone()))
+            } else {
+                Ok(CommitOutcome::IdempotencyKeyConflict)
+            };
+        }
+        if let Some(existing) = state.pending_by_key.get(&binding.idempotency_key) {
+            return if existing.binding == *binding {
+                Ok(CommitOutcome::AlreadyPending)
+            } else {
+                Ok(CommitOutcome::IdempotencyKeyConflict)
+            };
+        }
+        if let Some(existing) = state.aborted_by_key.get(&binding.idempotency_key) {
+            if existing != binding {
+                return Ok(CommitOutcome::IdempotencyKeyConflict);
+            }
+            state.aborted_by_key.remove(&binding.idempotency_key);
+        }
+
+        if let Some((tenant, resource)) = &state.participant_scope {
+            if binding.tenant != *tenant || binding.resource != *resource {
+                return Ok(CommitOutcome::DeniedOutsideParticipantScope);
+            }
+        }
+        if binding.authority_epoch != state.authority_epoch {
+            return Ok(CommitOutcome::DeniedStaleAuthorityEpoch {
+                presented: binding.authority_epoch,
+                current: state.authority_epoch,
+            });
+        }
+        if binding.resource_version != state.current_resource_version
+            || binding.resource_revision != state.resource_revision
+        {
+            return Ok(CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: binding.resource_version.clone(),
+                current_version: state.current_resource_version.clone(),
+                presented_revision: binding.resource_revision,
+                current_revision: state.resource_revision,
+            });
+        }
+        if state.remaining_budget <= state.reserved_budget {
+            return Ok(CommitOutcome::DeniedBudgetExhausted);
+        }
+
+        state.reserved_budget += 1;
+        state.pending_by_key.insert(
+            binding.idempotency_key.clone(),
+            PendingRecord {
+                binding: binding.clone(),
+            },
+        );
+        Ok(CommitOutcome::PendingAccepted)
+    }
+
+    /// Finalize a previously admitted request. Authority epoch and resource
+    /// revision are checked again at the actual commit point. Any denial writes
+    /// a terminal aborted journal marker and releases the reserved budget.
+    pub fn finalize_pending(
+        &self,
+        idempotency_key: &str,
+    ) -> Result<CommitOutcome, LedgerError> {
+        let mut state = self.lock()?;
+        let pending = state
+            .pending_by_key
+            .get(idempotency_key)
+            .cloned()
+            .ok_or(LedgerError::NoPendingAttempt)?;
+        let binding = pending.binding;
+
+        let denial = if binding.authority_epoch != state.authority_epoch {
+            Some(CommitOutcome::DeniedStaleAuthorityEpoch {
+                presented: binding.authority_epoch,
+                current: state.authority_epoch,
+            })
+        } else if binding.resource_version != state.current_resource_version
+            || binding.resource_revision != state.resource_revision
+        {
+            Some(CommitOutcome::DeniedStaleResourceRevision {
+                presented_version: binding.resource_version.clone(),
+                current_version: state.current_resource_version.clone(),
+                presented_revision: binding.resource_revision,
+                current_revision: state.resource_revision,
+            })
+        } else {
+            None
+        };
+
+        if let Some(outcome) = denial {
+            state.pending_by_key.remove(idempotency_key);
+            state.reserved_budget -= 1;
+            state
+                .aborted_by_key
+                .insert(idempotency_key.to_owned(), binding);
+            return Ok(outcome);
+        }
+
+        // Perform all fallible arithmetic before consuming the reservation.
+        let sequence = state.next_commit_sequence;
+        let next_sequence = sequence
+            .checked_add(1)
+            .ok_or(LedgerError::SequenceExhausted)?;
+        if state.remaining_budget == 0 || state.reserved_budget == 0 {
+            return Err(LedgerError::Poisoned);
+        }
+
+        state.pending_by_key.remove(idempotency_key);
+        state.reserved_budget -= 1;
+        state.remaining_budget -= 1;
+        state.next_commit_sequence = next_sequence;
+
+        let receipt = EffectReceipt {
+            transaction_id: format!("synthetic-tx-{sequence}"),
+            idempotency_key: binding.idempotency_key.clone(),
+            relying_party: binding.relying_party.clone(),
+            request_digest: binding.request_digest.clone(),
+            preflight_evidence_digest: binding.preflight_evidence_digest.clone(),
+            commit_evidence_digest: binding.commit_evidence_digest.clone(),
+            resource_version: binding.resource_version.clone(),
+            resource_revision: binding.resource_revision,
+            actor: binding.actor.clone(),
+            tenant: binding.tenant.clone(),
+            resource: binding.resource.clone(),
+            operation: binding.operation.clone(),
+            authority_epoch: binding.authority_epoch,
+            state_revision: sequence,
+            commit_sequence: sequence,
+        };
+        state
+            .receipts_by_key
+            .insert(idempotency_key.to_owned(), receipt.clone());
+        Ok(CommitOutcome::Committed(receipt))
+    }
+
+    /// Record an authoritative terminal result from the ingress/idempotency
+    /// coordinator proving this exact request was not accepted for execution.
+    /// A bare missing receipt is not sufficient; the upstream system must
+    /// produce this terminal marker after its admission window/watermark closes.
+    pub fn record_not_accepted(
+        &self,
+        binding: &EffectBinding,
+    ) -> Result<bool, LedgerError> {
+        if !binding.is_well_formed() {
+            return Err(LedgerError::InvalidBinding);
+        }
+        let mut state = self.lock()?;
+        if state.receipts_by_key.contains_key(&binding.idempotency_key)
+            || state.pending_by_key.contains_key(&binding.idempotency_key)
+        {
+            return Ok(false);
+        }
+        if let Some(existing) = state.aborted_by_key.get(&binding.idempotency_key) {
+            return Ok(existing == binding);
+        }
+        state
+            .aborted_by_key
+            .insert(binding.idempotency_key.clone(), binding.clone());
+        Ok(true)
+    }
+
+    /// Read the participant's authoritative idempotency journal. Absence of
+    /// any entry returns NotObserved, not Aborted: a delayed original request
+    /// may still arrive unless an ingress terminal marker has been recorded.
+    pub fn reconcile_attempt(
+        &self,
+        binding: &EffectBinding,
+    ) -> Result<ParticipantAttemptStatus, LedgerError> {
+        let state = self.lock()?;
+        if let Some(receipt) = state.receipts_by_key.get(&binding.idempotency_key) {
+            return Ok(if receipt.matches(binding) {
+                ParticipantAttemptStatus::Committed(receipt.clone())
+            } else {
+                ParticipantAttemptStatus::Conflict
+            });
+        }
+        if let Some(pending) = state.pending_by_key.get(&binding.idempotency_key) {
+            return Ok(if pending.binding == *binding {
+                ParticipantAttemptStatus::Pending
+            } else {
+                ParticipantAttemptStatus::Conflict
+            });
+        }
+        if let Some(aborted) = state.aborted_by_key.get(&binding.idempotency_key) {
+            return Ok(if aborted == binding {
+                ParticipantAttemptStatus::Aborted
+            } else {
+                ParticipantAttemptStatus::Conflict
+            });
+        }
+        Ok(ParticipantAttemptStatus::NotObserved)
+    }
+
     pub fn lookup(&self, idempotency_key: &str) -> Result<Option<EffectReceipt>, LedgerError> {
         Ok(self.lock()?.receipts_by_key.get(idempotency_key).cloned())
     }
@@ -380,10 +590,23 @@ pub fn verify_receipt_binding(receipt: &EffectReceipt, binding: &EffectBinding) 
         && !receipt.transaction_id.trim().is_empty()
 }
 
+/// State recorded by the participant's authoritative idempotency journal.
+/// NotObserved is deliberately not equivalent to Aborted: the original request
+/// may still be in a network queue or ingress worker.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParticipantAttemptStatus {
+    NotObserved,
+    Pending,
+    Aborted,
+    Committed(EffectReceipt),
+    Conflict,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeliveryFault {
     None,
     LostBeforeParticipant,
+    AcceptedPending,
     LostAfterParticipant,
 }
 
@@ -400,12 +623,15 @@ pub enum AttemptState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Submission {
     Response(CommitOutcome),
+    AcceptedPending,
     ResponseLost,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Reconciliation {
     Committed(EffectReceipt),
+    Pending,
+    NotObserved,
     Absent,
 }
 
@@ -472,6 +698,21 @@ impl EffectSession {
             self.state = AttemptState::OutcomeUnknown;
             return Ok(Submission::ResponseLost);
         }
+        if fault == DeliveryFault::AcceptedPending {
+            let outcome = participant
+                .accept_pending(binding)
+                .map_err(SessionError::Ledger)?;
+            match outcome {
+                CommitOutcome::PendingAccepted | CommitOutcome::AlreadyPending => {
+                    self.state = AttemptState::OutcomeUnknown;
+                    return Ok(Submission::AcceptedPending);
+                }
+                other => {
+                    self.apply_outcome(&other);
+                    return Ok(Submission::Response(other));
+                }
+            }
+        }
 
         let outcome = participant.commit(binding).map_err(SessionError::Ledger)?;
         if fault == DeliveryFault::LostAfterParticipant {
@@ -511,15 +752,21 @@ impl EffectSession {
             .as_ref()
             .ok_or(SessionError::NoPreparedAttempt)?;
         match participant
-            .lookup(&binding.idempotency_key)
+            .reconcile_attempt(binding)
             .map_err(SessionError::Ledger)?
         {
-            Some(receipt) if verify_receipt_binding(&receipt, binding) => {
+            ParticipantAttemptStatus::Committed(receipt)
+                if verify_receipt_binding(&receipt, binding) =>
+            {
                 self.state = AttemptState::Committed;
                 Ok(Reconciliation::Committed(receipt))
             }
-            Some(_) => Err(SessionError::ReceiptConflict),
-            None => {
+            ParticipantAttemptStatus::Committed(_) | ParticipantAttemptStatus::Conflict => {
+                Err(SessionError::ReceiptConflict)
+            }
+            ParticipantAttemptStatus::Pending => Ok(Reconciliation::Pending),
+            ParticipantAttemptStatus::NotObserved => Ok(Reconciliation::NotObserved),
+            ParticipantAttemptStatus::Aborted => {
                 self.state = AttemptState::ReconciledAbsent;
                 Ok(Reconciliation::Absent)
             }
