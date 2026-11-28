@@ -37,6 +37,24 @@ pub enum MemoryState {
     Unknown,
 }
 
+/// A lineage closure produced only after the trusted memory-store adapter
+/// supplies the complete parent index and the corresponding parent records.
+///
+/// The fields are private so callers cannot construct a witness by copying
+/// labels into a struct literal. This is a checked reference-model object, not
+/// a cryptographic proof; the adapter must obtain the parent index/records from
+/// its authenticated memory store and revalidate the witness on each use.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidatedDerivedLineage {
+    derived_id: String,
+    derived_content_digest: String,
+    tenant: String,
+    principal: String,
+    authority_epoch: u64,
+    parent_bindings: BTreeSet<(String, String)>,
+    inherited_taint_labels: BTreeSet<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MemoryRecord {
     pub id: String,
@@ -53,6 +71,9 @@ pub struct MemoryRecord {
     pub parent_taint_labels: BTreeSet<String>,
     pub age_sessions: u32,
     pub revocation_epoch: u64,
+    /// Opaque checked lineage closure for DerivedSummary records. Non-derived
+    /// records should leave this as None.
+    pub lineage: Option<ValidatedDerivedLineage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,7 +159,14 @@ pub enum MemoryViolation {
     RevocationEpochStale,
     EmptyMemoryHasProvenance,
     DerivedMemoryMissingParent,
+    DerivedLineageWitnessMissing,
+    DerivedLineageBindingMismatch,
+    DerivedLineageParentSetMismatch,
+    DerivedLineageParentInvalid,
+    DerivedLineageParentIndeterminate,
+    DerivedLineageTaintMismatch,
     ParentTaintDropped,
+    SourceTrustMismatch,
     TrustEscalation,
     SourceTrustConflict,
     InvalidMemoryProvenance,
@@ -214,13 +242,73 @@ pub fn classify_memory(
     {
         insert_once(&mut invalid, MemoryViolation::EmptyMemoryHasProvenance);
     }
+    match memory.source_kind {
+        MemorySourceKind::UserConfirmed
+            if memory.source_trust != MemoryTrust::UserConfirmed
+                || memory.claimed_trust != MemoryTrust::UserConfirmed =>
+        {
+            insert_once(&mut invalid, MemoryViolation::SourceTrustMismatch);
+        }
+        MemorySourceKind::System
+            if memory.source_trust != MemoryTrust::SystemVerified
+                || memory.claimed_trust != MemoryTrust::SystemVerified =>
+        {
+            insert_once(&mut invalid, MemoryViolation::SourceTrustMismatch);
+        }
+        MemorySourceKind::UntrustedTool
+            if memory.source_trust != MemoryTrust::UntrustedExternal
+                || memory.claimed_trust != MemoryTrust::UntrustedExternal =>
+        {
+            insert_once(&mut invalid, MemoryViolation::SourceTrustMismatch);
+        }
+        MemorySourceKind::DerivedSummary
+            if memory.source_trust != MemoryTrust::Derived
+                || memory.claimed_trust != MemoryTrust::Derived =>
+        {
+            insert_once(&mut invalid, MemoryViolation::SourceTrustMismatch);
+        }
+        _ => {}
+    }
+
     if memory.source_kind == MemorySourceKind::DerivedSummary {
         if memory.parent_ids.is_empty() {
             insert_once(&mut invalid, MemoryViolation::DerivedMemoryMissingParent);
         }
-        if !memory.parent_taint_labels.is_subset(&memory.taint_labels) {
-            insert_once(&mut invalid, MemoryViolation::ParentTaintDropped);
+        match &memory.lineage {
+            None => {
+                insert_once(&mut invalid, MemoryViolation::DerivedLineageWitnessMissing);
+            }
+            Some(lineage) => {
+                let witnessed_parent_ids: BTreeSet<String> = lineage
+                    .parent_bindings
+                    .iter()
+                    .map(|(parent_id, _)| parent_id.clone())
+                    .collect();
+                if lineage.derived_id != memory.id
+                    || lineage.derived_content_digest != memory.content_digest
+                    || lineage.tenant != memory.tenant
+                    || lineage.principal != memory.principal
+                    || lineage.authority_epoch != policy.authority_epoch
+                    || witnessed_parent_ids != memory.parent_ids
+                {
+                    insert_once(
+                        &mut invalid,
+                        MemoryViolation::DerivedLineageBindingMismatch,
+                    );
+                }
+                if lineage.inherited_taint_labels != memory.parent_taint_labels {
+                    insert_once(
+                        &mut invalid,
+                        MemoryViolation::DerivedLineageTaintMismatch,
+                    );
+                }
+                if !lineage.inherited_taint_labels.is_subset(&memory.taint_labels) {
+                    insert_once(&mut invalid, MemoryViolation::ParentTaintDropped);
+                }
+            }
         }
+    } else if memory.lineage.is_some() {
+        insert_once(&mut invalid, MemoryViolation::DerivedLineageBindingMismatch);
     }
 
     let source_is_untrusted = memory.source_kind == MemorySourceKind::UntrustedTool
@@ -258,6 +346,110 @@ pub fn classify_memory(
     } else {
         (MemoryClassification::Trusted, Vec::new())
     }
+}
+
+/// Validate a derived summary against the complete parent index and the
+/// corresponding parent records supplied by the authenticated memory-store
+/// adapter. The resulting opaque witness binds the child, exact parent IDs and
+/// digests, tenant/principal, current authority epoch, and inherited taint.
+pub fn validate_derived_memory_lineage(
+    policy: &RootMemoryPolicy,
+    derived: &MemoryRecord,
+    expected_parent_ids: &BTreeSet<String>,
+    parents: &[MemoryRecord],
+) -> Result<ValidatedDerivedLineage, Vec<MemoryViolation>> {
+    let mut invalid = Vec::new();
+    let mut indeterminate = Vec::new();
+
+    if derived.source_kind != MemorySourceKind::DerivedSummary {
+        insert_once(&mut invalid, MemoryViolation::DerivedLineageBindingMismatch);
+    }
+    if expected_parent_ids.is_empty() {
+        insert_once(&mut invalid, MemoryViolation::DerivedMemoryMissingParent);
+    }
+    if derived.parent_ids != *expected_parent_ids {
+        insert_once(&mut invalid, MemoryViolation::DerivedLineageParentSetMismatch);
+    }
+    if parents.len() != expected_parent_ids.len() {
+        insert_once(&mut invalid, MemoryViolation::DerivedLineageParentSetMismatch);
+    }
+
+    let mut actual_parent_ids = BTreeSet::new();
+    let mut parent_bindings = BTreeSet::new();
+    let mut inherited_taint_labels = BTreeSet::new();
+
+    for parent in parents {
+        if !actual_parent_ids.insert(parent.id.clone()) {
+            insert_once(&mut invalid, MemoryViolation::DerivedLineageParentSetMismatch);
+        }
+        if parent.id.trim().is_empty() || parent.content_digest.trim().is_empty() {
+            insert_once(&mut invalid, MemoryViolation::DerivedLineageParentInvalid);
+            continue;
+        }
+        if parent.tenant != derived.tenant
+            || parent.principal != derived.principal
+            || parent.tenant != policy.tenant
+            || parent.principal != policy.principal
+        {
+            insert_once(&mut invalid, MemoryViolation::SubjectOrTenantMismatch);
+        }
+
+        let (classification, _) = classify_memory(policy, parent);
+        match classification {
+            MemoryClassification::Invalid => {
+                insert_once(&mut invalid, MemoryViolation::DerivedLineageParentInvalid);
+            }
+            MemoryClassification::Indeterminate => {
+                insert_once(
+                    &mut indeterminate,
+                    MemoryViolation::DerivedLineageParentIndeterminate,
+                );
+            }
+            MemoryClassification::Trusted | MemoryClassification::Tainted => {}
+        }
+
+        inherited_taint_labels.extend(parent.taint_labels.iter().cloned());
+        if classification == MemoryClassification::Tainted && parent.taint_labels.is_empty() {
+            // Preserve tainted ancestry even if an upstream source has no
+            // finer-grained label vocabulary.
+            inherited_taint_labels.insert("provenance:tainted-parent".into());
+        }
+        parent_bindings.insert((parent.id.clone(), parent.content_digest.clone()));
+    }
+
+    if actual_parent_ids != *expected_parent_ids {
+        insert_once(&mut invalid, MemoryViolation::DerivedLineageParentSetMismatch);
+    }
+    if derived.parent_taint_labels != inherited_taint_labels {
+        insert_once(&mut invalid, MemoryViolation::DerivedLineageTaintMismatch);
+    }
+    if !inherited_taint_labels.is_subset(&derived.taint_labels) {
+        insert_once(&mut invalid, MemoryViolation::ParentTaintDropped);
+    }
+    if derived.id.trim().is_empty() || derived.content_digest.trim().is_empty() {
+        insert_once(&mut invalid, MemoryViolation::MemoryIdentifierMissing);
+    }
+    if derived.tenant != policy.tenant || derived.principal != policy.principal {
+        insert_once(&mut invalid, MemoryViolation::SubjectOrTenantMismatch);
+    }
+
+    if !invalid.is_empty() || !indeterminate.is_empty() {
+        let mut violations = invalid;
+        for item in indeterminate {
+            insert_once(&mut violations, item);
+        }
+        return Err(violations);
+    }
+
+    Ok(ValidatedDerivedLineage {
+        derived_id: derived.id.clone(),
+        derived_content_digest: derived.content_digest.clone(),
+        tenant: derived.tenant.clone(),
+        principal: derived.principal.clone(),
+        authority_epoch: policy.authority_epoch,
+        parent_bindings,
+        inherited_taint_labels,
+    })
 }
 
 /// Apply root-authority and independent-approval checks to an exact action.
@@ -424,6 +616,7 @@ mod tests {
             parent_taint_labels: BTreeSet::new(),
             age_sessions: 3,
             revocation_epoch: 4,
+            lineage: None,
         }
     }
 
@@ -646,15 +839,35 @@ mod tests {
     }
 
     #[test]
-    fn derived_summary_preserves_parent_taint_but_remains_context_usable() {
+    fn derived_summary_preserves_checked_parent_taint_but_remains_context_usable() {
+        let policy = policy();
+        let parent = untrusted_memory();
+        let mut parent = parent;
+        parent.id = "mem-parent".into();
+        parent.content_digest = "sha256:parent-1".into();
+
         let mut memory = clean_memory();
+        memory.id = "mem-derived".into();
+        memory.content_digest = "sha256:derived-1".into();
         memory.source_kind = MemorySourceKind::DerivedSummary;
         memory.source_trust = MemoryTrust::Derived;
         memory.claimed_trust = MemoryTrust::Derived;
         memory.parent_ids = set(&["mem-parent"]);
-        memory.parent_taint_labels = set(&["external:email", "pii:finance"]);
-        memory.taint_labels = set(&["external:email", "pii:finance"]);
-        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        memory.parent_taint_labels = parent.taint_labels.clone();
+        memory.taint_labels = parent.taint_labels.clone();
+
+        let expected_parent_ids = set(&["mem-parent"]);
+        memory.lineage = Some(
+            validate_derived_memory_lineage(
+                &policy,
+                &memory,
+                &expected_parent_ids,
+                &[parent],
+            )
+            .expect("complete authenticated parent set should produce a checked witness"),
+        );
+
+        let result = evaluate_memory_action(&policy, &memory, &read_action());
         assert_eq!(result.memory_classification, MemoryClassification::Tainted);
         assert_eq!(result.authorization, AuthorizationDecision::Allow);
     }
@@ -690,6 +903,80 @@ mod tests {
         let result = evaluate_memory_action(&policy(), &memory, &action);
         assert_eq!(result.authorization, AuthorizationDecision::Deny);
         assert!(result.violations.contains(&MemoryViolation::ActionDigestMissing));
+    }
+ 
+    #[test]
+    fn derived_summary_without_checked_lineage_witness_is_rejected() {
+        let mut memory = clean_memory();
+        memory.source_kind = MemorySourceKind::DerivedSummary;
+        memory.source_trust = MemoryTrust::Derived;
+        memory.claimed_trust = MemoryTrust::Derived;
+        memory.parent_ids = set(&["mem-parent"]);
+        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Invalid);
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+        assert!(result
+            .violations
+            .contains(&MemoryViolation::DerivedLineageWitnessMissing));
+    }
+
+    #[test]
+    fn derived_lineage_requires_exact_parent_index_and_current_epoch() {
+        let policy = policy();
+        let mut parent = untrusted_memory();
+        parent.id = "mem-parent".into();
+        parent.content_digest = "sha256:parent-1".into();
+
+        let mut derived = clean_memory();
+        derived.id = "mem-derived".into();
+        derived.content_digest = "sha256:derived-1".into();
+        derived.source_kind = MemorySourceKind::DerivedSummary;
+        derived.source_trust = MemoryTrust::Derived;
+        derived.claimed_trust = MemoryTrust::Derived;
+        derived.parent_ids = set(&["mem-parent"]);
+        derived.parent_taint_labels = parent.taint_labels.clone();
+        derived.taint_labels = parent.taint_labels.clone();
+
+        let incomplete_index = BTreeSet::new();
+        assert!(validate_derived_memory_lineage(
+            &policy,
+            &derived,
+            &incomplete_index,
+            std::slice::from_ref(&parent),
+        )
+        .is_err());
+
+        let expected = set(&["mem-parent"]);
+        derived.lineage = Some(
+            validate_derived_memory_lineage(
+                &policy,
+                &derived,
+                &expected,
+                &[parent],
+            )
+            .expect("exact parent index should validate"),
+        );
+        let mut changed_policy = policy.clone();
+        changed_policy.authority_epoch += 1;
+        let result = evaluate_memory_action(&changed_policy, &derived, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Invalid);
+        assert!(result
+            .violations
+            .contains(&MemoryViolation::DerivedLineageBindingMismatch));
+    }
+
+    #[test]
+    fn source_kind_cannot_claim_a_different_trust_class() {
+        let mut memory = clean_memory();
+        memory.source_kind = MemorySourceKind::System;
+        memory.source_trust = MemoryTrust::UserConfirmed;
+        memory.claimed_trust = MemoryTrust::UserConfirmed;
+        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Invalid);
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+        assert!(result
+            .violations
+            .contains(&MemoryViolation::SourceTrustMismatch));
     }
 
 }
