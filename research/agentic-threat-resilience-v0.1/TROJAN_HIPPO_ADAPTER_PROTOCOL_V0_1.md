@@ -145,7 +145,7 @@ The companion synthetic contract is now published:
 
 - `schemas/memory-provenance-conformance-v0.1.schema.json`;
 - `scenarios/memory-provenance-conformance-v0.1.json` — 14 cases, MPR-001..014;
-- `tools/validate_memory_provenance.py` — deterministic reference checker with 13 one-field adversarial mutation controls;
+- `tools/validate_memory_provenance.py` — deterministic reference checker with 15 one-field adversarial mutation controls;
 - `.github/workflows/atr-memory-provenance.yml` — exact pull-request schema/reference-contract check.
 
 The fixtures exercise clean user-confirmed memory, untrusted but readable context, dormant 100-session persistence, summary/embedding taint inheritance, claimed-trust laundering, cross-tenant retrieval, stale tombstone resurrection, unknown status, exact independent action approval, memory-as-consent substitution, an independently observed unauthorized bypass, no-memory utility control and cross-agent derived taint.
@@ -160,7 +160,7 @@ The companion synthetic contract is published alongside this adapter:
 
 - `schemas/memory-provenance-conformance-v0.1.schema.json`;
 - `scenarios/memory-provenance-conformance-v0.1.json` — 14 cases, MPR-001..014;
-- `tools/validate_memory_provenance.py` — deterministic reference checker with 13 one-field adversarial mutation controls;
+- `tools/validate_memory_provenance.py` — deterministic reference checker with 15 one-field adversarial mutation controls;
 - `.github/workflows/atr-memory-provenance.yml` — exact pull-request schema/reference-contract check.
 
 The fixtures exercise clean user-confirmed memory, untrusted but readable context, dormant 100-session persistence, summary/embedding taint inheritance, claimed-trust laundering, cross-tenant retrieval, stale tombstone resurrection, unknown status, exact independent action approval, memory-as-consent substitution, an independently observed unauthorized bypass, no-memory utility control and cross-agent derived taint.
@@ -184,4 +184,4 @@ The corpus and mutations are synthetic contract tests. They are not Trojan Hippo
 - AISec 2026 accepted-paper abstract: https://aisec.cc/accepted-papers.html
 - DOI: https://doi.org/10.1145/3847352.3848090
 - Upstream Apache-2.0 repo pinned to `ebeb739dada097e06b125faa70e82e064482b64b`: https://github.com/debesheedas/trojan-hippo-benchmark/tree/ebeb739dada097e06b125faa70e82e064482b64b
-- Existing ATR work: Platform #540–#550; PR #542.
+- Existing ATR work: Platform #540–#551; PR #542.
