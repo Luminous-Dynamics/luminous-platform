@@ -610,4 +610,40 @@ mod tests {
             Err(SessionError::UnresolvedOutcome)
         );
     }
+    #[test]
+    fn concurrent_distinct_requests_cannot_overspend_one_budget_unit() {
+        let participant = Arc::new(ParticipantLedger::new(5, 1));
+        let start = Arc::new(Barrier::new(2));
+        let left = binding("idem-left", "digest-left", 5);
+        let right = binding("idem-right", "digest-right", 5);
+
+        let left_participant = Arc::clone(&participant);
+        let left_start = Arc::clone(&start);
+        let left_handle = thread::spawn(move || {
+            left_start.wait();
+            left_participant.commit(&left).unwrap()
+        });
+
+        let right_participant = Arc::clone(&participant);
+        let right_start = Arc::clone(&start);
+        let right_handle = thread::spawn(move || {
+            right_start.wait();
+            right_participant.commit(&right).unwrap()
+        });
+
+        let outcomes = [left_handle.join().unwrap(), right_handle.join().unwrap()];
+        let committed = outcomes
+            .iter()
+            .filter(|outcome| matches!(outcome, CommitOutcome::Committed(_)))
+            .count();
+        let budget_denials = outcomes
+            .iter()
+            .filter(|outcome| matches!(outcome, CommitOutcome::DeniedBudgetExhausted))
+            .count();
+
+        assert_eq!(committed, 1);
+        assert_eq!(budget_denials, 1);
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
 }
