@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/trust-framework-conformance-v0.1.schema.json",
+  "title": "WIMSE Agent Mandate Trust-Framework Conformance Corpus v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "source_draft",
+    "status",
+    "cases"
+  ],
+  "properties": {
+    "profile": {
+      "const": "luminous-wimse-agent-mandate-trust-framework-conformance-v0.1"
+    },
+    "source_draft": {
+      "const": "draft-hulea-wimse-agent-mandate-01"
+    },
+    "status": {
+      "const": "synthetic-trust-framework-conformance-not-protocol-implementation"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "allocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_units",
+        "ledger_id"
+      ],
+      "properties": {
+        "max_units": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ledger_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "rp",
+        "request_id",
+        "idempotency_key",
+        "ledger_id",
+        "units",
+        "state"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rp": {
+          "type": "string",
+          "minLength": 1
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ledger_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "units": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "state": {
+          "enum": [
+            "committed",
+            "denied",
+            "unknown",
+            "reconciled_absent",
+            "reconciled_committed"
+          ]
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_id",
+        "family",
+        "description",
+        "trust_framework",
+        "mandate",
+        "instruction_evidence",
+        "consumption_events",
+        "expected"
+      ],
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^TF-[0-9]{3}$"
+        },
+        "family": {
+          "enum": [
+            "delegator-signature",
+            "mandate-issuer-process",
+            "status",
+            "shared-budget",
+            "per-rp-budget",
+            "unknown-outcome"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 12
+        },
+        "trust_framework": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instruction_method",
+            "require_role_separation",
+            "budget_mode",
+            "authority_budget_ceiling",
+            "shared_ledger_id",
+            "global_budget",
+            "rp_allocations"
+          ],
+          "properties": {
+            "instruction_method": {
+              "enum": [
+                "delegator_exact_mandate_signature",
+                "mandate_issuer_qualified_process",
+                "unspecified"
+              ]
+            },
+            "require_role_separation": {
+              "type": "boolean"
+            },
+            "budget_mode": {
+              "enum": [
+                "shared_global_ledger",
+                "allocated_per_rp"
+              ]
+            },
+            "authority_budget_ceiling": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shared_ledger_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "global_budget": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "rp_allocations": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/allocation"
+              }
+            }
+          }
+        },
+        "mandate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mandate_id",
+            "principal",
+            "delegator",
+            "issuer",
+            "content_digest"
+          ],
+          "properties": {
+            "mandate_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "principal": {
+              "type": "string",
+              "minLength": 1
+            },
+            "delegator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "issuer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "content_digest": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "instruction_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_kind",
+            "signer",
+            "signer_role",
+            "subject_digest",
+            "principal",
+            "delegator",
+            "verification_state",
+            "status",
+            "process_assurance",
+            "checked_at",
+            "expires_at"
+          ],
+          "properties": {
+            "evidence_kind": {
+              "enum": [
+                "delegator_signature",
+                "issuer_process_attestation",
+                "generic_approval",
+                "none"
+              ]
+            },
+            "signer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signer_role": {
+              "enum": [
+                "delegator",
+                "mandate_issuer",
+                "independent_assurance",
+                "other",
+                "none"
+              ]
+            },
+            "subject_digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "principal": {
+              "type": "string",
+              "minLength": 1
+            },
+            "delegator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "verification_state": {
+              "enum": [
+                "valid",
+                "invalid",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "status": {
+              "enum": [
+                "active",
+                "withdrawn",
+                "superseded",
+                "stale",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "process_assurance": {
+              "enum": [
+                "qualified",
+                "unqualified",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "checked_at": {
+              "type": "integer"
+            },
+            "expires_at": {
+              "type": "integer"
+            }
+          }
+        },
+        "consumption_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "instruction_outcome",
+            "budget_outcome",
+            "decision"
+          ],
+          "properties": {
+            "instruction_outcome": {
+              "enum": [
+                "valid",
+                "invalid",
+                "indeterminate"
+              ]
+            },
+            "budget_outcome": {
+              "enum": [
+                "qualified",
+                "invalid",
+                "indeterminate"
+              ]
+            },
+            "decision": {
+              "enum": [
+                "allow",
+                "deny",
+                "unknown_reconciliation_required"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
