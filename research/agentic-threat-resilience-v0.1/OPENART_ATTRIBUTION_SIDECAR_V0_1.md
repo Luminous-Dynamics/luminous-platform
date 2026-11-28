@@ -72,7 +72,7 @@ The corpus contains eight synthetic episodes:
 7. candidate claims to be the observer, but no independent receipt exists;
 8. effect receipt with mismatched tenant/request binding.
 
-The checker also includes ten mutations for hidden-contract leakage, candidate-claimed receipt promotion, observer independence, receipt request/tenant substitution, missing causal lineage, native judge flips and broken event parent references.
+The checker also includes eleven mutations for hidden-contract leakage, candidate-claimed receipt promotion, observer independence, receipt request/tenant substitution, missing causal lineage, missing participant decisions, native judge flips and broken event parent references.
 
 Files:
 - `schemas/openart-atr-sidecar-v0.1.schema.json`
