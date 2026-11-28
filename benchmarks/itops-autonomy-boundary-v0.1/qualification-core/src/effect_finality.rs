@@ -931,7 +931,7 @@ mod tests {
     }
 
     #[test]
-    fn response_loss_before_commit_requires_same_key_retry() {
+    fn response_loss_without_terminal_ingress_proof_stays_unknown() {
         let participant = ParticipantLedger::new(0, 1);
         let mut session = EffectSession::default();
         let original = binding("idem-same", "digest-same", 0);
@@ -944,8 +944,22 @@ mod tests {
         );
         assert_eq!(
             session.reconcile(&participant).unwrap(),
+            Reconciliation::NotObserved
+        );
+        assert_eq!(session.state(), AttemptState::OutcomeUnknown);
+        assert_eq!(
+            session.prepare(binding("idem-new", "digest-new", 0)),
+            Err(SessionError::UnresolvedOutcome)
+        );
+
+        // Only an authoritative terminal ingress result can establish that the
+        // request was not accepted. A missing receipt alone is not enough.
+        assert!(participant.record_not_accepted(&original).unwrap());
+        assert_eq!(
+            session.reconcile(&participant).unwrap(),
             Reconciliation::Absent
         );
+        assert_eq!(session.state(), AttemptState::ReconciledAbsent);
         assert_eq!(
             session.prepare(binding("idem-new", "digest-new", 0)),
             Err(SessionError::RetrySameAttemptRequired)
@@ -1387,6 +1401,108 @@ mod tests {
         assert_eq!(participant.current_resource_version().unwrap(), "orders-v32");
         assert_eq!(participant.current_resource_revision().unwrap(), u64::MAX);
         assert_eq!(participant.remaining_budget().unwrap(), 1);
+    }
+
+    #[test]
+    fn accepted_pending_request_cannot_be_retried_until_terminal() {
+        let participant = ParticipantLedger::new(2, 1);
+        let mut session = EffectSession::default();
+        let original = binding("idem-pending", "digest-pending", 2);
+        session.prepare(original.clone()).unwrap();
+        assert_eq!(
+            session.submit(&participant, DeliveryFault::AcceptedPending).unwrap(),
+            Submission::AcceptedPending
+        );
+        assert_eq!(session.state(), AttemptState::OutcomeUnknown);
+        assert_eq!(
+            session.reconcile(&participant).unwrap(),
+            Reconciliation::Pending
+        );
+        assert_eq!(
+            session.prepare(binding("idem-replacement", "digest-new", 2)),
+            Err(SessionError::UnresolvedOutcome)
+        );
+
+        let finalized = participant.finalize_pending("idem-pending").unwrap();
+        assert!(matches!(finalized, CommitOutcome::Committed(_)));
+        assert!(matches!(
+            session.reconcile(&participant).unwrap(),
+            Reconciliation::Committed(_)
+        ));
+        assert_eq!(session.state(), AttemptState::Committed);
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn pending_budget_is_reserved_across_distinct_relying_parties() {
+        let participant =
+            ParticipantLedger::new_scoped("tenant-a", "ledger/account-4", 4, 1);
+        let mut first = binding("idem-pending-rp1", "digest-rp1", 4);
+        first.relying_party = "rp-one".into();
+        let mut second = binding("idem-pending-rp2", "digest-rp2", 4);
+        second.relying_party = "rp-two".into();
+
+        assert_eq!(
+            participant.accept_pending(&first).unwrap(),
+            CommitOutcome::PendingAccepted
+        );
+        assert_eq!(
+            participant.accept_pending(&second).unwrap(),
+            CommitOutcome::DeniedBudgetExhausted
+        );
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+        assert!(matches!(
+            participant.finalize_pending("idem-pending-rp1").unwrap(),
+            CommitOutcome::Committed(_)
+        ));
+        assert_eq!(participant.remaining_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn pending_request_revoked_before_finalize_is_terminally_aborted() {
+        let participant = ParticipantLedger::new(7, 1);
+        let request = binding("idem-pending-revoke", "digest-pending", 7);
+        assert_eq!(
+            participant.accept_pending(&request).unwrap(),
+            CommitOutcome::PendingAccepted
+        );
+        participant.revoke_and_advance_epoch().unwrap();
+        assert_eq!(
+            participant.finalize_pending("idem-pending-revoke").unwrap(),
+            CommitOutcome::DeniedStaleAuthorityEpoch {
+                presented: 7,
+                current: 8
+            }
+        );
+        assert!(matches!(
+            participant.reconcile_attempt(&request).unwrap(),
+            ParticipantAttemptStatus::Aborted
+        ));
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+        assert_eq!(participant.reserved_budget().unwrap(), 0);
+    }
+
+    #[test]
+    fn reserved_budget_blocks_immediate_commit_from_overspending() {
+        let participant = ParticipantLedger::new(3, 1);
+        let pending = binding("idem-reserve", "digest-reserve", 3);
+        let immediate = binding("idem-immediate", "digest-immediate", 3);
+        assert_eq!(
+            participant.accept_pending(&pending).unwrap(),
+            CommitOutcome::PendingAccepted
+        );
+        assert_eq!(
+            participant.commit(&immediate).unwrap(),
+            CommitOutcome::DeniedBudgetExhausted
+        );
+        assert_eq!(participant.reserved_budget().unwrap(), 1);
+        assert_eq!(participant.remaining_budget().unwrap(), 1);
+        participant.abort_pending("idem-reserve").unwrap();
+        assert_eq!(participant.reserved_budget().unwrap(), 0);
+        assert!(matches!(
+            participant.commit(&immediate).unwrap(),
+            CommitOutcome::Committed(_)
+        ));
     }
 
 }
