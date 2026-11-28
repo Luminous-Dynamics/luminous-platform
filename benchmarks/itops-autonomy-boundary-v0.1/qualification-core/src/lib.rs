@@ -10,4 +10,5 @@
 #![forbid(unsafe_code)]
 
 pub mod delegation;
+pub mod effect_finality;
 pub mod root_reanchor;
