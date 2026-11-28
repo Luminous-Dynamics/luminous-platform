@@ -1,0 +1,69 @@
+name: ITOPS qualification-core policy tests
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/itops-autonomy-boundary-v0.1/qualification-core/**"
+      - ".github/workflows/itops-qualification-core.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  policy-core:
+    name: Pinned Rust policy-core qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: benchmarks/itops-autonomy-boundary-v0.1/qualification-core
+    steps:
+      - name: Check out exact pull-request revision
+        uses: actions/checkout@v4
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: clippy, rustfmt
+
+      - name: Verify formatting
+        run: cargo fmt --all -- --check
+
+      - name: Verify the checked-in test inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -Ec '^    #\[test\]' src/delegation.rs)" -eq 15
+          test "$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)" -eq 9
+          test "$(grep -Ec '^    #\[test\]' src/effect_finality.rs)" -eq 28
+          test "$(grep -Ec '^    #\[test\]' src/memory_provenance.rs)" -eq 23
+
+      - name: Run delegation, root-reanchor, effect-finality and memory-provenance tests
+        run: cargo test --locked --offline --all-targets
+
+      - name: Run Clippy
+        run: cargo clippy --locked --offline --all-targets -- -D warnings
+
+      - name: Emit exact-source qualification receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "source_commit=$GITHUB_SHA"
+            echo "rustc_version=$(rustc --version)"
+            echo "cargo_version=$(cargo --version)"
+            echo "cargo_lock_sha256=$(sha256sum Cargo.lock | cut -d ' ' -f 1)"
+            echo "delegation_test_annotations=$(grep -Ec '^    #\[test\]' src/delegation.rs)"
+            echo "root_reanchor_test_annotations=$(grep -Ec '^    #\[test\]' src/root_reanchor.rs)"
+            echo "effect_finality_test_annotations=$(grep -Ec '^    #\[test\]' src/effect_finality.rs)"
+            echo "memory_provenance_test_annotations=$(grep -Ec '^    #\[test\]' src/memory_provenance.rs)"
+            echo "scope=dependency-free policy, participant-finality and memory-provenance reference models; no production participant/runtime qualification"
+          } | tee qualification-build-receipt.txt
+
+      - name: Upload source qualification receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: itops-qualification-core-${{ github.sha }}
+          path: benchmarks/itops-autonomy-boundary-v0.1/qualification-core/qualification-build-receipt.txt
+          if-no-files-found: error

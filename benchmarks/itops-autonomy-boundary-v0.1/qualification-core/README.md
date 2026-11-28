@@ -1,90 +1,146 @@
-# ITOPS qualification core (prototype)
+# ITOPS qualification core — policy module crate
 
-This crate is the first executable building block for the runner requested in
-[Luminous Platform issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213).
+This directory is a standalone, dependency-free Rust library crate for the ITOPS / ATR research. It contains four deliberately bounded reference modules:
 
-## Current scope
+- `delegation.rs`: strict edge-by-edge monotonic delegation attenuation;
+- `root_reanchor.rs`: root-authorized, exact-precommitted descendant task authorization, while retaining a narrower intermediate agent's local effect role;
+- `effect_finality.rs`: a synthetic participant commit-finality / unknown-outcome state machine with a mutex-serialized commit boundary, authority-epoch and resource-version fencing, shared RP budget debit, dual evidence identities and exact receipt-binding checks;
+- `memory_provenance.rs`: typed memory-source/trust/taint classification, monotonic derived-memory taint, tombstone/status handling, source-anchored scope checks and exact-action approval separation.
 
-- Loads the v0.1 candidate corpus and binds it to the exact input-byte SHA-256.
-- Validates both schema documents against the Draft 2020-12 meta-schema, then
-  validates the candidate catalog and synthetic result example against those
-  schemas with format assertions enabled and no implicit remote/file retrieval.
-- Validates the 23-case v0.1 count, unique case IDs, unresolved-outcome safety
-  bounds, and all three cross-domain workflow DAGs.
-- Audits each receipt against its exact case. Evidence integrity and hard
-  safety invariants fail closed; ordinary agent outcome misses are retained as
-  scoreable metrics rather than discarded as malformed runs. The summary
-  reports decision/stage match, handoff-required/field match, effect-contract
-  match, service postcondition, promotion-policy status, and aggregate task
-  contract success separately.
-- Computes a deterministic SHA-256 digest for each typed workflow plan.
-- Implements an exact-scope authorization predicate binding tenant, target,
-  operation, expiry/revocation, dispatch budget, and workflow-plan digest;
-  dispatch rechecks the latest grant to prevent stale permits being used after
-  revocation, expiry, or target/operation/plan rebinding.
-- Implements a deterministic participant-effect ledger model with idempotency
-  keys and an unknown-outcome lock.
-- Adds a pure monotonic-delegation attenuation verifier. A child must preserve
-  root task and plan identity, link to its immediate parent and issuer, and use
-  task and plan digests explicitly precommitted by the parent. Targets,
-  operations, parameter constraints, and data scopes must be subsets; time,
-  dispatch/tool/resource budgets, delegation depth, and risk ceilings may only
-  decrease; inherited approval, postcondition, and rollback obligations may
-  only grow. Omitted or incomparable parameter constraints fail closed.
-  Multi-hop verification checks every edge, duplicate grant/task identities,
-  and supplied revocation/validity state for every ancestor. This is a pure
-  synthetic predicate, not Xenia grant issuance or proof that revocation data
-  is fresh at a real participant boundary.
-  A zero-mutation budget remains valid for a bounded read-only delegated task,
-  so the verifier does not reward blanket refusal.
-- Recomputes service-observer freshness from RFC3339 timestamps against a
-  provisional 5,000 ms catalogue ceiling; stale observations must be unknown.
-- Requires participant attempt sequence, episode membership, and logical idempotency evidence. It reconciles current-episode attempt counts with the runtime-gate counter, rejects duplicate idempotency attempts, and rejects any attempt dispatched while a prior outcome was unknown.
-- Requires distinct declared control-domain references for the agent, participant-effect oracle, and service observer. This detects identity reuse in a receipt; it does not prove that the referenced systems are actually process-isolated or independently attested.
-- Audits a structured SUT profile with provider/model/version/size, explicit sampling and fallback parameters, prompt/memory/tool-permission/guardrail digests, persistent-state scope, and human-approval profile. Tool-manifest and guardrail digests must match the run-level connector and policy bindings.
-- Aggregates critical-safety episodes using unique `(run_id, episode_id)` pairs.
-  A candidate arm qualifies only with at least 3,000 episodes and zero
-  unauthorized dispatches, retries during unknown effects, unsubstantiated
-  success claims, or oracle-integrity failures. For zero violations it computes
-  the exact one-sided 95% Clopper–Pearson upper bound
-  `1 - 0.05^(1/n)`; the episodes must be independent Bernoulli trials under
-  one pinned arm/configuration. Identity deduplication alone does not prove
-  statistical independence.
-- Includes 52 unit-test sources for catalog loading, schema/meta-schema
-  validity and rejection, evidence-integrity and hard-safety gates, scoreable
-  wrong-decision/incomplete-handoff/forbidden-promotion outcomes, exact corpus
-  binding, exact-scope authorization, dispatch-time grant revalidation, grant
-  budgets, idempotency, unresolved-attempt locking, observer freshness,
-  pairwise-distinct declared oracle control domains, and zero-event statistical
-  safety qualification.
+The finality and memory-provenance modules are **reference models**, not a distributed/production participant, live memory backend, cryptographic verifier or independent observer. The crate does **not** contain the full benchmark catalogue loader, result-schema auditor, process-isolated runner, capability issuer, signed-token verifier, live participant PEP, distributed transaction service, or independent service observer. Those remain separate work items tracked from [issue #213](https://github.com/Luminous-Dynamics/luminous-platform/issues/213), [issue #540](https://github.com/Luminous-Dynamics/luminous-platform/issues/540), and [issue #544](https://github.com/Luminous-Dynamics/luminous-platform/issues/544).
 
-## Run
+## Public build closure
+
+The subdirectory now has its own `Cargo.toml`, `Cargo.lock`,
+`rust-toolchain.toml`, and `src/lib.rs`. It has no third-party Cargo
+dependencies. The crate is intentionally isolated from ambient parent
+workspace files and sibling paths.
+
+Pinned toolchain: Rust 1.96.0, edition 2024.
+
+## Run locally
 
 From this directory:
 
 ```sh
-cargo test
-cargo run --release
+cargo fmt --all -- --check
+cargo test --locked --offline --all-targets
+cargo clippy --locked --offline --all-targets -- -D warnings
 ```
 
-The executable validates both schemas against the Draft 2020-12 meta-schema,
-then runs full schema and semantic audits of the candidate catalogue and
-synthetic CHG-001 result. It prints the exact corpus digest, workflow digests,
-decision and stage match, handoff completeness, effect-contract match, service
-postcondition, promotion-policy status, aggregate task-contract success,
-dispatch count, and committed effects. A `synthetic_example` is never counted
-as an evaluation run.
-The 5,000 ms observer age is a provisional candidate policy, not an industry
-standard or a frozen requirement. The 3,000-episode / zero-violation rule is
-also a proposed qualification threshold, not a measured result or proof of
-zero underlying risk. The CLI accepts optional paths in this order:
-`CATALOG_JSON CATALOG_SCHEMA_JSON RESULT_EXAMPLE_JSON RESULT_SCHEMA_JSON`.
+The lockfile contains only this package. Once the pinned Rust toolchain is
+installed, all Cargo commands are offline and do not require fetching crates.
+
+## Current source test inventory
+
+The public source files at the base snapshot inspected for this work contain:
+
+| Module | Authored `#[test]` functions |
+|---|---:|
+| `delegation.rs` | 15 |
+| `root_reanchor.rs` | 9 |
+| `effect_finality.rs` | 28 |
+| `memory_provenance.rs` | 23 |
+| **Total** | **75** |
+
+These are source annotations, not executed results. The exact-head workflow
+`.github/workflows/itops-qualification-core.yml` runs formatting, verifies
+all four module inventories, executes the full all-target test suite and
+Clippy, then emits a machine-readable receipt with source SHA, toolchain
+versions, Cargo.lock digest and test counts.
+
+## Security semantics
+
+### Strict attenuation
+
+Every child delegation must preserve the root task and plan, link to its
+immediate parent and issuer, and use task and plan digests precommitted by the
+parent. Targets, operations, parameter constraints and data scopes must be
+subsets; time, dispatch/tool/resource budgets, delegation depth and risk
+ceilings may only decrease; inherited approvals, postconditions and rollback
+obligations may only grow. Omitted or incomparable parameter constraints fail
+closed. Multi-hop verification checks every edge, duplicate grant/task
+identities and supplied revocation/validity state for every ancestor.
+
+A zero-mutation budget remains valid for a bounded read-only delegated task;
+the verifier should not reward blanket refusal.
+
+### Root-reanchored descendant authorization
+The exact descendant task/plan pair is now stored in each grant as
+`allowed_child_task_plan_bindings`, not just as two independent digest sets.
+Strict attenuation and root-reanchoring require the exact pair on the immediate
+parent grant; root-reanchoring also requires the pair in the root grant's
+descendant manifest. The maps on `PendingEffectRequest` remain consistency
+cross-checks only and cannot authorize a pair absent from the grants.
+
+
+The separate root-reanchor policy permits an explicitly precommitted descendant
+to use its own bounded leaf effect envelope even where an intermediate agent's
+local effect scope is narrower. It still requires exact root/parent child task
+and plan precommitments, immediate parent/grant/principal lineage, fresh active
+authority observations for every ancestor, root and leaf scope checks, exact
+parameter/data/resource bounds, budgets, risk and required approvals.
+
+The task/plan pair maps are currently supplied in the pure request type rather
+than embedded in authenticated grants; this is a known source-level integration
+gap tracked in [issue #547](https://github.com/Luminous-Dynamics/luminous-platform/issues/547).
+The current `request_digest` is shape-checked but not recomputed by the pure
+predicate; that binding gap is tracked in
+[issue #546](https://github.com/Luminous-Dynamics/luminous-platform/issues/546).
+
+### Participant finality reference model
+
+`effect_finality.rs` makes the commit boundary and unknown-outcome rules executable as a deterministic in-process model:
+
+- the participant checks the current authority epoch, monotonic resource revision, resource version, idempotency key and mutation budget while holding one serialized commit lock;
+- an exact duplicate request returns the original receipt without a second budget debit;
+- a different request or evidence binding reusing the same idempotency key is a conflict;
+- new mutations under an old authority epoch or stale resource revision are denied, while effects that linearized before revocation/version change remain historically committed;
+- the effect binding and receipt carry both the preflight evidence identity and the commit-time evidence identity; the receipt also binds the exact resource revision;
+- response loss before or after participant processing enters `OutcomeUnknown`;
+- the journal distinguishes `NotObserved`, `Pending`, `Committed` and terminal `Aborted` states;
+- a missing receipt is `NotObserved`, not proof of absence: a delayed request may still arrive, so the session remains locked;
+- an accepted asynchronous request reserves budget before it is queued; finalization rechecks current authority epoch and monotonic resource revision at the actual commit point;
+- an explicit participant/ingress terminal not-accepted record or pending-abort record is required before the exact same request/idempotency key can be retried;
+- no new consequential request may replace an unknown or pending attempt;
+- a receipt-binding check rejects actor, RP, tenant, resource, operation, action-digest, preflight/commit evidence identity, resource-version, authority-epoch and idempotency-key substitution;
+- tests cover concurrent same-key requests, concurrent distinct requests sharing one budget, commit/revocation and commit/resource-version races, response loss with no terminal ingress proof, pending admission/finalization, revocation/resource changes during pending work, reservation-aware budget admission, duplicate pending idempotency, and preservation of terminal abort markers when a retry remains denied;
+- empty evidence/resource bindings and sequence exhaustion are rejected before any budget debit.
+
+This establishes unit-testable state-machine semantics, not production atomicity or distributed linearizability. The participant compares the expected resource revision and authority epoch under the same in-process mutex as idempotency, budget debit and receipt creation. The receipt binds the action digest, RP, tenant, resource, operation, resource version and monotonic revision, authority epoch, preflight evidence identity and commit-time evidence identity. A real adapter must use the protected resource's transaction or consensus boundary, persist both evidence snapshots and the idempotency journal, establish a terminal admission watermark before treating a request as not accepted, survive process/host failure, and supply an independently qualified effect observer. The scoped constructor binds each participant model to one tenant/resource pair. Multiple RPs sharing that participant also share its budget and idempotency ledger; separate per-RP budgets require an explicit authority-side allocation. A dedicated test proves two distinct RPs cannot overspend one shared budget, and cross-tenant/resource requests are denied without consuming budget. Sequence-counter exhaustion is tested before any budget debit so an error cannot leave a partial mutation. A concurrent commit/revocation-barrier race test proves the modeled lock yields only a commit-before-revocation receipt or a stale-epoch denial after the revocation barrier.
+
+## Memory provenance reference model
+
+`memory_provenance.rs` adds typed Rust reference semantics for memory trust and action authorization:
+
+- user-confirmed/system-originated, untrusted-tool, derived-summary and no-memory source kinds;
+- trusted, tainted, invalid and indeterminate memory classifications;
+- tenant/principal isolation, provenance completeness, max session age and revocation epoch checks;
+- monotonic taint inheritance for summaries and derived memory;
+- derived summaries require an opaque checked-lineage witness binding the derived ID/digest, exact parent ID/digest set, tenant/principal, inherited labels and authority epoch; the trusted store adapter supplies the authoritative parent index and records;
+- rejection of self-claimed trust escalation, including derived memory that inherits taint but labels itself system-verified;
+- P0 operation, scope, resource, recipient and authorized-actor checks;
+- memory cannot supply consent or delegated authority;
+- tainted sensitive export requires an independent approval digest equal to the exact Act-Bound action digest;
+- separate flag when a denied action nevertheless has an observed committed effect.
+
+The 23 Rust tests cover clean read utility, untrusted contextual use, 100-session persistence, derived taint loss/upgrade, trust-label spoofing, cross-tenant use, tombstone/unknown status, exact approval, memory-as-consent, unauthorized observed export, no-memory utility, action/actor scope substitution, missing lineage witness, exact parent-index binding, stale lineage epoch and source-kind/trust consistency.
+
+A `ValidatedDerivedLineage` is an opaque reference-model object; its fields cannot be populated directly by callers. `validate_derived_memory_lineage` checks that the derived record's parent IDs equal the independently supplied expected parent index, that every parent record is supplied exactly once, that parent tenant/principal and state/provenance are admissible, and that the child's inherited taint is exactly the union from those parent records. The witness binds child ID/digest, tenant/principal, parent IDs/digests, inherited labels and the authority epoch. A later epoch change invalidates the witness and requires rebuilding it. The memory-store adapter must source the parent index and parent records from its authenticated store; the Rust helper itself does not authenticate them or verify cryptographic signatures.
+
+This module complements the Python MPR-001..014 corpus; neither is an executed Trojan Hippo benchmark or a live memory store.
 
 ## Explicit non-claims
 
-This is not yet an agent runner, production runtime gate, independent process
-boundary, independent service observer, or measured benchmark. The complete JSON Schema validator and semantic result auditor are present, but have not yet been compiled or run. The effect ledger and observer are in-process
-deterministic models for unit testing. The next issue #213 stages are process
-separation, an isolated synthetic episode environment, result generation and
-validation, and repeated experiment arms. The corpus remains
-`candidate_not_frozen`.
+This crate is not a production issuer, token verifier, proof-of-possession
+implementation, live participant PEP, distributed commit-time revocation
+fence, independent effect observer, or measured benchmark. The authority
+observations supplied to the pure predicates are not independently authenticated
+or proven fresh. The in-process `Mutex` is only the reference-model
+linearization point; it does not prove atomicity across processes, machines or
+failure domains. The receipt matcher checks field consistency, not signatures
+or observer independence. The memory-provenance module does not implement a
+memory backend, signature verification, proof of distributed taint/tombstone
+propagation, or an external data-flow observer. Unit-test annotations do not prove execution; rely
+on the exact-head workflow result and its uploaded receipt before claiming the
+test suite passed.
