@@ -127,6 +127,9 @@ pub enum AuthorizationDecision {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemoryViolation {
     MissingProvenance,
+    MemoryIdentifierMissing,
+    MemoryDigestMissing,
+    ActionDigestMissing,
     RevokedOrTombstoned,
     StatusUnresolved,
     SubjectOrTenantMismatch,
@@ -178,6 +181,12 @@ pub fn classify_memory(
 
     if !memory.provenance_complete {
         insert_once(&mut indeterminate, MemoryViolation::MissingProvenance);
+    }
+    if memory.id.trim().is_empty() {
+        insert_once(&mut invalid, MemoryViolation::MemoryIdentifierMissing);
+    }
+    if memory.content_digest.trim().is_empty() {
+        insert_once(&mut invalid, MemoryViolation::MemoryDigestMissing);
     }
     match memory.state {
         MemoryState::Active => {}
@@ -279,6 +288,9 @@ pub fn authorize_memory_influenced_action(
     }
     if action.actor.trim().is_empty() || !policy.allowed_actors.contains(&action.actor) {
         insert_once(&mut violations, MemoryViolation::ActorNotAuthorized);
+    }
+    if action.action_digest.trim().is_empty() {
+        insert_once(&mut violations, MemoryViolation::ActionDigestMissing);
     }
     if action.operation.trim().is_empty()
         || !policy.allowed_operations.contains(&action.operation)
@@ -655,6 +667,29 @@ mod tests {
         assert_eq!(result.memory_classification, MemoryClassification::Indeterminate);
         assert_eq!(result.authorization, AuthorizationDecision::Deny);
         assert!(result.violations.contains(&MemoryViolation::MemoryTooOld));
+    }
+
+    #[test]
+    fn missing_memory_identity_or_content_digest_is_invalid() {
+        let mut memory = clean_memory();
+        memory.content_digest.clear();
+        let result = evaluate_memory_action(&policy(), &memory, &read_action());
+        assert_eq!(result.memory_classification, MemoryClassification::Invalid);
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+        assert!(result.violations.contains(&MemoryViolation::MemoryDigestMissing));
+    }
+
+    #[test]
+    fn verified_approval_cannot_match_an_empty_action_digest() {
+        let memory = untrusted_memory();
+        let mut action = export_action();
+        action.recipient = Some("trusted-recipient".into());
+        action.action_digest.clear();
+        action.approval_state = ApprovalState::Verified;
+        action.approval_digest = Some(String::new());
+        let result = evaluate_memory_action(&policy(), &memory, &action);
+        assert_eq!(result.authorization, AuthorizationDecision::Deny);
+        assert!(result.violations.contains(&MemoryViolation::ActionDigestMissing));
     }
 
 }
