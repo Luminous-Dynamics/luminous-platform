@@ -266,6 +266,15 @@ impl ParticipantLedger {
         Ok(self.lock()?.remaining_budget)
     }
 
+    pub fn reserved_budget(&self) -> Result<u64, LedgerError> {
+        Ok(self.lock()?.reserved_budget)
+    }
+
+    pub fn available_budget(&self) -> Result<u64, LedgerError> {
+        let state = self.lock()?;
+        Ok(state.remaining_budget.saturating_sub(state.reserved_budget))
+    }
+
     /// Linearizable idempotent commit.
     ///
     /// Existing idempotency keys are reconciled before checking the current
@@ -515,6 +524,27 @@ impl ParticipantLedger {
             .receipts_by_key
             .insert(idempotency_key.to_owned(), receipt.clone());
         Ok(CommitOutcome::Committed(receipt))
+    }
+
+    /// Abort an admitted pending request and persist a terminal marker so
+    /// the exact same binding may be retried after reconciliation. This is a
+    /// participant-owned terminal transition, not an inference from timeout.
+    pub fn abort_pending(&self, idempotency_key: &str) -> Result<(), LedgerError> {
+        let mut state = self.lock()?;
+        let pending = state
+            .pending_by_key
+            .get(idempotency_key)
+            .cloned()
+            .ok_or(LedgerError::NoPendingAttempt)?;
+        if state.reserved_budget == 0 {
+            return Err(LedgerError::Poisoned);
+        }
+        state.pending_by_key.remove(idempotency_key);
+        state.reserved_budget -= 1;
+        state
+            .aborted_by_key
+            .insert(idempotency_key.to_owned(), pending.binding);
+        Ok(())
     }
 
     /// Record an authoritative terminal result from the ingress/idempotency
