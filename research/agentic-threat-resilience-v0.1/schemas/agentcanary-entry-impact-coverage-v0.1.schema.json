@@ -121,7 +121,12 @@
         "coverage_state",
         "upstream_task_ids",
         "atr_observer_profile",
-        "notes"
+        "notes",
+        "task_manifest_digest",
+        "run_manifest_id",
+        "native_result_artifact",
+        "atr_sidecar_artifact",
+        "independent_receipt_artifact"
       ],
       "properties": {
         "cell_id": {
@@ -162,6 +167,36 @@
         "notes": {
           "type": "string",
           "minLength": 1
+        },
+        "task_manifest_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "run_manifest_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "native_result_artifact": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "atr_sidecar_artifact": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "independent_receipt_artifact": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     }
