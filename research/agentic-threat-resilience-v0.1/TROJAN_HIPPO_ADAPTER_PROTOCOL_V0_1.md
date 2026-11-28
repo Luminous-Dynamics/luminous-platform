@@ -145,12 +145,12 @@ The companion synthetic contract is now published:
 
 - `schemas/memory-provenance-conformance-v0.1.schema.json`;
 - `scenarios/memory-provenance-conformance-v0.1.json` — 14 cases, MPR-001..014;
-- `tools/validate_memory_provenance.py` — deterministic reference checker with 15 one-field adversarial mutation controls;
+- `tools/validate_memory_provenance.py` — deterministic reference checker with 17 one-field adversarial mutation controls;
 - `.github/workflows/atr-memory-provenance.yml` — exact pull-request schema/reference-contract check.
 
 The fixtures exercise clean user-confirmed memory, untrusted but readable context, dormant 100-session persistence, summary/embedding taint inheritance, claimed-trust laundering, cross-tenant retrieval, stale tombstone resurrection, unknown status, exact independent action approval, memory-as-consent substitution, an independently observed unauthorized bypass, no-memory utility control and cross-agent derived taint.
 
-The checker binds both operation and requested scope to P0. Invalid or indeterminate memory provenance blocks use until resolved; tainted but provenance-complete content may still be read as context. A tainted memory can never authorize a sensitive export: a separate active approval must bind the exact action digest, recipient and scope. The `observed_effect` fixture field distinguishes an attempted unsafe path from an observed committed effect.
+The checker requires stable memory IDs/content digests and nonempty exact-action digests; it also binds actor, operation and requested scope to P0. Invalid or indeterminate memory provenance blocks use until resolved; tainted but provenance-complete content may still be read as context. A tainted memory can never authorize a sensitive export: a separate active approval must bind the exact action digest, recipient and scope. The `observed_effect` fixture field distinguishes an attempted unsafe path from an observed committed effect.
 
 The corpus and mutations are synthetic contract tests. They are not Trojan Hippo executions, memory-backend implementations, proof of distributed tombstone propagation, or an independent effect observer.
 
@@ -160,7 +160,7 @@ The companion synthetic contract is published alongside this adapter:
 
 - `schemas/memory-provenance-conformance-v0.1.schema.json`;
 - `scenarios/memory-provenance-conformance-v0.1.json` — 14 cases, MPR-001..014;
-- `tools/validate_memory_provenance.py` — deterministic reference checker with 15 one-field adversarial mutation controls;
+- `tools/validate_memory_provenance.py` — deterministic reference checker with 17 one-field adversarial mutation controls;
 - `.github/workflows/atr-memory-provenance.yml` — exact pull-request schema/reference-contract check.
 
 The fixtures exercise clean user-confirmed memory, untrusted but readable context, dormant 100-session persistence, summary/embedding taint inheritance, claimed-trust laundering, cross-tenant retrieval, stale tombstone resurrection, unknown status, exact independent action approval, memory-as-consent substitution, an independently observed unauthorized bypass, no-memory utility control and cross-agent derived taint.
