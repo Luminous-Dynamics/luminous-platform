@@ -90,7 +90,8 @@
         "allowed_resources",
         "allowed_recipients",
         "max_memory_age_sessions",
-        "authority_epoch"
+        "authority_epoch",
+        "allowed_actors"
       ],
       "properties": {
         "principal": {
@@ -140,6 +141,14 @@
         "authority_epoch": {
           "type": "integer",
           "minimum": 0
+        },
+        "allowed_actors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
