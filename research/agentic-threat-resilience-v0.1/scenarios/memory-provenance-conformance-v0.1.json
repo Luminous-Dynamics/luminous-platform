@@ -26,6 +26,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -89,6 +92,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -154,6 +160,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -219,6 +228,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -284,6 +296,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -351,6 +366,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -416,6 +434,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -479,6 +500,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -544,6 +568,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -609,6 +636,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -674,6 +704,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -739,6 +772,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -804,6 +840,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
@@ -867,6 +906,9 @@
         "allowed_scopes": [
           "inbox:read",
           "account:export"
+        ],
+        "allowed_actors": [
+          "agent-7"
         ]
       },
       "memory": {
