@@ -73,7 +73,7 @@ Normative rules for this synthetic profile:
 - provenance-complete untrusted content can be read as bounded context; invalid or indeterminate provenance cannot be used until resolved;
 - a sensitive export influenced by tainted memory requires a distinct, current approval that binds the exact action digest, recipient and P0 scope.
 
-The first synthetic corpus is MPR-001..014 with 15 mutation controls. It covers a dormant payload after 100 benign sessions, summary trust laundering, cross-tenant retrieval, tombstone resurrection, unknown status, explicit exact-action approval, memory-as-consent and an independently observed unauthorized effect. It is a deterministic reference contract, not an executed Trojan Hippo benchmark or proof of a distributed memory store's tombstone behavior.
+The first synthetic corpus is MPR-001..014 with 17 mutation controls. It covers a dormant payload after 100 benign sessions, summary trust laundering, cross-tenant retrieval, tombstone resurrection, unknown status, explicit exact-action approval, memory-as-consent and an independently observed unauthorized effect. It is a deterministic reference contract, not an executed Trojan Hippo benchmark or proof of a distributed memory store's tombstone behavior.
 
 
 ## 4. Scenario families
